@@ -1,0 +1,95 @@
+/* ===== Tailwind directives ===== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== PideLocal · Theme pack ===== */
+
+/* 1) Paleta de marca (ajusta si quieres) */
+:root {
+  --brand-green: #147a53;          /* verde principal (fondo gradiente) */
+  --brand-orange: #d55321;         /* naranja principal (fondo gradiente) */
+  --brand-cream: #f7f5f2;          /* fondo general limpio */
+  --brand-ink: #0f172a;            /* texto oscuro */
+  --brand-accent: #1ea76a;         /* acento (botones, enlaces) */
+  --brand-accent-700: #178b59;     /* acento hover */
+  --brand-muted: #64748b;          /* texto secundario */
+}
+
+/* 2) Tipografía base */
+@layer base {
+  html, body {
+    @apply antialiased;
+    color: var(--brand-ink);
+    background-color: var(--brand-cream);
+  }
+
+  h1, h2, h3 {
+    @apply font-bold tracking-tight;
+    color: var(--brand-ink);
+  }
+
+  a { color: var(--brand-accent); }
+  a:hover {
+    color: var(--brand-accent-700);
+    text-decoration: underline;
+  }
+}
+
+/* 3) Utilidades de marca */
+@layer utilities {
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, var(--brand-orange) 0%, #d46b2e 32%, var(--brand-green) 100%);
+  }
+  .text-brand-ink { color: var(--brand-ink); }
+  .text-brand-muted { color: var(--brand-muted); }
+
+  .card-brand {
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+  }
+
+  .btn-brand {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold text-white shadow-sm transition;
+    background-color: var(--brand-accent);
+  }
+  .btn-brand:hover { background-color: var(--brand-accent-700); }
+
+  .badge-pill {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+}
+
+/* 4) Re-skin global NO intrusivo
+   (remapea algunas clases comunes sin tocar TSX) */
+@layer utilities {
+  /* Botones primarios (antes bg-blue-600/700) -> verde marca */
+  .bg-blue-600   { background-color: var(--brand-accent) !important; }
+  .hover\:bg-blue-700:hover { background-color: var(--brand-accent-700) !important; }
+  .text-blue-600 { color: var(--brand-accent) !important; }
+
+  /* Barra superior (antes bg-slate-900) -> gradiente de marca */
+  .bg-slate-900  { background: linear-gradient(90deg, var(--brand-orange) 0%, var(--brand-green) 100%) !important; }
+
+  /* Badges/info */
+  .bg-yellow-100 { background-color: #fff7ed !important; }
+  .text-yellow-800 { color: #b45309 !important; }
+  .bg-green-100 { background-color: #ecfdf5 !important; }
+  .text-green-800 { color: #065f46 !important; }
+
+  /* Tarjetas y sombras */
+  .border-gray-200 { border-color: #e5e7eb !important; }
+  .shadow { box-shadow: 0 1px 2px rgba(2, 6, 23, 0.06), 0 1px 3px rgba(2, 6, 23, 0.1) !important; }
+}
+
+/* 5) Inputs */
+input, select, textarea {
+  @apply rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-accent)] focus:border-transparent;
+}
+
+/* 6) Dark mode opcional */
+@media (prefers-color-scheme: dark) {
+  .dark body {
+    background-color: #0b1320;
+    color: #e2e8f0;
+  }
+}
