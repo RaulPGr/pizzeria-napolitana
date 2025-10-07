@@ -3,11 +3,8 @@ import { NextResponse } from 'next/server';
 /**
  * GET /api/admin/orders/[orderId]/items
  */
-export async function GET(
-  _req: Request,
-  { params }: { params: { orderId: string } }
-) {
-  const { orderId } = params;
+export async function GET(_req: Request, { params }: any) {
+  const orderId = String(params?.orderId ?? '');
 
   // TODO: sustituir por lectura real desde BD
   const items: unknown[] = [];
@@ -21,11 +18,8 @@ export async function GET(
 /**
  * POST /api/admin/orders/[orderId]/items
  */
-export async function POST(
-  req: Request,
-  { params }: { params: { orderId: string } }
-) {
-  const { orderId } = params;
+export async function POST(req: Request, { params }: any) {
+  const orderId = String(params?.orderId ?? '');
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -42,12 +36,8 @@ export async function POST(
 /**
  * DELETE /api/admin/orders/[orderId]/items
  */
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { orderId: string } }
-) {
-  const { orderId } = params;
-
+export async function DELETE(_req: Request, { params }: any) {
+  const orderId = String(params?.orderId ?? '');
   // TODO: borrar en BD según lo que envíe el cliente
   return NextResponse.json({ ok: true, orderId });
 }
