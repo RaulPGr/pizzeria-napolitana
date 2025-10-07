@@ -3,7 +3,27 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import type { OrderWithItems } from "./page";
+
+// --- Tipos locales para evitar importar desde ./page (rompía el build) ---
+type OrderItem = {
+  name: string;
+  quantity: number;
+  line_total_cents: number;
+};
+
+type OrderWithItems = {
+  id: string;
+  created_at: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  pickup_at: string | null;
+  total_cents: number;
+  status: "pendiente" | "preparando" | "listo" | "entregado" | "cancelado";
+  payment_method: "CASH" | "CARD" | "BIZUM" | null;
+  payment_status: "pending" | "paid" | "failed" | null;
+  items: OrderItem[];
+};
+// ------------------------------------------------------------------------
 
 type Props = {
   initialOpenOrders: OrderWithItems[];
@@ -35,18 +55,27 @@ function paymentBadge(
   method: "CASH" | "CARD" | "BIZUM" | null,
   status: "pending" | "paid" | "failed" | null
 ) {
-  const meth =
-    method === "CARD" ? "Tarjeta" :
-    method === "BIZUM" ? "Bizum" :
-    "Efectivo";
+  const meth = method === "CARD" ? "Tarjeta" : method === "BIZUM" ? "Bizum" : "Efectivo";
 
   if (status === "paid") {
-    return <span className="rounded bg-green-100 px-2 py-1 text-sm text-green-700">Pagado · {meth}</span>;
+    return (
+      <span className="rounded bg-green-100 px-2 py-1 text-sm text-green-700">
+        Pagado · {meth}
+      </span>
+    );
   }
   if (status === "failed") {
-    return <span className="rounded bg-red-100 px-2 py-1 text-sm text-red-700">Fallido · {meth}</span>;
+    return (
+      <span className="rounded bg-red-100 px-2 py-1 text-sm text-red-700">
+        Fallido · {meth}
+      </span>
+    );
   }
-  return <span className="rounded bg-yellow-100 px-2 py-1 text-sm text-yellow-700">Pendiente · {meth}</span>;
+  return (
+    <span className="rounded bg-yellow-100 px-2 py-1 text-sm text-yellow-700">
+      Pendiente · {meth}
+    </span>
+  );
 }
 
 const STATUS_OPTIONS = [
@@ -63,8 +92,10 @@ export default function OrdersView({
 }: Props) {
   const router = useRouter();
 
-  const [openOrders, setOpenOrders] = React.useState<OrderWithItems[]>(initialOpenOrders);
-  const [completedOrders] = React.useState<OrderWithItems[]>(initialCompletedOrders);
+  const [openOrders, setOpenOrders] =
+    React.useState<OrderWithItems[]>(initialOpenOrders);
+  const [completedOrders] =
+    React.useState<OrderWithItems[]>(initialCompletedOrders);
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const [range, setRange] = React.useState<Range>("7");
 
@@ -88,7 +119,7 @@ export default function OrdersView({
       setOpenOrders((prev) =>
         prev.map((o) => (o.id === id ? { ...o, status: newStatus as any } : o))
       );
-      // Actualizamos de servidor para recolocar si pasa a completado
+      // Refrescamos para recolocar si pasa a completado
       router.refresh();
     } catch (e: any) {
       alert("Error al actualizar: " + (e?.message || "desconocido"));
@@ -197,10 +228,15 @@ export default function OrdersView({
                             ) : (
                               <div className="space-y-1">
                                 {o.items.map((it, idx) => (
-                                  <div key={idx} className="flex items-center justify-between">
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between"
+                                  >
                                     <div>
                                       {it.name}{" "}
-                                      <span className="text-gray-500">x{it.quantity}</span>
+                                      <span className="text-gray-500">
+                                        x{it.quantity}
+                                      </span>
                                     </div>
                                     <div className="text-gray-600">
                                       {eur(it.line_total_cents)}
@@ -231,10 +267,26 @@ export default function OrdersView({
           <h2 className="text-xl font-semibold">Completados</h2>
 
           <div className="flex items-center gap-2">
-            <FilterPill label="Hoy" active={range === "today"} onClick={() => setRange("today")} />
-            <FilterPill label="Últimos 7 días" active={range === "7"} onClick={() => setRange("7")} />
-            <FilterPill label="Últimos 30 días" active={range === "30"} onClick={() => setRange("30")} />
-            <FilterPill label="Siempre" active={range === "all"} onClick={() => setRange("all")} />
+            <FilterPill
+              label="Hoy"
+              active={range === "today"}
+              onClick={() => setRange("today")}
+            />
+            <FilterPill
+              label="Últimos 7 días"
+              active={range === "7"}
+              onClick={() => setRange("7")}
+            />
+            <FilterPill
+              label="Últimos 30 días"
+              active={range === "30"}
+              onClick={() => setRange("30")}
+            />
+            <FilterPill
+              label="Siempre"
+              active={range === "all"}
+              onClick={() => setRange("all")}
+            />
           </div>
         </div>
 
@@ -267,7 +319,6 @@ export default function OrdersView({
                         <td className="p-3">{fmt(o.pickup_at)}</td>
                         <td className="p-3">{eur(o.total_cents)}</td>
                         <td className="p-3">
-                          {/* SOLO PILL, sin select en completados */}
                           <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-800">
                             {o.status}
                           </span>
@@ -295,10 +346,15 @@ export default function OrdersView({
                             ) : (
                               <div className="space-y-1">
                                 {o.items.map((it, idx) => (
-                                  <div key={idx} className="flex items-center justify-between">
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between"
+                                  >
                                     <div>
                                       {it.name}{" "}
-                                      <span className="text-gray-500">x{it.quantity}</span>
+                                      <span className="text-gray-500">
+                                        x{it.quantity}
+                                      </span>
                                     </div>
                                     <div className="text-gray-600">
                                       {eur(it.line_total_cents)}
@@ -330,7 +386,11 @@ function FilterPill({
   label,
   active,
   onClick,
-}: { label: string; active: boolean; onClick: () => void }) {
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
