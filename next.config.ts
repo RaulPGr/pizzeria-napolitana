@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 
 // ya añadimos esto antes para ESLint:
-eslint: { ignoreDuringBuilds: true };
+eslint: { ignoreDuringBuilds: true },
 
 // añade esto para tipos:
-typescript: { ignoreBuildErrors: true };
+typescript: { ignoreBuildErrors: true },
