@@ -44,19 +44,43 @@ function paymentBadge(pm: Order["payment_method"], ps: Order["payment_status"]) 
   return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} · {method}</span>;
 }
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const search = useSearchParams();
-  const paidFlag = search.get("paid"); // ?paid=1 cuando volvemos de Stripe (opcional)
+/**
+ * Compat con Next 15: `params` puede ser un objeto o una Promise del objeto.
+ * No cambiamos la lógica: resolvemos el id y seguimos igual.
+ */
+type ParamsNow =
+  | { params: { id: string } }
+  | { params: Promise<{ id: string }> };
 
+export default function OrderDetailPage(props: ParamsNow) {
+  const search = useSearchParams();
+  const paidFlag = search.get("paid"); // ?paid=1 al volver de Stripe (opcional)
+
+  const [id, setId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadOrder() {
+  // Resolvemos params (soporta Promise o valor directo)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const p: any = (props as any)?.params;
+      const resolved = typeof p?.then === "function" ? await p : p;
+      const theId = String(resolved?.id ?? "");
+      if (alive) setId(theId);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [props]);
+
+  async function loadOrder(currentId: string) {
+    if (!currentId) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/orders/get?id=${params.id}`, { cache: "no-store" });
+      const res = await fetch(`/api/orders/get?id=${currentId}`, { cache: "no-store" });
       if (!res.ok) throw new Error("No se pudo cargar el pedido");
       const data = await res.json();
       setOrder(data?.order ?? null);
@@ -69,9 +93,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
   }
 
   useEffect(() => {
-    loadOrder();
+    loadOrder(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [id]);
 
   if (loading) return <div className="p-6">Cargando…</div>;
   if (error || !order) return <div className="p-6">Error: {error ?? "No se pudo cargar el pedido"}</div>;
