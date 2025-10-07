@@ -37,10 +37,16 @@ function formatPrice(n: number) {
   }
 }
 
-type SearchParams = { cat?: string };
+/** 👇 Tipo de props que Next espera para page.tsx (App Router) */
+type PageProps = {
+  searchParams?: Record<string, string | string[] | undefined>;
+};
 
-export default async function MenuPage({ searchParams }: { searchParams: SearchParams }) {
-  const selectedCat = (searchParams?.cat ?? '').toLowerCase(); // '', '123', 'nocat'
+export default async function MenuPage({ searchParams }: PageProps) {
+  // Acepta 'cat' como string o string[], y lo normaliza a string minúscula
+  const rawCat = searchParams?.cat;
+  const selectedCat =
+    (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase(); // '', '123', 'nocat'
 
   const supabase = await getSupabase();
 
