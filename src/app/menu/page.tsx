@@ -37,14 +37,14 @@ function formatPrice(n: number) {
   }
 }
 
-/** 👇 Tipo de props que Next espera para page.tsx (App Router) */
+/** 👇 Next 15 tipa searchParams como Promise */
 type PageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function MenuPage({ searchParams }: PageProps) {
-  // Acepta 'cat' como string o string[], y lo normaliza a string minúscula
-  const rawCat = searchParams?.cat;
+  // 👇 ahora hay que await
+  const rawCat = (await searchParams)?.cat;
   const selectedCat =
     (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase(); // '', '123', 'nocat'
 
@@ -57,7 +57,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     .order('sort_order', { ascending: true })
     .order('id', { ascending: true });
 
-  // 2) productos activos (ahora NO filtramos por available: true)
+  // 2) productos activos (no filtramos por available)
   const { data: products, error } = await supabase
     .from(PRODUCTS_TABLE)
     .select('id,name,description,price,image_url,available,active,category_id,categories(name,sort_order)')
@@ -79,7 +79,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     ...(groups.has('nocat') ? [{ id: 'nocat' as const, name: 'Otros', sort_order: 9999 }] : []),
   ];
 
-  // Si hay filtro de categoría, limitamos secciones
+  // Filtro de categoría
   const visibleSections = orderedSections.filter((s) => {
     if (!selectedCat) return true;
     if (selectedCat === 'nocat') return s.id === 'nocat';
