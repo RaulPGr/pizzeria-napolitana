@@ -1,20 +1,27 @@
 import { NextResponse } from 'next/server';
 
-// GET /api/orders/:id
-export async function GET(_req, ctx) {
-  const id = String(ctx?.params?.id || '');
-  return NextResponse.json({ ok: true, id }, { headers: { 'Cache-Control': 'no-store' } });
+const noStore = { headers: { 'Cache-Control': 'no-store' } };
+
+function pickId(params) {
+  const v = params?.id;
+  return Array.isArray(v) ? v[0] : (v ?? '');
 }
 
-// PATCH /api/orders/:id
-export async function PATCH(req, ctx) {
-  const id = String(ctx?.params?.id || '');
+// GET /api/admin/orders/:id
+export async function GET(_req, { params }) {
+  const id = pickId(params);
+  return NextResponse.json({ ok: true, id }, noStore);
+}
+
+// PATCH /api/admin/orders/:id
+export async function PATCH(req, { params }) {
+  const id = pickId(params);
   const body = await req.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, id, body }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ ok: true, id, body }, noStore);
 }
 
-// DELETE /api/orders/:id
-export async function DELETE(_req, ctx) {
-  const id = String(ctx?.params?.id || '');
-  return NextResponse.json({ ok: true, id }, { headers: { 'Cache-Control': 'no-store' } });
+// DELETE /api/admin/orders/:id
+export async function DELETE(_req, { params }) {
+  const id = pickId(params);
+  return NextResponse.json({ ok: true, id }, noStore);
 }
