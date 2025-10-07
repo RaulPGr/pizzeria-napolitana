@@ -1,4 +1,3 @@
-// src/app/order/[id]/print/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -29,27 +28,18 @@ function centsToEUR(cents: number) {
   });
 }
 
-/**
- * En Next 15 los params de página pueden llegar como Promise durante build.
- * Aceptamos ambas variantes para no romper nada:
- * - { params: { id: string } }
- * - { params: Promise<{ id: string }> }
- */
-type ParamsNow = { id: string } | Promise<{ id: string }>;
-type PageProps = { params: ParamsNow };
-
-export default function PrintTicketPage({ params }: PageProps) {
+export default function PrintTicketPage(props: any) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Resolvemos el id independientemente de si params es objeto o Promise
+  // Resolvemos params como Promise u objeto, lo que venga
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const p = (await Promise.resolve(params)) as { id: string } | undefined;
+        const p = await Promise.resolve((props as any)?.params);
         if (mounted) setResolvedId(p?.id ?? null);
       } catch {
         if (mounted) setResolvedId(null);
@@ -58,7 +48,7 @@ export default function PrintTicketPage({ params }: PageProps) {
     return () => {
       mounted = false;
     };
-  }, [params]);
+  }, [props]);
 
   async function loadOrder(id: string) {
     try {
@@ -68,7 +58,6 @@ export default function PrintTicketPage({ params }: PageProps) {
       if (!res.ok) throw new Error("No se pudo cargar el pedido");
       const data = await res.json();
       setOrder(data?.order ?? null);
-      // pequeña pausa para asegurarnos de que el DOM está listo antes de imprimir
       setTimeout(() => window.print(), 200);
     } catch (e: any) {
       setError(e?.message ?? "Error");
@@ -78,11 +67,8 @@ export default function PrintTicketPage({ params }: PageProps) {
     }
   }
 
-  // Cuando tengamos el id resuelto, cargamos el pedido
   useEffect(() => {
-    if (resolvedId) {
-      loadOrder(resolvedId);
-    }
+    if (resolvedId) loadOrder(resolvedId);
   }, [resolvedId]);
 
   if (!resolvedId) return <div className="p-6">Cargando…</div>;
