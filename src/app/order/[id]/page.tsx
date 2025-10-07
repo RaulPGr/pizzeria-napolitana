@@ -44,15 +44,12 @@ function paymentBadge(pm: Order["payment_method"], ps: Order["payment_status"]) 
   return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} · {method}</span>;
 }
 
-/**
- * Compat con Next 15: `params` puede ser un objeto o una Promise del objeto.
- * No cambiamos la lógica: resolvemos el id y seguimos igual.
- */
-type ParamsNow =
-  | { params: { id: string } }
-  | { params: Promise<{ id: string }> };
+// 👇 Aquí la clave: Next 15 tipa `params` como Promise en PageProps
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
 
-export default function OrderDetailPage(props: ParamsNow) {
+export default function OrderDetailPage(props: PageProps) {
   const search = useSearchParams();
   const paidFlag = search.get("paid"); // ?paid=1 al volver de Stripe (opcional)
 
@@ -61,19 +58,17 @@ export default function OrderDetailPage(props: ParamsNow) {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Resolvemos params (soporta Promise o valor directo)
+  // Resolvemos el Promise de params y guardamos el id
   useEffect(() => {
     let alive = true;
     (async () => {
-      const p: any = (props as any)?.params;
-      const resolved = typeof p?.then === "function" ? await p : p;
-      const theId = String(resolved?.id ?? "");
-      if (alive) setId(theId);
+      const { id } = await props.params;
+      if (alive) setId(String(id ?? ""));
     })();
     return () => {
       alive = false;
     };
-  }, [props]);
+  }, [props.params]);
 
   async function loadOrder(currentId: string) {
     if (!currentId) return;
