@@ -1,30 +1,53 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from 'next/server';
 
-// servicio (solo en el servidor)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // <- clave de servicio, nunca en el cliente
-  { auth: { persistSession: false } }
-);
+type Ctx = { params: { orderId: string } };
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { orderId: string } }
-) {
+/**
+ * GET /api/admin/orders/[orderId]/items
+ * Devuelve los items del pedido. (Placeholder: lista vacía)
+ */
+export async function GET(_req: Request, { params }: Ctx) {
+  const { orderId } = params;
+
+  // TODO: sustituir por lectura real desde tu BD (Supabase, etc.)
+  const items: unknown[] = [];
+
+  return NextResponse.json(
+    { ok: true, orderId, items },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
+}
+
+/**
+ * POST /api/admin/orders/[orderId]/items
+ * Crea un item para el pedido. (Placeholder: eco del body)
+ */
+export async function POST(req: Request, { params }: Ctx) {
+  const { orderId } = params;
+
   try {
-    const { orderId } = params;
+    const body = await req.json().catch(() => ({}));
 
-    const { data, error } = await supabase
-      .from("order_items")
-      .select("product_id,name,quantity,unit_price_cents,line_total_cents")
-      .eq("order_id", orderId)
-      .order("id", { ascending: true });
-
-    if (error) throw error;
-
-    return NextResponse.json({ items: data ?? [] });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "Error" }, { status: 500 });
+    // TODO: insertar en BD y devolver el item creado
+    return NextResponse.json(
+      { ok: true, orderId, created: body },
+      { status: 201 },
+    );
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: (err as Error).message },
+      { status: 400 },
+    );
   }
+}
+
+/**
+ * DELETE /api/admin/orders/[orderId]/items
+ * Elimina items del pedido. (Placeholder simple)
+ */
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { orderId } = params;
+
+  // TODO: borrar en BD según lo que envíe el cliente (id del item, etc.)
+  return NextResponse.json({ ok: true, orderId });
 }
