@@ -1,66 +1,39 @@
-// /app/login/page.tsx
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState<string | null>(null);
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setErr(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (error) {
-      setError("Credenciales inválidas");
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setErr(j?.error || 'Error al iniciar sesión');
       return;
     }
 
-    // Redirigir al admin si el login es exitoso
-    router.push("/admin");
-  };
+    // Ya tenemos las cookies sb-… => al admin
+    router.replace('/admin');
+  }
 
   return (
-    <div className="max-w-sm mx-auto py-16">
-      <h1 className="text-2xl font-bold mb-6 text-center">Iniciar sesión</h1>
-
-      <form onSubmit={handleLogin} className="space-y-4">
-        <input
-          className="w-full border p-2 rounded"
-          type="email"
-          placeholder="Correo electrónico"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <input
-          className="w-full border p-2 rounded"
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Entrar
-        </button>
-      </form>
-    </div>
+    <form onSubmit={onSubmit} className="mx-auto max-w-md space-y-3">
+      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" className="w-full border p-2 rounded" />
+      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" className="w-full border p-2 rounded" />
+      {err && <p className="text-red-600 text-sm">{err}</p>}
+      <button className="w-full bg-emerald-600 text-white py-2 rounded">Entrar</button>
+    </form>
   );
 }

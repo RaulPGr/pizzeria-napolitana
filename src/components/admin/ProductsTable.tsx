@@ -1,0 +1,472 @@
+'use client';
+
+import { useMemo, useRef, useState } from 'react';
+
+type Category = { id: number; name: string };
+type Product = {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  available: boolean;
+  category_id: number | null;
+  sort_order?: number | null;
+};
+
+type Props = {
+  initialProducts: Product[];
+  categories: Category[];
+};
+
+export default function ProductsTable({ initialProducts, categories }: Props) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [loading, setLoading] = useState(false);
+
+  // Filtro por categoría ('' = todas)
+  const [filterCat, setFilterCat] = useState<number | ''>('');
+
+  // ---- Form crear ----
+  const [newName, setNewName] = useState('');
+  const [newPrice, setNewPrice] = useState<number | ''>('');
+  const [newCat, setNewCat] = useState<number | ''>('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newAvail, setNewAvail] = useState(true);
+  const [newFile, setNewFile] = useState<File | null>(null);
+
+  // ---- Edición inline ----
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editRow, setEditRow] = useState<Partial<Product>>({});
+
+  // ---- Subida de imagen (cambiar imagen) ----
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
+
+  const catById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.name] as const)),
+    [categories]
+  );
+
+  function resetNewForm() {
+    setNewName('');
+    setNewPrice('');
+    setNewCat('');
+    setNewDesc('');
+    setNewAvail(true);
+    setNewFile(null);
+  }
+
+  async function refresh() {
+    const res = await fetch('/api/products', { cache: 'no-store' });
+    const { products: p } = await res.json();
+    setProducts(p ?? []);
+  }
+
+  // ------- Crear producto (y si hay archivo, subir imagen) -------
+  async function onCreate() {
+    if (!newName.trim()) return;
+    setLoading(true);
+
+    // 1) crear
+    const body = {
+      name: newName.trim(),
+      price: parseFloat(String(newPrice || 0)),
+      category_id: newCat === '' ? null : Number(newCat),
+      description: newDesc.trim() || null,
+      available: !!newAvail,
+    };
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) {
+      setLoading(false);
+      alert('Error al crear producto');
+      return;
+    }
+    const { id } = await res.json();
+
+    // 2) si hay fichero, subirlo
+    if (id && newFile) {
+      const fd = new FormData();
+      fd.append('id', String(id));
+      fd.append('file', newFile);
+      const up = await fetch('/api/products', { method: 'PATCH', body: fd });
+      if (!up.ok) {
+        setLoading(false);
+        alert('Producto creado, pero error al subir la imagen');
+        await refresh();
+        resetNewForm();
+        return;
+      }
+    }
+
+    setLoading(false);
+    await refresh();
+    resetNewForm();
+  }
+
+  // ------- Eliminar -------
+  async function onDelete(id: number) {
+    if (!confirm('¿Eliminar producto?')) return;
+    setLoading(true);
+    const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
+    setLoading(false);
+    if (!res.ok) {
+      alert('Error al eliminar');
+      return;
+    }
+    await refresh();
+  }
+
+  // ------- Edición -------
+  function startEdit(p: Product) {
+    setEditingId(p.id);
+    setEditRow({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      category_id: p.category_id,
+      available: p.available,
+      description: p.description ?? '',
+    });
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    setLoading(true);
+    const res = await fetch('/api/products', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        id: editingId,
+        ...editRow,
+        price: parseFloat(String(editRow.price ?? 0)),
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    setLoading(false);
+    if (!res.ok) {
+      alert('Error al guardar cambios');
+      return;
+    }
+    setEditingId(null);
+    setEditRow({});
+    await refresh();
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditRow({});
+  }
+
+  // ------- Cambiar imagen (file picker) -------
+  function triggerUpload(id: number) {
+    setUploadTargetId(id);
+    fileRef.current?.click();
+  }
+
+  async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f || !uploadTargetId) return;
+    setLoading(true);
+    const fd = new FormData();
+    fd.append('id', String(uploadTargetId));
+    fd.append('file', f);
+    const res = await fetch('/api/products', { method: 'PATCH', body: fd });
+    setLoading(false);
+    e.target.value = '';
+    setUploadTargetId(null);
+    if (!res.ok) {
+      alert('Error al subir imagen');
+      return;
+    }
+    await refresh();
+  }
+
+  // ------- Toggle disponible inmediato -------
+  async function toggleAvailable(p: Product, checked: boolean) {
+    // Optimista
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, available: checked } : x)));
+    const res = await fetch('/api/products', {
+      method: 'PATCH',
+      body: JSON.stringify({ id: p.id, available: checked }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      // Revertir si falla
+      setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, available: !checked } : x)));
+      alert('No se pudo actualizar disponible');
+    }
+  }
+
+  // ------- Lista para mostrar: filtrar + ordenar por categoría y nombre -------
+  const view = useMemo(() => {
+    let arr = products.slice();
+    if (filterCat !== '') {
+      arr = arr.filter((p) => p.category_id === Number(filterCat));
+    }
+    arr.sort(
+      (a, b) =>
+        (a.category_id ?? 0) - (b.category_id ?? 0) ||
+        (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+        a.name.localeCompare(b.name)
+    );
+    return arr;
+  }, [products, filterCat]);
+
+  return (
+    <div className="space-y-6">
+      {/* File input global para "Cambiar imagen" */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onFilePicked}
+      />
+
+      {/* Form crear */}
+      <div className="rounded-md border p-4">
+        <div className="flex flex-wrap gap-2 items-center">
+          <input
+            className="border rounded px-3 py-2 w-[280px]"
+            placeholder="Nombre"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <input
+            className="border rounded px-3 py-2 w-[100px]"
+            placeholder="0"
+            type="number"
+            step="0.01"
+            value={newPrice}
+            onChange={(e) => setNewPrice(e.target.value === '' ? '' : Number(e.target.value))}
+          />
+          <select
+            className="border rounded px-3 py-2 w-[220px]"
+            value={newCat}
+            onChange={(e) => setNewCat(e.target.value === '' ? '' : Number(e.target.value))}
+          >
+            <option value="">Sin categoría</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Subida de imagen en creación */}
+          <input
+            type="file"
+            accept="image/*"
+            className="border rounded px-3 py-2"
+            onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
+          />
+
+          <input
+            className="border rounded px-3 py-2 flex-1 min-w-[260px]"
+            placeholder="Descripción (opcional)"
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+          />
+        </div>
+
+        <label className="inline-flex items-center gap-2 mt-3">
+          <input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} />
+          <span>Disponible</span>
+        </label>
+
+        <div className="mt-3">
+          <button
+            onClick={onCreate}
+            disabled={loading}
+            className="bg-emerald-600 disabled:opacity-60 text-white px-4 py-2 rounded"
+          >
+            Añadir
+          </button>
+        </div>
+
+         
+        
+      </div>
+
+      {/* Filtro por categoría */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm">Filtrar por categoría:</label>
+        <select
+          className="border rounded px-3 py-2 w-[240px]"
+          value={filterCat}
+          onChange={(e) => setFilterCat(e.target.value === '' ? '' : Number(e.target.value))}
+        >
+          <option value="">Todas</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Tabla */}
+      <div className="overflow-x-auto rounded-md border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700">
+            <tr>
+              <th className="px-3 py-2 text-left">ID</th>
+              <th className="px-3 py-2 text-left">Nombre</th>
+              <th className="px-3 py-2 text-left">Precio</th>
+              <th className="px-3 py-2 text-left">Disponible</th>
+              <th className="px-3 py-2 text-left">Categoría</th>
+              <th className="px-3 py-2 text-left">Imagen</th>
+              <th className="px-3 py-2 text-left">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {view.map((p) => {
+              const isEditing = editingId === p.id;
+
+              if (isEditing) {
+                return (
+                  <tr key={p.id} className="border-t">
+                    <td className="px-3 py-2">{p.id}</td>
+                    <td className="px-3 py-2">
+                      <input
+                        className="border rounded px-2 py-1 w-full"
+                        value={editRow.name ?? ''}
+                        onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))}
+                      />
+                      <div className="text-xs text-gray-500 mt-1">
+                        <input
+                          className="border rounded px-2 py-1 w-full"
+                          placeholder="Descripción (opcional)"
+                          value={editRow.description ?? ''}
+                          onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 w-[120px]">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="border rounded px-2 py-1 w-[110px]"
+                        value={String(editRow.price ?? 0)}
+                        onChange={(e) =>
+                          setEditRow((r) => ({ ...r, price: e.target.value === '' ? 0 : Number(e.target.value) }))
+                        }
+                      />
+                    </td>
+                    <td className="px-3 py-2 w-[110px]">
+                      <label className="inline-flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={!!editRow.available}
+                          onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))}
+                        />
+                        <span>{editRow.available ? 'Sí' : 'No'}</span>
+                      </label>
+                    </td>
+                    <td className="px-3 py-2 w-[220px]">
+                      <select
+                        className="border rounded px-2 py-1 w-full"
+                        value={editRow.category_id ?? ''}
+                        onChange={(e) =>
+                          setEditRow((r) => ({
+                            ...r,
+                            category_id: e.target.value === '' ? null : Number(e.target.value),
+                          }))
+                        }
+                      >
+                        <option value="">Sin categoría</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt="" className="h-10 w-16 object-cover rounded" />
+                      ) : (
+                        <span className="text-gray-400">–</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={saveEdit}
+                          disabled={loading}
+                          className="bg-emerald-600 text-white px-3 py-1 rounded disabled:opacity-60"
+                        >
+                          Guardar
+                        </button>
+                        <button onClick={cancelEdit} className="bg-gray-200 px-3 py-1 rounded">
+                          Cancelar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              return (
+                <tr key={p.id} className="border-t">
+                  <td className="px-3 py-2">{p.id}</td>
+                  <td className="px-3 py-2">
+                    <div className="font-medium">{p.name}</div>
+                    {p.description ? (
+                      <div className="text-xs text-gray-500 mt-1">{p.description}</div>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2">{Number(p.price).toFixed(2)} €</td>
+                  <td className="px-3 py-2">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={p.available}
+                        onChange={(e) => toggleAvailable(p, e.target.checked)}
+                      />
+                      <span>{p.available ? 'Sí' : 'No'}</span>
+                    </label>
+                  </td>
+                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) ?? '—' : '—'}</td>
+                  <td className="px-3 py-2">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt="" className="h-10 w-16 object-cover rounded" />
+                    ) : (
+                      <span className="text-gray-400">–</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => startEdit(p)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => triggerUpload(p.id)}
+                        className="bg-gray-700 text-white px-3 py-1 rounded"
+                      >
+                        Cambiar imagen
+                      </button>
+                      <button
+                        onClick={() => onDelete(p.id)}
+                        className="bg-red-600 text-white px-3 py-1 rounded"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

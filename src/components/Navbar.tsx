@@ -4,6 +4,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCount, subscribe } from "@/lib/cart-storage";
+import AdminCTA from '@/components/AdminCTA';
+import AdminLink from '@/components/AdminLink';
+
 
 export default function NavBar() {
   const [count, setCount] = useState(0);
@@ -26,13 +29,16 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>
-          <Item href="/admin">Admin</Item>
-        </div>
+          {/*<Item href="/admin">Admin</Item>*/}
+          <AdminCTA />
+          <AdminLink />
 
+        </div>
+{/*}
         <div className="relative">
           <Link href="/cart" className="text-white hover:text-gray-300">
             Carrito
-          </Link>
+          </Link> 
           {count > 0 && (
             <span
               className="absolute -right-3 -top-2 inline-flex h-5 min-w-5 items-center justify-center
@@ -41,7 +47,7 @@ export default function NavBar() {
               {count}
             </span>
           )}
-        </div>
+        </div> */}
       </nav>
     </header>
   );

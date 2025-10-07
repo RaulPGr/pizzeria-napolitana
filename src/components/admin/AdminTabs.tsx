@@ -1,35 +1,27 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const TABS = [
-  { href: "/admin",        label: "Productos" },
-  { href: "/admin/orders", label: "Pedidos" },
-  { href: "/admin/stats",  label: "Estadísticas" },
-  { href: "/admin/pagos",  label: "Pagos" }, // 👈 NUEVA PESTAÑA
-];
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function AdminTabs() {
   const pathname = usePathname();
+  const tabs = [{ href: '/admin', label: 'Productos' }];
 
   return (
-    <div className="mb-6 border-b">
+    <div className="mb-6 border-b border-gray-200">
       <nav className="-mb-px flex gap-6">
-        {TABS.map((t) => {
-          const active =
-            pathname === t.href ||
-            (t.href !== "/admin" && pathname?.startsWith(t.href));
-
+        {tabs.map((t) => {
+          const active = pathname === t.href;
           return (
             <Link
               key={t.href}
               href={t.href}
-              className={`pb-2 border-b-2 ${
+              className={[
+                'pb-3 text-sm',
                 active
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-              }`}
+                  ? 'border-b-2 border-emerald-600 font-medium text-emerald-700'
+                  : 'text-gray-600 hover:text-gray-800'
+              ].join(' ')}
             >
               {t.label}
             </Link>
