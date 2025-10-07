@@ -29,35 +29,63 @@ function centsToEUR(cents: number) {
   });
 }
 
-export default function PrintTicketPage({ params }: { params: { id: string } }) {
+/**
+ * En Next 15 los params de página pueden llegar como Promise durante build.
+ * Aceptamos ambas variantes para no romper nada:
+ * - { params: { id: string } }
+ * - { params: Promise<{ id: string }> }
+ */
+type ParamsNow = { id: string } | Promise<{ id: string }>;
+type PageProps = { params: ParamsNow };
+
+export default function PrintTicketPage({ params }: PageProps) {
+  const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadOrder() {
+  // Resolvemos el id independientemente de si params es objeto o Promise
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const p = (await Promise.resolve(params)) as { id: string } | undefined;
+        if (mounted) setResolvedId(p?.id ?? null);
+      } catch {
+        if (mounted) setResolvedId(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [params]);
+
+  async function loadOrder(id: string) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/orders/get?id=${params.id}`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`/api/orders/get?id=${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error("No se pudo cargar el pedido");
       const data = await res.json();
       setOrder(data?.order ?? null);
+      // pequeña pausa para asegurarnos de que el DOM está listo antes de imprimir
+      setTimeout(() => window.print(), 200);
     } catch (e: any) {
       setError(e?.message ?? "Error");
       setOrder(null);
     } finally {
       setLoading(false);
-      setTimeout(() => window.print(), 200);
     }
   }
 
+  // Cuando tengamos el id resuelto, cargamos el pedido
   useEffect(() => {
-    loadOrder();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (resolvedId) {
+      loadOrder(resolvedId);
+    }
+  }, [resolvedId]);
 
+  if (!resolvedId) return <div className="p-6">Cargando…</div>;
   if (loading) return <div className="p-6">Cargando…</div>;
   if (error || !order) return <div className="p-6">Error: {error ?? "desconocido"}</div>;
 
@@ -140,22 +168,69 @@ export default function PrintTicketPage({ params }: { params: { id: string } }) 
 
       <style jsx global>{`
         @media print {
-          @page { margin: 0; }
-          body { margin: 0; }
+          @page {
+            margin: 0;
+          }
+          body {
+            margin: 0;
+          }
         }
-        .ticket { width: 80mm; max-width: 80mm; padding: 10px 12px; font-family: ui-monospace, Menlo, Monaco, Consolas, "Courier New", monospace; font-size: 12px; color: #111; }
-        .center { text-align: center; }
-        .title { font-size: 16px; font-weight: 700; }
-        .subtle { color: #666; }
-        .bold { font-weight: 700; }
-        .mb-4 { margin-bottom: 8px; }
-        .mt-4 { margin-top: 8px; }
-        .line { border-top: 1px dashed #999; margin: 8px 0; }
-        .row { display: flex; justify-content: space-between; gap: 12px; margin: 3px 0; }
-        .items { display: flex; flex-direction: column; gap: 4px; }
-        .item { display: flex; justify-content: space-between; gap: 12px; }
-        .item-left { max-width: 60%; word-break: break-word; }
-        .item-right { min-width: 70px; text-align: right; }
+        .ticket {
+          width: 80mm;
+          max-width: 80mm;
+          padding: 10px 12px;
+          font-family: ui-monospace, Menlo, Monaco, Consolas, "Courier New",
+            monospace;
+          font-size: 12px;
+          color: #111;
+        }
+        .center {
+          text-align: center;
+        }
+        .title {
+          font-size: 16px;
+          font-weight: 700;
+        }
+        .subtle {
+          color: #666;
+        }
+        .bold {
+          font-weight: 700;
+        }
+        .mb-4 {
+          margin-bottom: 8px;
+        }
+        .mt-4 {
+          margin-top: 8px;
+        }
+        .line {
+          border-top: 1px dashed #999;
+          margin: 8px 0;
+        }
+        .row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin: 3px 0;
+        }
+        .items {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .item {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .item-left {
+          max-width: 60%;
+          word-break: break-word;
+        }
+        .item-right {
+          min-width: 70px;
+          text-align: right;
+        }
       `}</style>
     </div>
   );
