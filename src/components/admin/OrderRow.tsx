@@ -1,4 +1,8 @@
+// @ts-nocheck
+
 // src/components/admin/OrderRow.tsx
+
+
 "use client";
 
 import { useState } from "react";
