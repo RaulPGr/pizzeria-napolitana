@@ -1,5 +1,12 @@
+// src/app/api/admin/orders/[id]/route.js
+
+// Evita SSG / edge y fuerza Node.js en Vercel
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 
+// No cambiar: seguimos devolviendo sin cache
 const noStore = { headers: { 'Cache-Control': 'no-store' } };
 
 function pickId(params) {
