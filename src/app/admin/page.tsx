@@ -8,25 +8,46 @@ export const revalidate = 0;
 import { headers } from 'next/headers';
 import ProductsTable from '@/components/admin/ProductsTable';
 
+// Obtiene la URL base de forma robusta (Vercel, local, etc.)
+async function getBaseUrl() {
+  // En Next 15, headers() puede ser asíncrono; si fuese síncrono, await no rompe.
+  const h = await headers();
+
+  // En Vercel vienen estos headers
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const host = h.get('host');
+
+  // Si tenemos host, construimos la base con él
+  if (host) return `${proto}://${host}`;
+
+  // Fallback: variable de entorno (por si algún proxy raro no pasa el host)
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+}
 
 export default async function AdminPage() {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = await getBaseUrl();
 
-  // Leemos la cookie de la request (Next 15: headers() -> Promise<ReadonlyHeaders>)
-  const hdrs = await headers();
-  const cookie = hdrs.get('cookie') ?? '';
+  // Leemos la cookie de la request (para mantener sesión en el fetch SSR)
+  const h = await headers();
+  const cookie = h.get('cookie') ?? '';
 
-  // SSR sin caché, pasando la cookie para respetar la sesión
-  const res = await fetch(`${site}/api/products`, {
+  // Pedimos los datos al API interno sin cache
+  const res = await fetch(`${baseUrl}/api/products`, {
     cache: 'no-store',
     headers: { cookie },
   });
+
+  // Si la respuesta no es OK, forzamos un error legible
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(txt || `Request to ${baseUrl}/api/products failed`);
+  }
 
   const { products, categories } = await res.json();
 
   return (
     <div className="space-y-6">
-      {/* H1 lo pinta el layout; aquí solo subtítulo */}
+      {/* H1 lo pinta el layout; aquí solo subtítulo si quieres */}
       <h2 className="text-lg font-medium">Productos</h2>
 
       <ProductsTable
