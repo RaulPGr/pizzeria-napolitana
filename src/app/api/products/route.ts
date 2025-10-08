@@ -3,14 +3,15 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
+
 export const dynamic = 'force-dynamic';
 
 const TABLE = process.env.NEXT_PUBLIC_PRODUCTS_TABLE || 'products';
 // Bucket para imágenes (crea uno público en Supabase Storage con este nombre)
 const BUCKET = process.env.NEXT_PUBLIC_STORAGE_BUCKET || 'product-images';
 
-function supabaseFromCookies() {
-  const cookieStore = cookies();
+async function supabaseFromCookies() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,7 +37,7 @@ function supabaseFromCookies() {
 
 // ---------- GET: productos + categorías ----------
 export async function GET() {
-  const supabase = supabaseFromCookies();
+  const supabase = await supabaseFromCookies();
 
   const { data: products, error } = await supabase
     .from(TABLE)
@@ -64,7 +65,7 @@ export async function GET() {
 // ---------- POST: crear ----------
 export async function POST(req: Request) {
   const contentType = req.headers.get('content-type') || '';
-  const supabase = supabaseFromCookies();
+  const supabase = await supabaseFromCookies();
 
   // Creamos el producto (JSON). Si luego quieres subir imagen, usa PATCH multipart con id.
   if (contentType.includes('application/json')) {
@@ -92,7 +93,7 @@ export async function POST(req: Request) {
 
 // ---------- PATCH: actualizar o subir imagen ----------
 export async function PATCH(req: Request) {
-  const supabase = supabaseFromCookies();
+  const supabase = await supabaseFromCookies();
   const contentType = req.headers.get('content-type') || '';
 
   // Subida de imagen (multipart/form-data): campos -> id, file
@@ -143,7 +144,7 @@ export async function PATCH(req: Request) {
 
 // ---------- DELETE: borrar ?id= ----------
 export async function DELETE(req: Request) {
-  const supabase = supabaseFromCookies();
+  const supabase = await supabaseFromCookies();
   const { searchParams } = new URL(req.url);
   const id = Number(searchParams.get('id'));
   if (!id) return NextResponse.json({ ok: false, error: 'id requerido' }, { status: 400 });
