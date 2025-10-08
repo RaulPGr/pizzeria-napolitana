@@ -4,7 +4,6 @@ export type Plan = 'starter' | 'medium' | 'pro';
 export const PLAN: Plan =
   (process.env.NEXT_PUBLIC_PLAN as Plan) || 'starter';
 
-// qué plan puede ver cada feature/sección
 export const FEATURES = {
   products: ['starter', 'medium', 'pro'],
   orders:   ['medium', 'pro'],
@@ -15,5 +14,7 @@ export const FEATURES = {
 export type FeatureName = keyof typeof FEATURES;
 
 export function hasFeature(feature: FeatureName, plan: Plan = PLAN) {
-  return FEATURES[feature].includes(plan);
+  const list = FEATURES[feature] as readonly Plan[]; // ← esta línea faltaba
+  return list.includes(plan);
 }
+
