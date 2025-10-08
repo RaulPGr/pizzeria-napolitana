@@ -25,7 +25,10 @@ export async function GET(req: Request) {
     }
     // "all" => fromISO = null
 
-    let q = supabaseAdmin
+// crea el cliente admin invocando la factory
+const db = supabaseAdmin(); // 👈 importante: paréntesis
+
+    let q = db
       .from("orders")
       .select(
         `
