@@ -1,5 +1,8 @@
-// src/app/api/_env-check/route.ts
+// src/app/api/env-check/route.ts
 import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";        // fuerza runtime Node (no Edge)
+export const dynamic = "force-dynamic"; // evita caché/prerender
 
 export async function GET() {
   return NextResponse.json({
