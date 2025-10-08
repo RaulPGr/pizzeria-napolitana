@@ -4,6 +4,7 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+
 import { NextResponse } from 'next/server';
 
 // No cambiar: seguimos devolviendo sin cache

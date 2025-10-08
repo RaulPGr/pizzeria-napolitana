@@ -1,8 +1,13 @@
 // src/app/admin/page.tsx
+
+// fuerza Node.js (no Edge) y evita prerender
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { headers } from 'next/headers';
 import ProductsTable from '@/components/admin/ProductsTable';
 
-export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
   const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';

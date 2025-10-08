@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+// fuerza Node.js (no Edge) y evita prerender
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 type Order = {
   id: string;
   status: string | null;
