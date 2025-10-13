@@ -58,6 +58,81 @@ export default function OrderDetailPage(props: PageProps) {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  async function ensureJsPDF() {
+    if ((window as any).jspdf?.jsPDF) return (window as any).jspdf.jsPDF;
+    await new Promise<void>((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('No se pudo cargar jsPDF'));
+      document.body.appendChild(s);
+    });
+    return (window as any).jspdf.jsPDF;
+  }
+
+  async function downloadPdf() {
+    if (!order) return;
+    try {
+      const jsPDF = await ensureJsPDF();
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      let y = 50;
+      doc.setFontSize(18);
+      doc.text('Mi Restaurante', 300, y, { align: 'center' });
+      y += 24;
+      doc.setFontSize(12);
+      doc.text(`Pedido #${order.id}`, 300, y, { align: 'center' });
+      y += 20;
+
+      const created = new Date(order.created_at).toLocaleString('es-ES');
+      const pickup = order.pickup_at
+        ? new Date(order.pickup_at).toLocaleString('es-ES')
+        : '—';
+      const method = order.payment_method === 'CARD' ? 'Tarjeta' : order.payment_method === 'BIZUM' ? 'Bizum' : 'Efectivo';
+      const ps = order.payment_status === 'paid' ? 'Pagado' : order.payment_status === 'failed' ? 'Fallido' : order.payment_status === 'refunded' ? 'Reembolsado' : 'Pendiente';
+
+      y += 10;
+      doc.text(`Fecha: ${created}`, 60, y);
+      y += 18;
+      doc.text(`Cliente: ${order.customer_name}`, 60, y);
+      y += 18;
+      doc.text(`Teléfono: ${order.customer_phone}`, 60, y);
+      y += 18;
+      doc.text(`Recogida: ${pickup}`, 60, y);
+      y += 18;
+      doc.text(`Pago: ${method} — ${ps}`, 60, y);
+      y += 24;
+
+      doc.setFont(undefined, 'bold');
+      doc.text('Artículos', 60, y);
+      doc.setFont(undefined, 'normal');
+      y += 14;
+      doc.line(60, y, 535, y);
+      y += 12;
+
+      order.items.forEach((it) => {
+        const subtotal = (it.unit_price_cents * it.quantity) / 100;
+        doc.text(`${it.name ?? 'Producto'}`, 60, y);
+        doc.text(`x${it.quantity}`, 400, y, { align: 'right' });
+        doc.text(subtotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }), 535, y, { align: 'right' });
+        y += 16;
+        if (y > 760) { doc.addPage(); y = 60; }
+      });
+
+      y += 6;
+      doc.line(60, y, 535, y);
+      y += 18;
+      doc.setFont(undefined, 'bold');
+      doc.text('Total', 60, y);
+      doc.text((order.total_cents/100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }), 535, y, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+
+      const filename = `pedido-${String(order.id).slice(0,8)}.pdf`;
+      doc.save(filename);
+    } catch (e) {
+      alert('No se pudo generar el PDF');
+    }
+  }
+
   // Resolvemos el Promise de params y guardamos el id
   useEffect(() => {
     let alive = true;
@@ -120,13 +195,12 @@ export default function OrderDetailPage(props: PageProps) {
           Volver al menú
         </Link>
         <div className="ml-auto">
-          <Link
-            href={`/order/${order.id}/print`}
-            target="_blank"
+          <button
+            onClick={downloadPdf}
             className="px-3 py-2 rounded border hover:bg-gray-50"
           >
-            Imprimir ticket
-          </Link>
+            Descargar PDF
+          </button>
         </div>
       </div>
 
