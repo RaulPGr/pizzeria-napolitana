@@ -10,7 +10,8 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET() {
   try {
-    const supa = supabaseAdmin();
+    // supabaseAdmin es una instancia (no una función)
+    const supa = supabaseAdmin;
     const table = process.env.NEXT_PUBLIC_PRODUCTS_TABLE || 'products';
 
     // Productos + nombre de categoría
