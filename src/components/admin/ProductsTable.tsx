@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from "react";
 
 type Category = { id: number; name: string };
 type Product = {
@@ -23,22 +23,26 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
 
-  // Filtro por categoría ('' = todas)
-  const [filterCat, setFilterCat] = useState<number | ''>('');
+  // Filtros
+  const [filterCat, setFilterCat] = useState<number | "">("");
+  const [filterName, setFilterName] = useState("");
+  const [filterAvail, setFilterAvail] = useState<"all" | "yes" | "no">("all");
+  const [priceMin, setPriceMin] = useState<number | "">("");
+  const [priceMax, setPriceMax] = useState<number | "">("");
 
-  // ---- Form crear ----
-  const [newName, setNewName] = useState('');
-  const [newPrice, setNewPrice] = useState<number | ''>('');
-  const [newCat, setNewCat] = useState<number | ''>('');
-  const [newDesc, setNewDesc] = useState('');
+  // Form crear
+  const [newName, setNewName] = useState("");
+  const [newPrice, setNewPrice] = useState<number | "">("");
+  const [newCat, setNewCat] = useState<number | "">("");
+  const [newDesc, setNewDesc] = useState("");
   const [newAvail, setNewAvail] = useState(true);
   const [newFile, setNewFile] = useState<File | null>(null);
 
-  // ---- Edición inline ----
+  // Edición
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<Partial<Product>>({});
 
-  // ---- Subida de imagen (cambiar imagen) ----
+  // Subida de imagen
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
 
@@ -48,55 +52,60 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   );
 
   function resetNewForm() {
-    setNewName('');
-    setNewPrice('');
-    setNewCat('');
-    setNewDesc('');
+    setNewName("");
+    setNewPrice("");
+    setNewCat("");
+    setNewDesc("");
     setNewAvail(true);
     setNewFile(null);
   }
 
+  function resetFilters() {
+    setFilterCat("");
+    setFilterName("");
+    setFilterAvail("all");
+    setPriceMin("");
+    setPriceMax("");
+  }
+
   async function refresh() {
-    const res = await fetch('/api/products', { cache: 'no-store' });
+    const res = await fetch("/api/products", { cache: "no-store" });
     const { products: p } = await res.json();
     setProducts(p ?? []);
   }
 
-  // ------- Crear producto (y si hay archivo, subir imagen) -------
+  // Crear producto y (opcional) subir imagen
   async function onCreate() {
     if (!newName.trim()) return;
     setLoading(true);
-
-    // 1) crear
     const body = {
       name: newName.trim(),
       price: parseFloat(String(newPrice || 0)),
-      category_id: newCat === '' ? null : Number(newCat),
+      category_id: newCat === "" ? null : Number(newCat),
       description: newDesc.trim() || null,
       available: !!newAvail,
     };
-    const res = await fetch('/api/products', {
-      method: 'POST',
+    const res = await fetch("/api/products", {
+      method: "POST",
       body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!res.ok) {
       setLoading(false);
-      alert('Error al crear producto');
+      alert("Error al crear producto");
       return;
     }
-    const { id } = await res.json();
+    const { id } = (await res.json()) as { id: number };
 
-    // 2) si hay fichero, subirlo
     if (id && newFile) {
       const fd = new FormData();
-      fd.append('id', String(id));
-      fd.append('file', newFile);
-      const up = await fetch('/api/products', { method: 'PATCH', body: fd });
+      fd.append("id", String(id));
+      fd.append("file", newFile);
+      const up = await fetch("/api/products", { method: "PATCH", body: fd });
       if (!up.ok) {
         setLoading(false);
-        alert('Producto creado, pero error al subir la imagen');
+        alert("Producto creado, pero error al subir la imagen");
         await refresh();
         resetNewForm();
         return;
@@ -108,47 +117,43 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     resetNewForm();
   }
 
-  // ------- Eliminar -------
+  // Eliminar
   async function onDelete(id: number) {
-    if (!confirm('¿Eliminar producto?')) return;
+    if (!confirm("¿Eliminar producto?")) return;
     setLoading(true);
-    const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
     setLoading(false);
     if (!res.ok) {
-      alert('Error al eliminar');
+      alert("Error al eliminar");
       return;
     }
     await refresh();
   }
 
-  // ------- Edición -------
+  // Edición
   function startEdit(p: Product) {
     setEditingId(p.id);
     setEditRow({
       id: p.id,
       name: p.name,
+      description: p.description,
       price: p.price,
-      category_id: p.category_id,
       available: p.available,
-      description: p.description ?? '',
+      category_id: p.category_id,
     });
   }
 
   async function saveEdit() {
     if (!editingId) return;
     setLoading(true);
-    const res = await fetch('/api/products', {
-      method: 'PATCH',
-      body: JSON.stringify({
-        id: editingId,
-        ...editRow,
-        price: parseFloat(String(editRow.price ?? 0)),
-      }),
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/products", {
+      method: "PATCH",
+      body: JSON.stringify({ id: editingId, ...editRow, price: parseFloat(String(editRow.price ?? 0)) }),
+      headers: { "Content-Type": "application/json" },
     });
     setLoading(false);
     if (!res.ok) {
-      alert('Error al guardar cambios');
+      alert("Error al guardar cambios");
       return;
     }
     setEditingId(null);
@@ -161,52 +166,52 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     setEditRow({});
   }
 
-  // ------- Cambiar imagen (file picker) -------
+  // Cambiar imagen
   function triggerUpload(id: number) {
     setUploadTargetId(id);
     fileRef.current?.click();
   }
-
   async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f || !uploadTargetId) return;
     setLoading(true);
     const fd = new FormData();
-    fd.append('id', String(uploadTargetId));
-    fd.append('file', f);
-    const res = await fetch('/api/products', { method: 'PATCH', body: fd });
+    fd.append("id", String(uploadTargetId));
+    fd.append("file", f);
+    const res = await fetch("/api/products", { method: "PATCH", body: fd });
     setLoading(false);
-    e.target.value = '';
+    e.target.value = "";
     setUploadTargetId(null);
     if (!res.ok) {
-      alert('Error al subir imagen');
+      alert("Error al subir imagen");
       return;
     }
     await refresh();
   }
 
-  // ------- Toggle disponible inmediato -------
+  // Toggle disponible
   async function toggleAvailable(p: Product, checked: boolean) {
-    // Optimista
     setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, available: checked } : x)));
-    const res = await fetch('/api/products', {
-      method: 'PATCH',
+    const res = await fetch("/api/products", {
+      method: "PATCH",
       body: JSON.stringify({ id: p.id, available: checked }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
     if (!res.ok) {
-      // Revertir si falla
       setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, available: !checked } : x)));
-      alert('No se pudo actualizar disponible');
+      alert("No se pudo actualizar disponible");
     }
   }
 
-  // ------- Lista para mostrar: filtrar + ordenar por categoría y nombre -------
+  // Lista vista (filtros + orden)
   const view = useMemo(() => {
     let arr = products.slice();
-    if (filterCat !== '') {
-      arr = arr.filter((p) => p.category_id === Number(filterCat));
-    }
+    if (filterCat !== "") arr = arr.filter((p) => p.category_id === Number(filterCat));
+    const q = filterName.trim().toLowerCase();
+    if (q) arr = arr.filter((p) => p.name.toLowerCase().includes(q));
+    if (filterAvail !== "all") arr = arr.filter((p) => (filterAvail === "yes" ? p.available : !p.available));
+    if (priceMin !== "") arr = arr.filter((p) => Number(p.price) >= Number(priceMin));
+    if (priceMax !== "") arr = arr.filter((p) => Number(p.price) <= Number(priceMax));
     arr.sort(
       (a, b) =>
         (a.category_id ?? 0) - (b.category_id ?? 0) ||
@@ -214,22 +219,18 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
         a.name.localeCompare(b.name)
     );
     return arr;
-  }, [products, filterCat]);
+  }, [products, filterCat, filterName, filterAvail, priceMin, priceMax]);
 
   return (
     <div className="space-y-6">
-      {/* File input global para "Cambiar imagen" */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={onFilePicked}
-      />
+      {/* file input global */}
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFilePicked} />
 
-      {/* Form crear */}
-      <div className="rounded-md border p-4">
-        <div className="flex flex-wrap gap-2 items-center">
+      {/* Form crear en desplegable */}
+      <details className="rounded-md border p-4">
+        <summary className="cursor-pointer select-none text-sm font-medium">Añadir producto</summary>
+        <div className="mt-3" />
+        <div className="flex flex-wrap items-center gap-2">
           <input
             className="border rounded px-3 py-2 w-[280px]"
             placeholder="Nombre"
@@ -242,12 +243,12 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
             type="number"
             step="0.01"
             value={newPrice}
-            onChange={(e) => setNewPrice(e.target.value === '' ? '' : Number(e.target.value))}
+            onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))}
           />
           <select
             className="border rounded px-3 py-2 w-[220px]"
             value={newCat}
-            onChange={(e) => setNewCat(e.target.value === '' ? '' : Number(e.target.value))}
+            onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}
           >
             <option value="">Sin categoría</option>
             {categories.map((c) => (
@@ -256,15 +257,12 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               </option>
             ))}
           </select>
-
-          {/* Subida de imagen en creación */}
           <input
             type="file"
             accept="image/*"
             className="border rounded px-3 py-2"
             onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
           />
-
           <input
             className="border rounded px-3 py-2 flex-1 min-w-[260px]"
             placeholder="Descripción (opcional)"
@@ -272,41 +270,68 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
             onChange={(e) => setNewDesc(e.target.value)}
           />
         </div>
-
-        <label className="inline-flex items-center gap-2 mt-3">
+        <label className="mt-3 inline-flex items-center gap-2">
           <input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} />
           <span>Disponible</span>
         </label>
-
         <div className="mt-3">
-          <button
-            onClick={onCreate}
-            disabled={loading}
-            className="bg-emerald-600 disabled:opacity-60 text-white px-4 py-2 rounded"
-          >
+          <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">
             Añadir
           </button>
         </div>
+      </details>
 
-         
-        
-      </div>
-
-      {/* Filtro por categoría */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm">Filtrar por categoría:</label>
-        <select
-          className="border rounded px-3 py-2 w-[240px]"
-          value={filterCat}
-          onChange={(e) => setFilterCat(e.target.value === '' ? '' : Number(e.target.value))}
-        >
-          <option value="">Todas</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+      {/* Filtros avanzados */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-600">Nombre</label>
+          <input
+            className="border rounded px-3 py-2 w-[220px]"
+            placeholder="Buscar por nombre"
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-600">Precio mín.</label>
+          <input
+            type="number"
+            step="0.01"
+            className="border rounded px-3 py-2 w-[120px]"
+            value={priceMin}
+            onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))}
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-600">Precio máx.</label>
+          <input
+            type="number"
+            step="0.01"
+            className="border rounded px-3 py-2 w-[120px]"
+            value={priceMax}
+            onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))}
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-600">Disponible</label>
+          <select className="border rounded px-3 py-2 w-[160px]" value={filterAvail} onChange={(e) => setFilterAvail(e.target.value as any)}>
+            <option value="all">Todos</option>
+            <option value="yes">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-600">Categoría</label>
+          <select className="border rounded px-3 py-2 w-[200px]" value={filterCat} onChange={(e) => setFilterCat(e.target.value === "" ? "" : Number(e.target.value))}>
+            <option value="">Todas</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button onClick={resetFilters} className="h-[38px] rounded border px-3">Restablecer</button>
       </div>
 
       {/* Tabla */}
@@ -326,58 +351,27 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           <tbody>
             {view.map((p) => {
               const isEditing = editingId === p.id;
-
               if (isEditing) {
                 return (
                   <tr key={p.id} className="border-t">
                     <td className="px-3 py-2">{p.id}</td>
                     <td className="px-3 py-2">
-                      <input
-                        className="border rounded px-2 py-1 w-full"
-                        value={editRow.name ?? ''}
-                        onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        <input
-                          className="border rounded px-2 py-1 w-full"
-                          placeholder="Descripción (opcional)"
-                          value={editRow.description ?? ''}
-                          onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))}
-                        />
+                      <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
+                      <div className="mt-1 text-xs text-gray-500">
+                        <input className="w-full rounded border px-2 py-1" placeholder="Descripción (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
                       </div>
                     </td>
-                    <td className="px-3 py-2 w-[120px]">
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="border rounded px-2 py-1 w-[110px]"
-                        value={String(editRow.price ?? 0)}
-                        onChange={(e) =>
-                          setEditRow((r) => ({ ...r, price: e.target.value === '' ? 0 : Number(e.target.value) }))
-                        }
-                      />
+                    <td className="w-[120px] px-3 py-2">
+                      <input type="number" step="0.01" className="w-[110px] rounded border px-2 py-1" value={String(editRow.price ?? 0)} onChange={(e) => setEditRow((r) => ({ ...r, price: e.target.value === "" ? 0 : Number(e.target.value) }))} />
                     </td>
-                    <td className="px-3 py-2 w-[110px]">
+                    <td className="w-[110px] px-3 py-2">
                       <label className="inline-flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={!!editRow.available}
-                          onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))}
-                        />
-                        <span>{editRow.available ? 'Sí' : 'No'}</span>
+                        <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
+                        <span>{editRow.available ? "Sí" : "No"}</span>
                       </label>
                     </td>
-                    <td className="px-3 py-2 w-[220px]">
-                      <select
-                        className="border rounded px-2 py-1 w-full"
-                        value={editRow.category_id ?? ''}
-                        onChange={(e) =>
-                          setEditRow((r) => ({
-                            ...r,
-                            category_id: e.target.value === '' ? null : Number(e.target.value),
-                          }))
-                        }
-                      >
+                    <td className="w-[220px] px-3 py-2">
+                      <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === "" ? null : Number(e.target.value) }))}>
                         <option value="">Sin categoría</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
@@ -386,25 +380,13 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2">
-                      {p.image_url ? (
-                        <img src={p.image_url} alt="" className="h-10 w-16 object-cover rounded" />
-                      ) : (
-                        <span className="text-gray-400">–</span>
-                      )}
-                    </td>
+                    <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">—</span>}</td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={saveEdit}
-                          disabled={loading}
-                          className="bg-emerald-600 text-white px-3 py-1 rounded disabled:opacity-60"
-                        >
+                        <button onClick={saveEdit} disabled={loading} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">
                           Guardar
                         </button>
-                        <button onClick={cancelEdit} className="bg-gray-200 px-3 py-1 rounded">
-                          Cancelar
-                        </button>
+                        <button onClick={cancelEdit} className="rounded bg-gray-200 px-3 py-1">Cancelar</button>
                       </div>
                     </td>
                   </tr>
@@ -416,47 +398,26 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                   <td className="px-3 py-2">{p.id}</td>
                   <td className="px-3 py-2">
                     <div className="font-medium">{p.name}</div>
-                    {p.description ? (
-                      <div className="text-xs text-gray-500 mt-1">{p.description}</div>
-                    ) : null}
+                    {p.description ? <div className="mt-1 text-xs text-gray-500">{p.description}</div> : null}
                   </td>
                   <td className="px-3 py-2">{Number(p.price).toFixed(2)} €</td>
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={p.available}
-                        onChange={(e) => toggleAvailable(p, e.target.checked)}
-                      />
-                      <span>{p.available ? 'Sí' : 'No'}</span>
+                      <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
+                      <span>{p.available ? "Sí" : "No"}</span>
                     </label>
                   </td>
-                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) ?? '—' : '—'}</td>
-                  <td className="px-3 py-2">
-                    {p.image_url ? (
-                      <img src={p.image_url} alt="" className="h-10 w-16 object-cover rounded" />
-                    ) : (
-                      <span className="text-gray-400">–</span>
-                    )}
-                  </td>
+                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) ?? "—" : "—"}</td>
+                  <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">—</span>}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => startEdit(p)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded"
-                      >
+                      <button onClick={() => startEdit(p)} className="rounded bg-blue-600 px-3 py-1 text-white">
                         Editar
                       </button>
-                      <button
-                        onClick={() => triggerUpload(p.id)}
-                        className="bg-gray-700 text-white px-3 py-1 rounded"
-                      >
+                      <button onClick={() => triggerUpload(p.id)} className="rounded bg-gray-700 px-3 py-1 text-white">
                         Cambiar imagen
                       </button>
-                      <button
-                        onClick={() => onDelete(p.id)}
-                        className="bg-red-600 text-white px-3 py-1 rounded"
-                      >
+                      <button onClick={() => onDelete(p.id)} className="rounded bg-red-600 px-3 py-1 text-white">
                         Eliminar
                       </button>
                     </div>
@@ -470,3 +431,4 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
+

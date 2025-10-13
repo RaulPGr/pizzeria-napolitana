@@ -13,18 +13,22 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+
+    // ✅ añadido seguro para que el alias @/* siempre funcione
+    "baseUrl": ".",
+
+    "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/admin/orders/[id]/route.js", "src/app/api/orders/[id]/status/route.js"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/app/api/admin/orders/[id]/route.js",
+    "src/app/api/orders/[id]/status/route.ts"
+  ],
   "exclude": ["node_modules", ".next", "archive/**"]
-  
 }
-
-

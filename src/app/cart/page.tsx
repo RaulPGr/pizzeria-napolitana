@@ -2,13 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  CartItem,
-  subscribe,
-  setQty,
-  removeItem,
-  clearCart,
-} from "@/lib/cart-storage";
+import { CartItem, subscribe, setQty, removeItem, clearCart } from "@/lib/cart-storage";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type PaymentMethod = "cash" | "card";
@@ -22,22 +16,15 @@ function todayISO(): string {
 }
 
 export default function CartPage() {
-  // -------------------------
   // Carrito
-  // -------------------------
   const [items, setItems] = useState<CartItem[]>([]);
   useEffect(() => {
     const unsub = subscribe((next) => setItems(next));
     return () => unsub();
   }, []);
-  const total = useMemo(
-    () => items.reduce((acc, it) => acc + it.price * it.qty, 0),
-    [items]
-  );
+  const total = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items]);
 
-  // -------------------------
   // Formulario
-  // -------------------------
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -45,6 +32,7 @@ export default function CartPage() {
   const [date, setDate] = useState(todayISO());
   const [time, setTime] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("cash");
+  const [methods, setMethods] = useState<{ cash: boolean; card: boolean }>({ cash: true, card: true });
   const [sending, setSending] = useState(false);
 
   const canSubmit =
@@ -55,9 +43,25 @@ export default function CartPage() {
     time.trim().length > 0 &&
     !sending;
 
-  // -------------------------
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/payments', { cache: 'no-store' });
+        const j = await res.json();
+        if (j?.ok && j?.data) {
+          setMethods({ cash: !!j.data.cash, card: !!j.data.card });
+          // Si el método actual no está permitido, selecciona uno disponible
+          setPayment((prev) => {
+            if (prev === 'cash' && j.data.cash) return 'cash';
+            if (prev === 'card' && j.data.card) return 'card';
+            return j.data.cash ? 'cash' : 'card';
+          });
+        }
+      } catch {}
+    })();
+  }, []);
+
   // Envío
-  // -------------------------
   async function onConfirm() {
     if (!canSubmit) return;
 
@@ -76,41 +80,16 @@ export default function CartPage() {
     }
 
     const payload = {
-      customer_name: name.trim(),
-      customer_phone: phone.trim(),
-      customer_email: email.trim() || null,
-      notes: notes.trim() || null,
-      pickup_at: pickup.toISOString(), // UTC ISO
-      payment_method: payment === "cash" ? "cash" : "card",
-      items: items.map((it) => ({
-        product_id: it.id,
-        name: it.name,
-        unit_price_cents: Math.round(it.price * 100),
-        quantity: it.qty,
-      })),
-    };
+      customer: { name: name.trim(), phone: phone.trim(), email: email.trim() || undefined },
+      notes: notes.trim() || undefined,
+      pickupAt: pickup.toISOString(),
+      paymentMethod: payment,
+      items: items.map((it) => ({ productId: it.id as number, quantity: it.qty })),
+    } as const;
 
     try {
       setSending(true);
-
-      if (payment === "cash") {
-        // --- FLUJO EFECTIVO (como ya tenías) ---
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(txt || `HTTP ${res.status}`);
-        }
-        clearCart();
-        alert("¡Pedido creado correctamente!");
-        return;
-      }
-
-      // --- FLUJO TARJETA (Stripe) ---
-      const res = await fetch("/api/orders/card", {
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -119,9 +98,8 @@ export default function CartPage() {
         const txt = await res.text();
         throw new Error(txt || `HTTP ${res.status}`);
       }
-      const data = (await res.json()) as { checkout_url: string; order_id: number };
-      // No vaciamos el carrito aquí; se limpia en la página de éxito
-      window.location.href = data.checkout_url;
+      clearCart();
+      alert("Pedido creado correctamente");
     } catch (e: any) {
       alert(`No se pudo crear el pedido. ${e?.message ?? ""}`);
     } finally {
@@ -129,9 +107,7 @@ export default function CartPage() {
     }
   }
 
-  // -------------------------
   // UI
-  // -------------------------
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-6 text-3xl font-bold">Tu carrito</h1>
@@ -139,48 +115,28 @@ export default function CartPage() {
       {/* LÍNEAS DEL CARRITO */}
       <div className="mb-6">
         {items.length === 0 ? (
-          <div className="rounded border bg-white p-4 text-gray-600 shadow">
-            Tu carrito está vacío.
-          </div>
+          <div className="rounded border bg-white p-4 text-gray-600 shadow">Tu carrito está vacío.</div>
         ) : (
           <ul className="space-y-3">
             {items.map((it) => (
               <li key={String(it.id)} className="rounded border bg-white p-4 shadow">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    {it.image && (
-                      <img
-                        src={it.image}
-                        alt={it.name}
-                        className="h-12 w-12 rounded object-cover"
-                      />
-                    )}
+                    {it.image && <img src={it.image} alt={it.name} className="h-12 w-12 rounded object-cover" />}
                     <div>
                       <div className="font-medium">{it.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {it.price.toFixed(2)} €
-                      </div>
+                      <div className="text-sm text-gray-500">{it.price.toFixed(2)} €</div>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setQty(it.id, Math.max(1, it.qty - 1))}
-                      className="rounded border px-2 py-1"
-                    >
-                      −
+                    <button onClick={() => setQty(it.id, Math.max(1, it.qty - 1))} className="rounded border px-2 py-1">
+                      -
                     </button>
                     <span className="w-8 text-center">{it.qty}</span>
-                    <button
-                      onClick={() => setQty(it.id, it.qty + 1)}
-                      className="rounded border px-2 py-1"
-                    >
+                    <button onClick={() => setQty(it.id, it.qty + 1)} className="rounded border px-2 py-1">
                       +
                     </button>
-                    <button
-                      onClick={() => removeItem(it.id)}
-                      className="rounded border border-red-300 px-3 py-1 text-red-600"
-                    >
+                    <button onClick={() => removeItem(it.id)} className="rounded border border-red-300 px-3 py-1 text-red-600">
                       Quitar
                     </button>
                   </div>
@@ -206,98 +162,49 @@ export default function CartPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm text-gray-600">Nombre</label>
-            <input
-              className="w-full rounded border px-3 py-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre del cliente"
-            />
+            <input className="w-full rounded border px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del cliente" />
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Teléfono</label>
-            <input
-              className="w-full rounded border px-3 py-2"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Teléfono de contacto"
-              inputMode="tel"
-            />
+            <input className="w-full rounded border px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono de contacto" inputMode="tel" />
           </div>
-
-        <div>
+          <div>
             <label className="mb-1 block text-sm text-gray-600">Email (opcional)</label>
-            <input
-              className="w-full rounded border px-3 py-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="cliente@email.com"
-              type="email"
-            />
+            <input className="w-full rounded border px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" type="email" />
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Notas (opcional)</label>
-            <input
-              className="w-full rounded border px-3 py-2"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Sin cebolla, alergias, etc."
-            />
+            <input className="w-full rounded border px-3 py-2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Sin cebolla, alergias, etc." />
           </div>
-
           <div>
             <label className="mb-1 block text-sm text-gray-600">Fecha de recogida</label>
-            <input
-              type="date"
-              className="w-full rounded border px-3 py-2"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <input type="date" className="w-full rounded border px-3 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Hora de recogida</label>
-            <input
-              type="time"
-              className="w-full rounded border px-3 py-2"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
+            <input type="time" className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
         </div>
 
         <div className="mt-4">
           <div className="mb-2 text-sm text-gray-600">Método de pago</div>
-          <label className="mr-6 inline-flex items-center gap-2">
-            <input
-              type="radio"
-              name="payment"
-              checked={payment === "cash"}
-              onChange={() => setPayment("cash")}
-            />
-            Efectivo en tienda
-          </label>
-          
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="radio"
-              name="payment"
-              checked={payment === "card"}
-              onChange={() => setPayment("card")}
-            />
-            Tarjeta (Stripe)
-          </label>
-          
+          {methods.cash && (
+            <label className="mr-6 inline-flex items-center gap-2">
+              <input type="radio" name="payment" checked={payment === "cash"} onChange={() => setPayment("cash")} />
+              Pago en tienda
+            </label>
+          )}
+          {methods.card && (
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="payment" checked={payment === "card"} onChange={() => setPayment("card")} />
+              Tarjeta
+            </label>
+          )}
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          {/* ⬇️ Botón con protección antidoble-clic */}
           <ConfirmSubmitButton onClick={onConfirm} />
-
-          <button
-            onClick={() => clearCart()}
-            disabled={items.length === 0}
-            className="rounded border px-4 py-2 disabled:opacity-50"
-            type="button"
-          >
+          <button onClick={() => clearCart()} disabled={items.length === 0} className="rounded border px-4 py-2 disabled:opacity-50" type="button">
             Vaciar carrito
           </button>
         </div>

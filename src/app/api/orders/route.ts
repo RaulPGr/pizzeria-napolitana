@@ -1,74 +1,102 @@
 // src/app/api/orders/route.ts
-import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin'; // ajusta la ruta si en tu proyecto es distinta
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-const noStore = { headers: { 'Cache-Control': 'no-store' } };
+type ItemInput = { productId: number; quantity: number };
+type BodyInput = {
+  customer: { name: string; phone: string; email?: string };
+  pickupAt: string; // ISO
+  items: ItemInput[];
+  paymentMethod: 'cash' | 'card';
+  notes?: string;
+};
 
-/**
- * GET /api/orders
- * Devuelve el listado de pedidos (si lo usas en el admin).
- * No crea ni modifica pedidos (Starter/Medium).
- */
-export async function GET(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const db = supabaseAdmin(); // ← IMPORTANTE: invocar la factory para obtener el cliente
+    const body = (await req.json()) as BodyInput;
 
-    const url = new URL(req.url);
-    const limit = Number(url.searchParams.get('limit') ?? '50');
-    const from  = Number(url.searchParams.get('from')  ?? '0');
-
-    const { data, error, count } = await db
-      .from('orders')
-      .select(
-        `
-          id,
-          status,
-          total_cents,
-          customer_name,
-          customer_phone,
-          created_at,
-          order_items (
-            name,
-            quantity,
-            unit_price_cents
-          )
-        `,
-        { count: 'exact' }
-      )
-      .order('created_at', { ascending: false })
-      .range(from, from + limit - 1);
-
-    if (error) {
+    if (!body.customer?.name || !body.customer?.phone)
       return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500, ...noStore }
+        { ok: false, message: 'Faltan datos del cliente' },
+        { status: 400 }
       );
-    }
 
-    return NextResponse.json(
-      { ok: true, orders: data ?? [], count: count ?? 0 },
-      noStore
-    );
+    if (!Array.isArray(body.items) || body.items.length === 0)
+      return NextResponse.json(
+        { ok: false, message: 'Debes incluir al menos 1 item' },
+        { status: 400 }
+      );
+
+    // Traer precios de productos y calcular totales en céntimos
+    const productIds = [...new Set(body.items.map((i) => i.productId))];
+    const { data: products, error: prodErr } = await supabaseAdmin
+      .from('products')
+      .select('id, name, price')
+      .in('id', productIds);
+    if (prodErr) throw prodErr;
+
+    const map = new Map(products?.map((p) => [p.id, p]) || []);
+
+    let totalCents = 0;
+    const itemsPrepared = body.items.map((i) => {
+      const p = map.get(i.productId);
+      if (!p) {
+        throw new Error(`Producto no existe (id=${i.productId})`);
+      }
+      const unit_price_cents = Math.round(Number(p.price) * 100);
+      const line_total_cents = unit_price_cents * i.quantity;
+      totalCents += line_total_cents;
+      return {
+        product_id: i.productId,
+        name: p.name,
+        unit_price_cents,
+        quantity: i.quantity,
+        line_total_cents,
+      };
+    });
+
+    // Decidir estado inicial según método de pago
+    const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
+
+    // Insertar pedido
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        customer_name: body.customer.name,
+        customer_phone: body.customer.phone,
+        customer_email: body.customer.email || null,
+        pickup_at: body.pickupAt ? new Date(body.pickupAt).toISOString() : null,
+        status: initialStatus,
+        total_cents: totalCents,
+        payment_method: body.paymentMethod,
+        payment_status: 'unpaid',
+        notes: body.notes || null,
+      })
+      .select('id')
+      .single();
+    if (insErr) throw insErr;
+
+    const orderId: string = inserted.id;
+
+    // Generar code corto (p.ej. primeros 7 chars del uuid)
+    const code = orderId.split('-')[0];
+    const { error: upErr } = await supabaseAdmin
+      .from('orders')
+      .update({ code })
+      .eq('id', orderId);
+    if (upErr) throw upErr;
+
+    // Insertar los items
+    const { error: itemsErr } = await supabaseAdmin
+      .from('order_items')
+      .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId })));
+    if (itemsErr) throw itemsErr;
+
+    return NextResponse.json({ ok: true, orderId, code });
   } catch (err: any) {
     return NextResponse.json(
-      { ok: false, error: err?.message ?? 'Unexpected error' },
-      { status: 500, ...noStore }
+      { ok: false, message: err?.message || 'Error creando pedido' },
+      { status: 400 }
     );
   }
 }
-
-/**
- * Métodos de escritura deshabilitados en Starter/Medium
- * (evita romper el build y asegura que no se creen pedidos).
- */
-function methodNotAllowed() {
-  return NextResponse.json(
-    { ok: false, error: 'Pedidos deshabilitados en este plan' },
-    { status: 405, ...noStore }
-  );
-}
-
-export async function POST()   { return methodNotAllowed(); }
-export async function PUT()    { return methodNotAllowed(); }
-export async function PATCH()  { return methodNotAllowed(); }
-export async function DELETE() { return methodNotAllowed(); }

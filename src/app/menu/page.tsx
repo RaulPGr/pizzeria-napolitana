@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import AddToCartButton from '@/components/AddToCartButton';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
@@ -183,6 +184,11 @@ export default async function MenuPage({ searchParams }: PageProps) {
                           {p.description}
                         </p>
                       )}
+
+                      <AddToCartButton
+                        product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                        disabled={out}
+                      />
                     </div>
                   </li>
                 );

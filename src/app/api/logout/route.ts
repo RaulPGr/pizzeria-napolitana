@@ -1,42 +1,31 @@
 // src/app/api/logout/route.ts
-import { NextResponse, type NextRequest } from "next/server";
-import { cookies } from "next/headers";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 
-/**
- * Elimina de forma segura las cookies de sesión que pueda estar usando la app.
- * Añade o quita nombres según tu caso.
- */
-const SESSION_COOKIES = [
-  "session",           // cookie propia de la app (si la usas)
-  "sb-access-token",   // Supabase (auth helpers)
-  "sb-refresh-token",  // Supabase (auth helpers)
-  "sb:token",          // variantes antiguas
-];
-
-async function handleLogout() {
-  const cookieStore = await cookies(); // Next.js 15: cookies() devuelve una Promesa
-
-  for (const name of SESSION_COOKIES) {
-    try {
-      if (cookieStore.get(name)) {
-        cookieStore.set(name, "", { expires: new Date(0), path: "/" });
+export async function POST() {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name: string) => cookieStore.get(name)?.value,
+          set: (name: string, value: string, options: any) => {
+            try { cookieStore.set(name, value, options); } catch {}
+          },
+          remove: (name: string, options: any) => {
+            try { cookieStore.set(name, '', { ...options, maxAge: 0 }); } catch {}
+          },
+        },
       }
-    } catch {
-      // Evita romperse si el runtime no permite set-cookie en este contexto
-    }
+    );
+
+    await supabase.auth.signOut();
+    return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || 'Error al cerrar sesión' }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { ok: true },
-    { headers: { "Cache-Control": "no-store" } }
-  );
 }
 
-export async function POST(_req: NextRequest) {
-  return handleLogout();
-}
-
-// Opcionalmente admite GET para facilitar pruebas desde el navegador
-export async function GET(_req: NextRequest) {
-  return handleLogout();
-}
