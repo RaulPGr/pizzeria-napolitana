@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 
 
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
   try {
@@ -30,7 +30,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = supabaseAdmin;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
     const { error } = await supabase
       .from('orders')
