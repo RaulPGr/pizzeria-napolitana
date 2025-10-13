@@ -32,7 +32,8 @@ export default async function AdminPage() {
   const cookie = h.get('cookie') ?? '';
 
   // Pedimos los datos al API interno sin cache
-  const res = await fetch(`${baseUrl}/api/products`, {
+  // Usamos el endpoint admin (service role) para evitar problemas de RLS
+  const res = await fetch(`${baseUrl}/api/admin/orders/products`, {
     cache: 'no-store',
     headers: { cookie },
   });
@@ -40,7 +41,7 @@ export default async function AdminPage() {
   // Si la respuesta no es OK, forzamos un error legible
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
-    throw new Error(txt || `Request to ${baseUrl}/api/products failed`);
+    throw new Error(txt || `Request to ${baseUrl}/api/admin/orders/products failed`);
   }
 
   const { products, categories } = await res.json();
