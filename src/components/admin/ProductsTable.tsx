@@ -230,22 +230,30 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
       <details className="rounded-md border p-4">
         <summary className="cursor-pointer select-none text-sm font-medium">Añadir producto</summary>
         <div className="mt-3" />
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            className="border rounded px-3 py-2 w-[280px]"
-            placeholder="Nombre"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-          <input
-            className="border rounded px-3 py-2 w-[100px]"
-            placeholder="0"
-            type="number"
-            step="0.01"
-            value={newPrice}
-            onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))}
-          />
-          <select
+        <div className="space-y-3">
+          <div className="flex flex-col max-w-xl">
+            <label className="text-sm text-gray-700">Nombre del producto</label>
+            <input
+              className="border rounded px-3 py-2 w-full"
+              placeholder="Ej. Croqueta de jamon"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col max-w-xs">
+            <label className="text-sm text-gray-700">Precio</label>
+            <input
+              className="border rounded px-3 py-2"
+              placeholder="0.00"
+              type="number"
+              step="0.01"
+              value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))}
+            />
+          </div>
+          <div className="flex flex-col max-w-sm">
+            <label className="text-sm text-gray-700">Categor��a</label>
+            <select
             className="border rounded px-3 py-2 w-[220px]"
             value={newCat}
             onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}
@@ -257,12 +265,16 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               </option>
             ))}
           </select>
-          <input
-            type="file"
-            accept="image/*"
-            className="border rounded px-3 py-2"
-            onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
-          />
+          </div>
+          <div className="flex flex-col max-w-xl">
+            <label className="text-sm text-gray-700">Imagen (opcional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="border rounded px-3 py-2"
+              onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
           <input
             className="border rounded px-3 py-2 flex-1 min-w-[260px]"
             placeholder="Descripción (opcional)"
@@ -431,4 +443,3 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
-
