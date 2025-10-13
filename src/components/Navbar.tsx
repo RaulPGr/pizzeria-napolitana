@@ -4,8 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCount, subscribe } from "@/lib/cart-storage";
-import AdminCTA from "@/components/AdminCTA";
-import AdminLink from "@/components/AdminLink";
+// Admin entry removed from navbar
 
 export default function NavBar() {
   const [count, setCount] = useState(0);
@@ -27,9 +26,7 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>
-          {/*<Item href="/admin">Admin</Item>*/}
-          <AdminCTA />
-          <AdminLink />
+          {/* Admin link intentionally removed */}
         </div>
         <div className="relative">
           <Link href="/cart" className="text-white hover:text-gray-300">
@@ -45,4 +42,3 @@ export default function NavBar() {
     </header>
   );
 }
-
