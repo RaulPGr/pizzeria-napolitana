@@ -39,9 +39,9 @@ export async function GET(req: NextRequest) {
       });
       const { data } = await supa.auth.getUser();
       const email = data.user?.email?.toLowerCase() || '';
-      if (!adminEmails().includes(email)) {
-        return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
-      }
+      const admins = adminEmails();
+      const ok = admins.length === 0 ? !!email : admins.includes(email);
+      if (!ok) { return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 }); }
     } catch {
       return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
     }

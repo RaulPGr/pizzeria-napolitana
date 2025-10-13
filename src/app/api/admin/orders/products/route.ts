@@ -33,7 +33,9 @@ export async function GET() {
       });
       const { data } = await supa.auth.getUser();
       const email = data.user?.email?.toLowerCase() || '';
-      if (!adminEmails().includes(email)) {
+      const admins = adminEmails();
+      const ok = admins.length === 0 ? !!email : admins.includes(email);
+      if (!ok) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     } catch {

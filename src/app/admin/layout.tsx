@@ -16,7 +16,8 @@ async function isAdmin() {
     if (!res.ok) return false;
     const j = await res.json();
     const email = String(j?.email || "").toLowerCase();
-    return adminEmails().includes(email);
+    const admins = adminEmails();
+    return admins.length === 0 ? !!email : admins.includes(email);
   } catch {
     return false;
   }
@@ -35,4 +36,3 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     </div>
   );
 }
-
