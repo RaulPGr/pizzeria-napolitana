@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useRef, useState } from "react";
 
@@ -38,7 +38,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   const [newAvail, setNewAvail] = useState(true);
   const [newFile, setNewFile] = useState<File | null>(null);
 
-  // Edición
+  // EdiciÃ³n
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<Partial<Product>>({});
 
@@ -119,7 +119,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
 
   // Eliminar
   async function onDelete(id: number) {
-    if (!confirm("¿Eliminar producto?")) return;
+    if (!confirm("Â¿Eliminar producto?")) return;
     setLoading(true);
     const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
     setLoading(false);
@@ -130,7 +130,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     await refresh();
   }
 
-  // Edición
+  // EdiciÃ³n
   function startEdit(p: Product) {
     setEditingId(p.id);
     setEditRow({
@@ -228,7 +228,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
 
       {/* Form crear en desplegable */}
       <details className="rounded-md border p-4">
-        <summary className="cursor-pointer select-none text-sm font-medium">Añadir producto</summary>
+        <summary className="cursor-pointer select-none text-sm font-medium">AÃ±adir producto</summary>
         <div className="mt-3" />
         <div className="space-y-3">
           <div className="flex flex-col max-w-xl">
@@ -251,44 +251,47 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))}
             />
           </div>
-          <div className="flex flex-col max-w-sm">
-            <label className="text-sm text-gray-700">Categor��a</label>
+          <div className="flex flex-col max-w-xl">
+            <label className="text-sm text-gray-700">Categoria</label>
             <select
-            className="border rounded px-3 py-2 w-[220px]"
-            value={newCat}
-            onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}
-          >
-            <option value="">Sin categoría</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+              className="border rounded px-3 py-2 w-full"
+              value={newCat}
+              onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}
+            >
+              <option value="">Sin categoria</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
+            <label className="text-sm text-gray-700">Imagen (opcional)</label>
           <div className="flex flex-col max-w-xl">
             <label className="text-sm text-gray-700">Imagen (opcional)</label>
             <input
               type="file"
               accept="image/*"
-              className="border rounded px-3 py-2"
-              onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
+              className="border rounded px-3 py-2 w-full"
             />
           </div>
-          <input
-            className="border rounded px-3 py-2 flex-1 min-w-[260px]"
-            placeholder="Descripción (opcional)"
-            value={newDesc}
-            onChange={(e) => setNewDesc(e.target.value)}
-          />
-        </div>
+          <div className="flex flex-col max-w-xl">
+            <label className="text-sm text-gray-700">Descripcion (opcional)</label>
+            <textarea
+              className="border rounded px-3 py-2 w-full"
+              rows={3}
+              placeholder="Describe el producto"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
+          </div>
+          <span>Disponible</span>
         <label className="mt-3 inline-flex items-center gap-2">
           <input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} />
           <span>Disponible</span>
         </label>
-        <div className="mt-3">
           <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">
-            Añadir
+            AÃ±adir
           </button>
         </div>
       </details>
@@ -305,7 +308,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Precio mín.</label>
+          <label className="text-xs text-gray-600">Precio mÃ­n.</label>
           <input
             type="number"
             step="0.01"
@@ -315,7 +318,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Precio máx.</label>
+          <label className="text-xs text-gray-600">Precio mÃ¡x.</label>
           <input
             type="number"
             step="0.01"
@@ -328,12 +331,12 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           <label className="text-xs text-gray-600">Disponible</label>
           <select className="border rounded px-3 py-2 w-[160px]" value={filterAvail} onChange={(e) => setFilterAvail(e.target.value as any)}>
             <option value="all">Todos</option>
-            <option value="yes">Sí</option>
+            <option value="yes">SÃ­</option>
             <option value="no">No</option>
           </select>
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Categoría</label>
+          <label className="text-xs text-gray-600">CategorÃ­a</label>
           <select className="border rounded px-3 py-2 w-[200px]" value={filterCat} onChange={(e) => setFilterCat(e.target.value === "" ? "" : Number(e.target.value))}>
             <option value="">Todas</option>
             {categories.map((c) => (
@@ -355,7 +358,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Precio</th>
               <th className="px-3 py-2 text-left">Disponible</th>
-              <th className="px-3 py-2 text-left">Categoría</th>
+              <th className="px-3 py-2 text-left">CategorÃ­a</th>
               <th className="px-3 py-2 text-left">Imagen</th>
               <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
@@ -370,7 +373,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     <td className="px-3 py-2">
                       <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
                       <div className="mt-1 text-xs text-gray-500">
-                        <input className="w-full rounded border px-2 py-1" placeholder="Descripción (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
+                        <input className="w-full rounded border px-2 py-1" placeholder="DescripciÃ³n (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
                       </div>
                     </td>
                     <td className="w-[120px] px-3 py-2">
@@ -379,12 +382,12 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     <td className="w-[110px] px-3 py-2">
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
-                        <span>{editRow.available ? "Sí" : "No"}</span>
+                        <span>{editRow.available ? "SÃ­" : "No"}</span>
                       </label>
                     </td>
                     <td className="w-[220px] px-3 py-2">
                       <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === "" ? null : Number(e.target.value) }))}>
-                        <option value="">Sin categoría</option>
+                        <option value="">Sin categorÃ­a</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
@@ -392,7 +395,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">—</span>}</td>
+                    <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">â€”</span>}</td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
                         <button onClick={saveEdit} disabled={loading} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">
@@ -412,15 +415,15 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     <div className="font-medium">{p.name}</div>
                     {p.description ? <div className="mt-1 text-xs text-gray-500">{p.description}</div> : null}
                   </td>
-                  <td className="px-3 py-2">{Number(p.price).toFixed(2)} €</td>
+                  <td className="px-3 py-2">{Number(p.price).toFixed(2)} â‚¬</td>
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? "Sí" : "No"}</span>
+                      <span>{p.available ? "SÃ­" : "No"}</span>
                     </label>
                   </td>
-                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) ?? "—" : "—"}</td>
-                  <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">—</span>}</td>
+                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) ?? "â€”" : "â€”"}</td>
+                  <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">â€”</span>}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => startEdit(p)} className="rounded bg-blue-600 px-3 py-1 text-white">
@@ -443,3 +446,4 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
+
