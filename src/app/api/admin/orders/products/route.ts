@@ -8,8 +8,14 @@ import { createClient } from '@supabase/supabase-js';
 export async function GET() {
   try {
     const table = process.env.NEXT_PUBLIC_PRODUCTS_TABLE || 'products';
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceKey) {
+      return NextResponse.json(
+        { error: 'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' },
+        { status: 500 }
+      );
+    }
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
     // Productos + nombre de categoría
