@@ -1,6 +1,9 @@
 // src/app/api/admin/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { adminEmails } from '@/utils/plan';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +25,27 @@ type Dataset = {
 
 export async function GET(req: NextRequest) {
   try {
+    // Guard: requiere sesión admin
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const cookieStore = await cookies();
+      const supa = createServerClient(url, anon, {
+        cookies: {
+          get(name: string) { return cookieStore.get(name)?.value; },
+          set(name: string, value: string, options: any) { cookieStore.set({ name, value, ...options }); },
+          remove(name: string, options: any) { cookieStore.set({ name, value: '', ...options }); },
+        },
+      });
+      const { data } = await supa.auth.getUser();
+      const email = data.user?.email?.toLowerCase() || '';
+      if (!adminEmails().includes(email)) {
+        return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
+      }
+    } catch {
+      return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const from = searchParams.get('from');
     const to = searchParams.get('to');
@@ -155,4 +179,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, message: err?.message || 'Error generando estadísticas' }, { status: 500 });
   }
 }
-
