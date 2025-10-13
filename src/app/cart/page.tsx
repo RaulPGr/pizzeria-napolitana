@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CartItem, subscribe, setQty, removeItem, clearCart } from "@/lib/cart-storage";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
@@ -16,6 +17,7 @@ function todayISO(): string {
 }
 
 export default function CartPage() {
+  const router = useRouter();
   // Carrito
   const [items, setItems] = useState<CartItem[]>([]);
   useEffect(() => {
@@ -98,8 +100,14 @@ export default function CartPage() {
         const txt = await res.text();
         throw new Error(txt || `HTTP ${res.status}`);
       }
+      const j = (await res.json().catch(() => ({}))) as any;
       clearCart();
-      alert("Pedido creado correctamente");
+      // Redirigimos a la pantalla de detalle con opción de imprimir/descargar
+      if (j?.orderId) {
+        router.replace(`/order/${j.orderId}`);
+      } else {
+        alert("Pedido creado correctamente");
+      }
     } catch (e: any) {
       alert(`No se pudo crear el pedido. ${e?.message ?? ""}`);
     } finally {
