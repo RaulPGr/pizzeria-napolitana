@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = supabaseAdmin();
+    const supabase = supabaseAdmin;
 
     const { error } = await supabase
       .from('orders')
