@@ -235,7 +235,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
             <label className="text-sm text-gray-700">Nombre del producto</label>
             <input
               className="border rounded px-3 py-2 w-full"
-              placeholder="Ej. Croqueta de jamon"
+              placeholder="Ej. Croqueta de jamón"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
@@ -252,13 +252,13 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
             />
           </div>
           <div className="flex flex-col max-w-xl">
-            <label className="text-sm text-gray-700">Categoria</label>
+            <label className="text-sm text-gray-700">Categoría</label>
             <select
               className="border rounded px-3 py-2 w-full"
               value={newCat}
               onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}
             >
-              <option value="">Sin categoria</option>
+              <option value="">Sin Categoría</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -276,7 +276,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
             />
           </div>
           <div className="flex flex-col max-w-xl">
-            <label className="text-sm text-gray-700">Descripcion (opcional)</label>
+            <label className="text-sm text-gray-700">Descripción (opcional)</label>
             <textarea
               className="border rounded px-3 py-2 w-full"
               rows={3}
@@ -446,4 +446,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
+
+
+
 
