@@ -47,6 +47,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
   const addFormRef = React.useRef<HTMLDivElement>(null);
+  const tableRef = React.useRef<HTMLDivElement>(null);
 
   // Limpieza defensiva de duplicados en el DOM del formulario
   React.useEffect(() => {
@@ -71,6 +72,22 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
       if (btn && /A.+adir/.test(btn.textContent || '')) btn.textContent = 'Añadir';
     } catch {}
   }, []);
+
+  // Ajuste visual de cabeceras para evitar duplicado "Disponible"
+  React.useEffect(() => {
+    const root = tableRef.current;
+    if (!root) return;
+    try {
+      const ths = Array.from(root.querySelectorAll('thead th')) as HTMLTableCellElement[];
+      if (ths.length >= 7) {
+        // Orden esperado: ID, Nombre, Precio, Disponible, Disponible, Categoría, Acciones
+        // Ajustamos a:    ID, Nombre, Precio, Disponible, Acciones, Categoría, Imagen
+        ths[4].textContent = 'Acciones';
+        ths[5].textContent = 'Categoría';
+        ths[6].textContent = 'Imagen';
+      }
+    } catch {}
+  }, [products]);
 
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name] as const)),
@@ -378,14 +395,14 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
       </div>
 
       {/* Tabla */}
-      <div className="overflow-x-auto rounded-md border">
+      <div ref={tableRef} className="overflow-x-auto rounded-md border">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr>
               <th className="px-3 py-2 text-left">ID</th>
+              <th className="px-3 py-2 text-left">Imagen</th>
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Precio</th>
-              <th className="px-3 py-2 text-left">Disponible</th>
               <th className="px-3 py-2 text-left">Disponible</th>
               <th className="px-3 py-2 text-left">Categoría</th>
               <th className="px-3 py-2 text-left">Acciones</th>
@@ -439,6 +456,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               return (
                 <tr key={p.id} className="border-t">
                   <td className="px-3 py-2">{p.id}</td>
+                  <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">—</span>}</td>
                   <td className="px-3 py-2">
                     <div className="font-medium">{p.name}</div>
                     {p.description ? <div className="mt-1 text-xs text-gray-500">{p.description}</div> : null}
@@ -450,6 +468,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                       <span>{p.available ? "Sí" : "No"}</span>
                     </label>
                   </td>
+                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '—' : '—'}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => startEdit(p)} className="rounded bg-blue-600 px-3 py-1 text-white">
