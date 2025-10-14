@@ -228,7 +228,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
 
       {/* Form crear en desplegable */}
       <details className="rounded-md border p-4">
-        <summary className="cursor-pointer select-none text-sm font-medium">AÃ±adir producto</summary>
+        <summary className="cursor-pointer select-none text-sm font-medium">A\u00F1adir producto</summary>
         <div className="mt-3" />
         <div className="space-y-3">
           <div className="flex flex-col max-w-xl">
@@ -308,7 +308,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Precio mÃ­n.</label>
+          <label className="text-xs text-gray-600">Precio m\\u00E1x.\u00EDn.</label>
           <input
             type="number"
             step="0.01"
@@ -318,7 +318,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Precio mÃ¡x.</label>
+          <label className="text-xs text-gray-600">Precio m\\u00E1x.¡x.</label>
           <input
             type="number"
             step="0.01"
@@ -336,7 +336,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           </select>
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">CategorÃ­a</label>
+          <label className="text-xs text-gray-600">Categor\u00EDa</label>
           <select className="border rounded px-3 py-2 w-[200px]" value={filterCat} onChange={(e) => setFilterCat(e.target.value === "" ? "" : Number(e.target.value))}>
             <option value="">Todas</option>
             {categories.map((c) => (
@@ -358,7 +358,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Precio</th>
               <th className="px-3 py-2 text-left">Disponible</th>
-              <th className="px-3 py-2 text-left">CategorÃ­a</th>
+              <th className="px-3 py-2 text-left">Categor\u00EDa</th>
               <th className="px-3 py-2 text-left">Imagen</th>
               <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
@@ -387,7 +387,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     </td>
                     <td className="w-[220px] px-3 py-2">
                       <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === "" ? null : Number(e.target.value) }))}>
-                        <option value="">Sin categorÃ­a</option>
+                        <option value="">Sin Categor\u00EDa</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
@@ -415,7 +415,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     <div className="font-medium">{p.name}</div>
                     {p.description ? <div className="mt-1 text-xs text-gray-500">{p.description}</div> : null}
                   </td>
-                  <td className="px-3 py-2">{Number(p.price).toFixed(2)} â‚¬</td>
+                  <td className="px-3 py-2">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(p.price))} â‚¬</td>
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
@@ -446,6 +446,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
+
 
 
 
