@@ -30,6 +30,10 @@ export async function PATCH(req, { params }) {
 
 // DELETE /api/admin/orders/:id
 export async function DELETE(_req, { params }) {
+  // Deshabilitado: no se permite eliminar pedidos
   const id = pickId(params);
-  return NextResponse.json({ ok: true, id }, noStore);
+  return NextResponse.json(
+    { ok: false, id, message: 'Eliminar pedidos está deshabilitado' },
+    { status: 405, headers: noStore.headers }
+  );
 }

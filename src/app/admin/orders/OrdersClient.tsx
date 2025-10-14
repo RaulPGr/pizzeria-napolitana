@@ -133,29 +133,8 @@ export default function OrdersClient() {
     finally { setDetailLoading((s) => ({ ...s, [id]: false })); }
   }
 
-  async function deleteOrder(id: string) {
-    if (!confirm("¿Eliminar este pedido? Esta acción no se puede deshacer.")) return;
-    try {
-      const r = await fetch("/api/orders/bulk-delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [id] }) });
-      const j = await r.json(); if (!j?.ok) throw new Error(j?.message || "Error eliminando pedido");
-      await reload();
-    } catch (e: any) { alert(e?.message || "No se pudo eliminar el pedido"); }
-  }
-
-  const [bulkDay, setBulkDay] = useState("");
-  const [bulkMonth, setBulkMonth] = useState("");
-  async function deleteByRange() {
-    let from: Date | null = null, to: Date | null = null;
-    if (bulkMonth) { const [y, m] = bulkMonth.split("-").map(Number); if (y && m) { from = new Date(y, m - 1, 1); to = new Date(y, m, 1); } }
-    else if (bulkDay) { const [y, m, d] = bulkDay.split("-").map(Number); if (y && m && d) { from = new Date(y, m - 1, d); to = new Date(y, m - 1, d + 1); } }
-    if (!from || !to) { alert("Selecciona un día o un mes válido"); return; }
-    if (!confirm("¿Eliminar todos los pedidos del periodo seleccionado?")) return;
-    try {
-      const r = await fetch("/api/orders/bulk-delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ range: { from: from.toISOString(), to: to.toISOString() }, status: "all" }) });
-      const j = await r.json(); if (!j?.ok) throw new Error(j?.message || "Error eliminando pedidos");
-      setBulkDay(""); setBulkMonth(""); await reload(); alert(`Eliminados ${j.deleted} pedidos`);
-    } catch (e: any) { alert(e?.message || "No se pudo eliminar el rango de pedidos"); }
-  }
+  // Eliminación deshabilitada: a partir de ahora no se pueden borrar
+  // pedidos del histórico. Se ha retirado la UI y las llamadas.
 
   return (
     <div className="space-y-6">
@@ -224,13 +203,6 @@ export default function OrdersClient() {
       {/* Histórico */}
       <details className="rounded-lg border bg-white shadow-sm" open={false}>
         <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">Histórico (entregados y cancelados) · {historico.length || "0"}</summary>
-        <div className="px-4 pb-2">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col"><label className="text-xs text-gray-600">Eliminar por día</label><input type="date" className="h-9 rounded border px-3" value={bulkDay} onChange={(e) => { setBulkDay(e.target.value); setBulkMonth(""); }} /></div>
-            <div className="flex flex-col"><label className="text-xs text-gray-600">Eliminar por mes</label><input type="month" className="h-9 rounded border px-3" value={bulkMonth} onChange={(e) => { setBulkMonth(e.target.value); setBulkDay(""); }} /></div>
-            <button onClick={() => void deleteByRange()} className="h-9 rounded bg-red-600 px-3 text-white">Eliminar</button>
-          </div>
-        </div>
 
         {historico.length === 0 ? (
           <div className="px-4 pb-4 text-sm text-gray-600">No hay pedidos entregados o cancelados.</div>
@@ -240,10 +212,7 @@ export default function OrdersClient() {
               <div key={o.id} className="mb-3 overflow-hidden rounded-md border">
                 <div className="flex items-center justify-between bg-gray-50 px-3 py-2 text-sm">
                   <div className="font-medium">#{(o.code ?? o.id).slice(0, 7)} · {estadoEtiqueta[o.status]}</div>
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => void deleteOrder(o.id)} className="rounded bg-red-600 px-2 py-1 text-white">Eliminar</button>
-                    <div>{new Date(o.created_at).toLocaleString("es-ES")}</div>
-                  </div>
+                  <div>{new Date(o.created_at).toLocaleString("es-ES")}</div>
                 </div>
                 <div className="px-3 py-2 text-sm text-gray-700">
                   <div><span className="text-gray-500">Cliente:</span> {o.customer_name}</div>
@@ -272,4 +241,3 @@ export default function OrdersClient() {
     </div>
   );
 }
-
