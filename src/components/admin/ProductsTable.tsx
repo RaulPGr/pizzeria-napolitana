@@ -399,6 +399,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                 return (
                   <tr key={p.id} className="border-t">
                     <td className="px-3 py-2">{p.id}</td>
+                    <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">-</span>}</td>
                     <td className="px-3 py-2">
                       <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
                       <div className="mt-1 text-xs text-gray-500">
@@ -411,7 +412,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     <td className="w-[110px] px-3 py-2">
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
-                        <span>{editRow.available ? "SÃ­" : "No"}</span>
+                        <span>{editRow.available ? "S&iacute;" : "No"}</span>
                       </label>
                     </td>
                     <td className="w-[220px] px-3 py-2">
@@ -424,7 +425,6 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">â€”</span>}</td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
                         <button onClick={saveEdit} disabled={loading} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">
@@ -449,7 +449,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? "Sí" : "No"}</span>
+                      <span>{p.available ? "S&iacute;" : "No"}</span>
                     </label>
                   </td>
                   <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '—' : '—'}</td>
@@ -475,6 +475,8 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
+
+
 
 
 
