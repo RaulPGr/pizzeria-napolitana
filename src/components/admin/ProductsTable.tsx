@@ -308,7 +308,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Precio m\\u00E1x.\u00EDn.</label>
+          <label className="text-xs text-gray-600">Precio mín.</label>
           <input
             type="number"
             step="0.01"
@@ -318,7 +318,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           />
         </div>
         <div className="flex flex-col">
-          <label className="text-xs text-gray-600">Precio m\\u00E1x.¡x.</label>
+          <label className="text-xs text-gray-600">Precio máx.</label>
           <input
             type="number"
             step="0.01"
@@ -358,8 +358,8 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Precio</th>
               <th className="px-3 py-2 text-left">Disponible</th>
+              <th className="px-3 py-2 text-left">Disponible</th>
               <th className="px-3 py-2 text-left">Categoría</th>
-              <th className="px-3 py-2 text-left">Imagen</th>
               <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -419,11 +419,9 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? "SÃ­" : "No"}</span>
+                      <span>{p.available ? "Sí" : "No"}</span>
                     </label>
                   </td>
-                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) ?? "â€”" : "â€”"}</td>
-                  <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">â€”</span>}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => startEdit(p)} className="rounded bg-blue-600 px-3 py-1 text-white">
@@ -446,6 +444,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
+
 
 
 
