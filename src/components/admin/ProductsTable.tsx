@@ -47,7 +47,6 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
   const addFormRef = React.useRef<HTMLDivElement>(null);
-  const tableRef = React.useRef<HTMLDivElement>(null);
 
   // Limpieza defensiva de duplicados en el DOM del formulario
   React.useEffect(() => {
@@ -73,21 +72,6 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     } catch {}
   }, []);
 
-  // Ajuste visual de cabeceras para evitar duplicado "Disponible"
-  React.useEffect(() => {
-    const root = tableRef.current;
-    if (!root) return;
-    try {
-      const ths = Array.from(root.querySelectorAll('thead th')) as HTMLTableCellElement[];
-      if (ths.length >= 7) {
-        // Orden esperado: ID, Nombre, Precio, Disponible, Disponible, Categoría, Acciones
-        // Ajustamos a:    ID, Nombre, Precio, Disponible, Acciones, Categoría, Imagen
-        ths[4].textContent = 'Acciones';
-        ths[5].textContent = 'Categoría';
-        ths[6].textContent = 'Imagen';
-      }
-    } catch {}
-  }, [products]);
 
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name] as const)),
@@ -395,7 +379,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
       </div>
 
       {/* Tabla */}
-      <div ref={tableRef} className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr>
