@@ -412,7 +412,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                     <td className="w-[110px] px-3 py-2">
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
-                        <span>{editRow.available ? "S&iacute;" : "No"}</span>
+                        <span>{editRow.available ? "Sí" : "No"}</span>
                       </label>
                     </td>
                     <td className="w-[220px] px-3 py-2">
@@ -449,7 +449,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? "S&iacute;" : "No"}</span>
+                      <span>{p.available ? "Sí" : "No"}</span>
                     </label>
                   </td>
                   <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '—' : '—'}</td>
