@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useMemo, useRef, useState } from "react";
+import React from "react";
 
 type Category = { id: number; name: string };
 type Product = {
@@ -45,6 +46,31 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   // Subida de imagen
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
+  const addFormRef = React.useRef<HTMLDivElement>(null);
+
+  // Limpieza defensiva de duplicados en el DOM del formulario
+  React.useEffect(() => {
+    const root = addFormRef.current;
+    if (!root) return;
+    try {
+      // Imagen (opcional) duplicado
+      const labels = Array.from(root.querySelectorAll('label')) as HTMLElement[];
+      const img = labels.filter(l => (l.textContent || '').trim() === 'Imagen (opcional)');
+      if (img.length > 1) img[0].remove();
+
+      // Disponible duplicado (span suelto)
+      const spans = Array.from(root.querySelectorAll('span')) as HTMLElement[];
+      spans.forEach(s => {
+        const t = (s.textContent || '').trim();
+        const prev = s.previousElementSibling as HTMLElement | null;
+        if (t === 'Disponible' && !(prev && prev.tagName === 'INPUT')) s.remove();
+      });
+
+      // Botón con mojibake
+      const btn = root.querySelector('button');
+      if (btn && /A.+adir/.test(btn.textContent || '')) btn.textContent = 'Añadir';
+    } catch {}
+  }, []);
 
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c.name] as const)),
@@ -227,6 +253,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFilePicked} />
 
       {/* Form crear en desplegable */}
+      <div ref={addFormRef}>
       <details className="rounded-md border p-4">
         <summary className="cursor-pointer select-none text-sm font-medium">Añadir producto</summary>
         <div className="space-y-3">
@@ -295,6 +322,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
           </button>
         </div>
       </details>
+      </div>
 
       {/* Filtros avanzados */}
       <div className="flex flex-wrap items-end gap-3">
