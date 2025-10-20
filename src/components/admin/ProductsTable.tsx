@@ -229,7 +229,8 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     e.target.value = "";
     setUploadTargetId(null);
     if (!res.ok) {
-      alert("Error al subir imagen");
+      const txt = await res.text().catch(() => "");
+      alert("Error al subir imagen" + (txt ? `: ${txt}` : ""));
       return;
     }
     await refresh();

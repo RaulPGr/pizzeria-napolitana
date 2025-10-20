@@ -7,6 +7,7 @@ import { adminEmails } from '@/utils/plan';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const TABLE = process.env.NEXT_PUBLIC_PRODUCTS_TABLE || 'products';
 // Bucket para imágenes (crea uno público en Supabase Storage con este nombre)
