@@ -23,7 +23,8 @@
   --brand-accent-700: #A5222D;     /* Hover más oscuro para acento */
   --brand-muted: #666666;          /* Texto secundario */
   --brand-crust: #8B572A;          /* Marrón Tostado / Masa */
-  --brand-chalk-bg: #D6DDD8;       /* Pizarra clara (más visible) */
+  /* Fondo en gris neutro muy claro */
+  --brand-chalk-bg: #E8EAEC;       /* Gris claro (tono pizarra neutro) */
 }
 
 /* 2) Tipografía base */
