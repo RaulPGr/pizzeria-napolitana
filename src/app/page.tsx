@@ -66,15 +66,25 @@ type Tramo = { abre: string; cierra: string };
 type Dia = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo";
 type Horarios = Record<Dia, Tramo[]>;
 const HORARIOS_DEFAULT: Horarios = {
-  lunes: [{ abre: "12:30", cierra: "16:00" }],
-  martes: [{ abre: "12:30", cierra: "16:00" }],
-  miercoles: [{ abre: "12:30", cierra: "16:00" }],
-  jueves: [{ abre: "12:30", cierra: "16:00" }],
+  lunes: [],
+  martes: [{ abre: "12:30", cierra: "16:00" },
+            { abre: "19:00", cierra: "23:30" }
+          ],
+  miercoles: [{ abre: "12:30", cierra: "16:00" },
+            { abre: "19:00", cierra: "23:30" }
+          ],
+  jueves: [{ abre: "12:30", cierra: "16:00" },
+            { abre: "19:00", cierra: "23:30" }
+          ],
   viernes: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "22:30" }
-        ],
-  sabado: [],
-  domingo: [],
+            { abre: "19:00", cierra: "23:30" }
+          ],
+  sabado: [{ abre: "12:30", cierra: "16:00" },
+            { abre: "19:00", cierra: "23:30" }
+          ],
+  domingo: [{ abre: "12:30", cierra: "16:00" },
+            { abre: "19:00", cierra: "23:30" }
+          ],
 };
 const DAY_LABEL: Record<Dia, string> = {
   lunes: "Lunes",
