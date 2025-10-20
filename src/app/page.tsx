@@ -70,7 +70,9 @@ const HORARIOS_DEFAULT: Horarios = {
   martes: [{ abre: "12:30", cierra: "16:00" }],
   miercoles: [{ abre: "12:30", cierra: "16:00" }],
   jueves: [{ abre: "12:30", cierra: "16:00" }],
-  viernes: [{ abre: "12:30", cierra: "16:00" }],
+  viernes: [{ abre: "12:30", cierra: "16:00" },
+            { abre: "19:00", cierra: "22:30" }
+        ],
   sabado: [],
   domingo: [],
 };
