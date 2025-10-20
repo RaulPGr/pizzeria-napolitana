@@ -131,32 +131,38 @@ export async function PATCH(req: Request) {
   const auth = await assertAdmin();
   if (!auth.ok) return auth.res;
 
-  // Subida de imagen (multipart/form-data): campos -> id, file
-  if (contentType.includes('multipart/form-data')) {
-    const form = await req.formData();
-    const id = Number(form.get('id'));
-    const file = form.get('file') as File | null;
-
-    if (!id || !file || typeof file === 'string') {
-      return NextResponse.json({ ok: false, error: 'id y file requeridos' }, { status: 400 });
+  // Subida de imagen (multipart/form-data), con fallback por si el header no llega
+  try {
+    if (contentType.includes('multipart/form-data')) {
+      const form = await req.formData();
+      const id = Number(form.get('id'));
+      const file = form.get('file');
+      if (id && file && file instanceof File) {
+        const filePath = `${id}/${Date.now()}_${file.name}`;
+        const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, file, { upsert: true });
+        if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
+        const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
+        const { error: updErr } = await supabaseAdmin.from(TABLE).update({ image_url: pub.data.publicUrl }).eq('id', id);
+        if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
+        return NextResponse.json({ ok: true, url: pub.data.publicUrl });
+      }
+    } else {
+      const form = await req.formData().catch(() => null as any);
+      if (form) {
+        const id = Number(form.get('id'));
+        const f = form.get('file');
+        if (id && f && f instanceof File) {
+          const filePath = `${id}/${Date.now()}_${(f as File).name}`;
+          const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, f as File, { upsert: true });
+          if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
+          const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
+          const { error: updErr } = await supabaseAdmin.from(TABLE).update({ image_url: pub.data.publicUrl }).eq('id', id);
+          if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
+          return NextResponse.json({ ok: true, url: pub.data.publicUrl });
+        }
+      }
     }
-
-    const filePath = `${id}/${Date.now()}_${file.name}`;
-    const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, file, { upsert: true });
-
-    if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
-
-    const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
-
-    const { error: updErr } = await supabaseAdmin
-      .from(TABLE)
-      .update({ image_url: pub.data.publicUrl })
-      .eq('id', id);
-
-    if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
-
-    return NextResponse.json({ ok: true, url: pub.data.publicUrl });
-  }
+  } catch {}
 
   // Actualización JSON normal
   const body = await req.json();
