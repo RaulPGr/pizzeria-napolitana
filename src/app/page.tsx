@@ -71,8 +71,8 @@ const HORARIOS_DEFAULT: Horarios = {
   miercoles: [{ abre: "12:30", cierra: "16:00" }],
   jueves: [{ abre: "12:30", cierra: "16:00" }],
   viernes: [{ abre: "12:30", cierra: "16:00" }],
-  sabado: [{ abre: "12:30", cierra: "16:00" ],
-  domingo: [{ abre: "12:30", cierra: "16:00" ],
+  sabado: [],
+  domingo: [],
 };
 const DAY_LABEL: Record<Dia, string> = {
   lunes: "Lunes",
