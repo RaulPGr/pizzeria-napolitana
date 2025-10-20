@@ -274,7 +274,7 @@ export default function HomePage() {
 
 <p>Preparamos cada día nuestras auténticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
 
-<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rápida. Perfecta para llevar (takeaway) o para encargar cómodamente a través de WhatsApp.
+<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rápida. Perfecta para llevar (takeaway).
 
 ¡Ti aspettiamo! (¡Te esperamos!)</>)}</p>
         </div>
