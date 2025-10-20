@@ -9,7 +9,14 @@
 :root {
   /* Paleta Pizzería (Tomate, Mozzarella, Albahaca, Pizarra, Corteza) */
   --brand-green: #457242;          /* Verde Albahaca / Oliva */
+  --brand-green-700: #375a35;
+  --brand-green-100: #e7efe6;
+  --brand-green-50: #eff3ee;
   --brand-orange: #CC2936;         /* Rojo Tomate (usado en gradiente) */
+  --brand-tomato-700: #8f1b25;
+  --brand-tomato-800: #7a1620;
+  --brand-tomato-50: #fbeaec;
+  --brand-tomato-200: #f2c8cc;
   --brand-cream: #F7F7F7;          /* Blanco Crema / Mozzarella */
   --brand-ink: #333333;            /* Negro Pizarra (texto principal) */
   --brand-accent: #CC2936;         /* Acento: botones y enlaces */
@@ -76,11 +83,37 @@
   /* Barra superior (antes bg-slate-900) -> gradiente de marca */
   .bg-slate-900  { background: linear-gradient(90deg, var(--brand-orange) 0%, var(--brand-green) 100%) !important; }
 
+  /* Fondo base claro */
+  .bg-slate-50, .bg-gray-50 { background-color: var(--brand-cream) !important; }
+
+  /* Botones y acentos AZULES -> Tomate */
+  .bg-blue-600   { background-color: var(--brand-accent) !important; }
+  .hover\:bg-blue-700:hover { background-color: var(--brand-accent-700) !important; }
+  .text-blue-600 { color: var(--brand-accent) !important; }
+  .bg-blue-50    { background-color: var(--brand-tomato-50) !important; }
+  .text-blue-700 { color: var(--brand-tomato-700) !important; }
+  .text-blue-800 { color: var(--brand-tomato-800) !important; }
+  .border-blue-200 { border-color: var(--brand-tomato-200) !important; }
+  .border-blue-600 { border-color: var(--brand-accent-700) !important; }
+  .bg-blue-500 { background-color: var(--brand-accent) !important; }
+
+  /* Botones que usaban emerald -> pasar a Tomate (CTA) */
+  .bg-emerald-600 { background-color: var(--brand-accent) !important; }
+  .hover\:bg-emerald-700:hover { background-color: var(--brand-accent-700) !important; }
+  .bg-green-500 { background-color: var(--brand-accent) !important; }
+
+  /* Tonos verdes (estados/chips) siguen siendo Albahaca */
+  .text-emerald-700, .text-green-700, .text-green-800 { color: var(--brand-green-700) !important; }
+  .bg-emerald-50, .bg-green-50 { background-color: var(--brand-green-50) !important; }
+  .bg-emerald-100, .bg-green-100 { background-color: var(--brand-green-100) !important; }
+  .border-green-200 { border-color: var(--brand-green-100) !important; }
+  .border-emerald-600 { border-color: var(--brand-accent-700) !important; }
+
   /* Badges/info */
   .bg-yellow-100 { background-color: #fff7ed !important; }
   .text-yellow-800 { color: #b45309 !important; }
-  .bg-green-100 { background-color: #ecfdf5 !important; }
-  .text-green-800 { color: #065f46 !important; }
+  .bg-green-100 { background-color: var(--brand-green-100) !important; }
+  .text-green-800 { color: var(--brand-green-700) !important; }
 
   /* Tarjetas y sombras */
   .border-gray-200 { border-color: #e5e7eb !important; }

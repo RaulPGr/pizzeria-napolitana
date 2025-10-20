@@ -171,7 +171,7 @@ export default function HomePage() {
   const mapaSrc = useMemo(() => cfg?.mapUrl ? (cfg.mapUrl as string) : `https://maps.google.com/maps?q=${COORDS_DEFAULT.lat},${COORDS_DEFAULT.lng}&z=${COORDS_DEFAULT.zoom}&output=embed`, [cfg?.mapUrl]);
 
   return (
-    <main className="min-h-screen bg-white text-gray-900">
+    <main className="min-h-screen bg-brand-cream text-gray-900">
       <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_DEFAULT)) }} />
 
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-brand-crust">
@@ -185,7 +185,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
-            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-emerald-600 px-3 py-1.5 text-white hover:bg-emerald-700 text-sm">Ver menú ahora</button>
+            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menú ahora</button>
           </div>
         </div>
       </header>
@@ -197,7 +197,7 @@ export default function HomePage() {
           <div className="text-center space-y-2">
             <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
             <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
-            <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-white px-4 py-2 text-gray-900">Ver menú ahora</button>
+            <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menú ahora</button>
           </div>
         </div>
       </section>

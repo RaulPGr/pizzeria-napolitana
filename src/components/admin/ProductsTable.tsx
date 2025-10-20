@@ -38,6 +38,25 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   const [newDesc, setNewDesc] = useState("");
   const [newAvail, setNewAvail] = useState(true);
   const [newFile, setNewFile] = useState<File | null>(null);
+  const [newFilePreview, setNewFilePreview] = useState<string | null>(null);
+
+  // Vista previa de la imagen seleccionada en el formulario de alta
+  React.useEffect(() => {
+    if (!newFile) { setNewFilePreview(null); return; }
+    try {
+      const url = URL.createObjectURL(newFile);
+      setNewFilePreview(url);
+      return () => URL.revokeObjectURL(url);
+    } catch { setNewFilePreview(null); }
+  }, [newFile]);
+
+  function formatSize(bytes: number) {
+    if (!bytes || bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${Math.round(kb)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(1)} MB`;
+  }
 
   // EdiciÃ³n
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -294,14 +313,33 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               ))}
             </select>
           </div>
-            <label className="text-sm text-gray-700">Imagen (opcional)</label>
           <div className="flex flex-col max-w-xl">
             <label className="text-sm text-gray-700">Imagen (opcional)</label>
             <input
               type="file"
               accept="image/*"
               className="border rounded px-3 py-2 w-full"
+              onChange={(e) => {
+                const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                setNewFile(f);
+              }}
             />
+            {newFilePreview && newFile && (
+              <div className="mt-2 flex items-center gap-3">
+                <img src={newFilePreview} alt="Vista previa" className="h-16 w-24 rounded object-cover border" />
+                <div className="text-xs text-gray-600">
+                  <div className="font-medium truncate max-w-[220px]" title={newFile.name}>{newFile.name}</div>
+                  <div>{formatSize(newFile.size)}</div>
+                </div>
+                <button
+                  type="button"
+                  className="text-sm text-gray-600 hover:underline"
+                  onClick={() => setNewFile(null)}
+                >
+                  Quitar imagen
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex flex-col max-w-xl">
             <label className="text-sm text-gray-700">Descripción (opcional)</label>
