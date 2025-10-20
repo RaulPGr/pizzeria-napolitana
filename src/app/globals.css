@@ -7,13 +7,15 @@
 
 /* 1) Paleta de marca (ajusta si quieres) */
 :root {
-  --brand-green: #147a53;          /* verde principal (fondo gradiente) */
-  --brand-orange: #d55321;         /* naranja principal (fondo gradiente) */
-  --brand-cream: #f7f5f2;          /* fondo general limpio */
-  --brand-ink: #0f172a;            /* texto oscuro */
-  --brand-accent: #1ea76a;         /* acento (botones, enlaces) */
-  --brand-accent-700: #178b59;     /* acento hover */
-  --brand-muted: #64748b;          /* texto secundario */
+  /* Paleta Pizzería (Tomate, Mozzarella, Albahaca, Pizarra, Corteza) */
+  --brand-green: #457242;          /* Verde Albahaca / Oliva */
+  --brand-orange: #CC2936;         /* Rojo Tomate (usado en gradiente) */
+  --brand-cream: #F7F7F7;          /* Blanco Crema / Mozzarella */
+  --brand-ink: #333333;            /* Negro Pizarra (texto principal) */
+  --brand-accent: #CC2936;         /* Acento: botones y enlaces */
+  --brand-accent-700: #A5222D;     /* Hover más oscuro para acento */
+  --brand-muted: #666666;          /* Texto secundario */
+  --brand-crust: #8B572A;          /* Marrón Tostado / Masa */
 }
 
 /* 2) Tipografía base */
@@ -39,7 +41,7 @@
 /* 3) Utilidades de marca */
 @layer utilities {
   .bg-brand-gradient {
-    background: linear-gradient(135deg, var(--brand-orange) 0%, #d46b2e 32%, var(--brand-green) 100%);
+    background: linear-gradient(135deg, var(--brand-orange) 0%, #b72b35 32%, var(--brand-green) 100%);
   }
   .text-brand-ink { color: var(--brand-ink); }
   .text-brand-muted { color: var(--brand-muted); }
@@ -57,6 +59,10 @@
   .badge-pill {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
   }
+
+  /* Utilidades de apoyo con la corteza (bordes/acentos sutiles) */
+  .border-brand-crust { border-color: var(--brand-crust); }
+  .bg-brand-cream { background-color: var(--brand-cream); }
 }
 
 /* 4) Re-skin global NO intrusivo

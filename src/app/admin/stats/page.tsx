@@ -162,7 +162,7 @@ function Skeleton() { return <div className="h-40 animate-pulse bg-gray-100 roun
 
 function KpiCard({ title, value, subtitle, tone = "default" }: { title: string; value: string; subtitle?: string; tone?: "default" | "primary" | "success" | "danger" }) {
   const tones: Record<NonNullable<typeof tone>, { bg: string; text: string; border: string }> = {
-    default: { bg: "bg-white", text: "text-gray-900", border: "border-gray-200" },
+    default: { bg: "bg-white", text: "text-gray-900", border: "border-brand-crust" },
     primary: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
     success: { bg: "bg-green-50", text: "text-green-700", border: "border-green-200" },
     danger: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },

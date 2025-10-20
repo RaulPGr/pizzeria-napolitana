@@ -1,0 +1,12 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm ci || npm install",
+  "functions": {
+    "api/**": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
+

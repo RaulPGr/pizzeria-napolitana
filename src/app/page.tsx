@@ -174,7 +174,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-white text-gray-900">
       <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_DEFAULT)) }} />
 
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-brand-crust">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {INFO.logoUrl && <img src={INFO.logoUrl} alt={`${INFO.nombre} logo`} className="h-9 w-auto rounded" />}
@@ -204,7 +204,7 @@ export default function HomePage() {
 
       <section className="max-w-6xl mx-auto grid gap-4 p-4 md:grid-cols-3">
         {/* Horarios */}
-        <article className="rounded-2xl border border-gray-200 p-6">
+        <article className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Horarios</h2>
           <ul className="text-sm space-y-1">
             {(Object.keys(HORARIOS_USED) as Dia[]).map((d) => (
@@ -214,7 +214,7 @@ export default function HomePage() {
         </article>
 
         {/* Contacto + Redes */}
-        <article className="rounded-2xl border border-gray-200 p-6">
+        <article className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Contacto</h2>
           <ul className="text-sm space-y-1">
             <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
@@ -235,7 +235,7 @@ export default function HomePage() {
         </article>
 
         {/* Métodos de pago */}
-        <article className="rounded-2xl border border-gray-200 p-6">
+        <article className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Métodos de pago</h2>
           {Array.isArray(cfg?.payments) && cfg.payments.length > 0 ? (
             <ul className="text-sm grid grid-cols-2 gap-2">{cfg.payments.map((p: string, i: number) => (<li key={i}>• {p}</li>))}</ul>
@@ -249,21 +249,21 @@ export default function HomePage() {
       {/* Mapa */}
       <section className="max-w-6xl mx-auto px-4 pb-10">
         <h2 className="text-xl font-semibold mb-3">Dónde estamos</h2>
-        <div className="rounded-2xl overflow-hidden border border-gray-200">
+        <div className="rounded-2xl overflow-hidden border border-brand-crust">
           <iframe title={`Mapa de ${INFO.nombre}`} src={mapaSrc} className="w-full h-[360px]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         </div>
       </section>
 
       {/* Sobre nosotros */}
       <section className="max-w-6xl mx-auto px-4 pb-14">
-        <div className="rounded-2xl border border-gray-200 p-6">
+        <div className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Sobre nosotros</h2>
           <p className="text-sm leading-6 text-gray-700">{cfg?.about ? cfg.about : (<>En <strong>{INFO.nombre}</strong> preparamos cada día platos caseros con ingredientes frescos de proximidad. Nuestro objetivo es que puedas disfrutar de una comida rica y rápida, para llevar o encargar por WhatsApp. ¡Te esperamos!</>)}</p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-top border-gray-200">
+      <footer className="border-t border-brand-crust">
         <div className="max-w-6xl mx-auto px-4 py-8 text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>© {new Date().getFullYear()} {INFO.nombre}. Todos los derechos reservados.</span>
           <div className="flex items-center gap-4">

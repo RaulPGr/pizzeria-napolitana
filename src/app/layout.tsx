@@ -19,7 +19,7 @@ export default function RootLayout({
       <body className="bg-slate-50">
         <CartProvider>
           {/* Header fijo en todas las páginas */}
-          <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
+          <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-brand-crust">
             <Navbar />
           </div>
 

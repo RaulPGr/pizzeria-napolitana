@@ -21,7 +21,7 @@ export default function NavBar() {
   );
 
   return (
-    <header className="bg-slate-900 text-white">
+    <header className="bg-slate-900 text-white border-b border-brand-crust">
       <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <Item href="/">Inicio</Item>

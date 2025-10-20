@@ -8,7 +8,7 @@ export default function AdminTabs() {
   const tabs = [{ href: '/admin', label: 'Productos' }];
 
   return (
-    <div className="mb-6 border-b border-gray-200">
+    <div className="mb-6 border-b border-brand-crust">
       <nav className="-mb-px flex gap-6">
         {tabs.map((t) => {
           const active = pathname === t.href;
