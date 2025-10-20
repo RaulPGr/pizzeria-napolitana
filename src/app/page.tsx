@@ -50,8 +50,8 @@ puedo reactivar la API y el formulario sin perder esta versión.
 
 // Defaults (fallbacks si no hay configuración)
 const INFO_DEFAULT = {
-  nombre: "Mi Restaurante Ejemplo",
-  slogan: "Comida casera para llevar, hecha cada día",
+  nombre: "Pizzeria napolitana",
+  slogan: "La tradición de Nápoles en cada porción.",
   telefono: "+34 600 000 000",
   email: "info@mirestaurante.com",
   whatsapp: "+34600000000",

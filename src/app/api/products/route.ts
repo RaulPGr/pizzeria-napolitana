@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { adminEmails } from '@/utils/plan';
 
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +37,37 @@ async function supabaseFromCookies() {
   );
 }
 
+async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response }> {
+  try {
+    const cookieStore = await cookies();
+    const supa = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return cookieStore.get(name)?.value; },
+          set(name: string, value: string, options: any) {
+            try { cookieStore.set({ name, value, ...options }); } catch {}
+          },
+          remove(name: string, options: any) {
+            try { cookieStore.set({ name, value: '', ...options, maxAge: 0 }); } catch {}
+          },
+        },
+      }
+    );
+    const { data } = await supa.auth.getUser();
+    const email = data.user?.email?.toLowerCase() || '';
+    const admins = adminEmails();
+    const allowed = admins.length === 0 ? !!email : admins.includes(email);
+    if (!allowed) {
+      return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
+  }
+}
+
 // ---------- GET: productos + categorías ----------
 export async function GET() {
   const supabase = await supabaseFromCookies();
@@ -65,12 +98,13 @@ export async function GET() {
 // ---------- POST: crear ----------
 export async function POST(req: Request) {
   const contentType = req.headers.get('content-type') || '';
-  const supabase = await supabaseFromCookies();
+  const auth = await assertAdmin();
+  if (!auth.ok) return auth.res;
 
   // Creamos el producto (JSON). Si luego quieres subir imagen, usa PATCH multipart con id.
   if (contentType.includes('application/json')) {
     const body = await req.json();
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from(TABLE)
       .insert({
         name: body.name,
@@ -93,8 +127,9 @@ export async function POST(req: Request) {
 
 // ---------- PATCH: actualizar o subir imagen ----------
 export async function PATCH(req: Request) {
-  const supabase = await supabaseFromCookies();
   const contentType = req.headers.get('content-type') || '';
+  const auth = await assertAdmin();
+  if (!auth.ok) return auth.res;
 
   // Subida de imagen (multipart/form-data): campos -> id, file
   if (contentType.includes('multipart/form-data')) {
@@ -107,13 +142,13 @@ export async function PATCH(req: Request) {
     }
 
     const filePath = `${id}/${Date.now()}_${file.name}`;
-    const { error: upErr } = await supabase.storage.from(BUCKET).upload(filePath, file, { upsert: true });
+    const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, file, { upsert: true });
 
     if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
 
-    const pub = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+    const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
 
-    const { error: updErr } = await supabase
+    const { error: updErr } = await supabaseAdmin
       .from(TABLE)
       .update({ image_url: pub.data.publicUrl })
       .eq('id', id);
@@ -135,7 +170,7 @@ export async function PATCH(req: Request) {
   }
   if ('price' in updates) updates.price = parseFloat(String(updates.price ?? 0));
 
-  const { error } = await supabase.from(TABLE).update(updates).eq('id', body.id);
+  const { error } = await supabaseAdmin.from(TABLE).update(updates).eq('id', body.id);
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
@@ -144,12 +179,13 @@ export async function PATCH(req: Request) {
 
 // ---------- DELETE: borrar ?id= ----------
 export async function DELETE(req: Request) {
-  const supabase = await supabaseFromCookies();
+  const auth = await assertAdmin();
+  if (!auth.ok) return auth.res;
   const { searchParams } = new URL(req.url);
   const id = Number(searchParams.get('id'));
   if (!id) return NextResponse.json({ ok: false, error: 'id requerido' }, { status: 400 });
 
-  const { error } = await supabase.from(TABLE).delete().eq('id', id);
+  const { error } = await supabaseAdmin.from(TABLE).delete().eq('id', id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
   return NextResponse.json({ ok: true });
