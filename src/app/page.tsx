@@ -260,7 +260,13 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-4 pb-14">
         <div className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Sobre nosotros</h2>
-          <p className="text-sm leading-6 text-gray-700">{cfg?.about ? cfg.about : (<>En <strong>{INFO.nombre}</strong> preparamos cada día platos caseros con ingredientes frescos de proximidad. Nuestro objetivo es que puedas disfrutar de una comida rica y rápida, para llevar o encargar por WhatsApp. ¡Te esperamos!</>)}</p>
+          <p className="text-sm leading-6 text-gray-700">{cfg?.about ? cfg.about : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
+
+Preparamos cada día nuestras auténticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.
+
+Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rápida. Perfecta para llevar (takeaway) o para encargar cómodamente a través de WhatsApp.
+
+¡Ti aspettiamo! (¡Te esperamos!)</>)}</p>
         </div>
       </section>
 
