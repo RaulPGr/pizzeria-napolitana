@@ -71,8 +71,8 @@ const HORARIOS_DEFAULT: Horarios = {
   miercoles: [{ abre: "12:30", cierra: "16:00" }],
   jueves: [{ abre: "12:30", cierra: "16:00" }],
   viernes: [{ abre: "12:30", cierra: "16:00" }],
-  sabado: [],
-  domingo: [],
+  sabado: [{ abre: "12:30", cierra: "16:00" ],
+  domingo: [{ abre: "12:30", cierra: "16:00" ],
 };
 const DAY_LABEL: Record<Dia, string> = {
   lunes: "Lunes",
@@ -171,7 +171,7 @@ export default function HomePage() {
   const mapaSrc = useMemo(() => cfg?.mapUrl ? (cfg.mapUrl as string) : `https://maps.google.com/maps?q=${COORDS_DEFAULT.lat},${COORDS_DEFAULT.lng}&z=${COORDS_DEFAULT.zoom}&output=embed`, [cfg?.mapUrl]);
 
   return (
-    <main className="min-h-screen bg-brand-cream text-gray-900">
+    <main className="min-h-screen bg-brand-chalk text-gray-900">
       <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_DEFAULT)) }} />
 
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-brand-crust">
@@ -191,7 +191,7 @@ export default function HomePage() {
       </header>
 
       <section className="relative">
-        <img src={INFO.fachadaUrl} alt="Fachada" className="h-[320px] w-full object-cover" />
+        <img src={INFO.fachadaUrl} alt="Fachada" className="h-[420px] md:h-[520px] w-full object-cover" />
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center space-y-2">
