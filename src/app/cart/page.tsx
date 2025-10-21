@@ -315,7 +315,7 @@ export default function CartPage() {
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          <ConfirmSubmitButton onClick={onConfirm} />
+          <ConfirmSubmitButton onClick={onConfirm} disabled={!canSubmit} title={timeError || undefined} />
           <button onClick={() => clearCart()} disabled={items.length === 0} className="rounded border px-4 py-2 disabled:opacity-50" type="button">
             Vaciar carrito
           </button>

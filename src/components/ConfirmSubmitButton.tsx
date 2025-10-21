@@ -7,6 +7,8 @@ type Props = {
   className?: string;
   idleText?: string;
   busyText?: string;
+  disabled?: boolean;
+  title?: string;
 };
 
 export default function ConfirmSubmitButton({
@@ -14,6 +16,8 @@ export default function ConfirmSubmitButton({
   className = "bg-green-600 hover:bg-green-700 text-white",
   idleText = "Confirmar pedido",
   busyText = "Enviando…",
+  disabled = false,
+  title,
 }: Props) {
   const { busy, run } = useSubmitOnce();
 
@@ -21,7 +25,8 @@ export default function ConfirmSubmitButton({
     <button
       type="button"
       onClick={() => run(onClick)}
-      disabled={busy}
+      disabled={busy || disabled}
+      title={title}
       className={`px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {busy ? busyText : idleText}
