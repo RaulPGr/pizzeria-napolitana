@@ -106,7 +106,7 @@ export default function BusinessSettingsClient() {
   return (
     <div className="space-y-6 rounded-lg border bg-white p-4 shadow-sm">
       <div>
-        <h2 className="text-xl font-semibold">ConfiguraciÃ³n del negocio</h2>
+        <h2 className="text-xl font-semibold">Configuración del negocio</h2>
         <p className="text-sm text-gray-600">Nombre, eslogan y logotipos que verÃ¡n tus clientes.</p>
       </div>
 
@@ -116,13 +116,13 @@ export default function BusinessSettingsClient() {
 
       <div className="grid gap-4">
         <label className="text-sm text-gray-700">Nombre comercial</label>
-        <input className="border rounded px-3 py-2" placeholder="PizzerÃ­a napolitana" value={name} onChange={(e)=>setName(e.target.value)} />
+        <input className="border rounded px-3 py-2" placeholder="Pizzería napolitana" value={name} onChange={(e)=>setName(e.target.value)} />
 
         <label className="text-sm text-gray-700">Slogan</label>
         <input className="border rounded px-3 py-2" placeholder="La tradiciÃ³n de NÃ¡poles en cada porciÃ³n." value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
 
         <label className="text-sm text-gray-700">Sobre nosotros</label>
-        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripciÃ³n del negocio" />
+        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripción del negocio" />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -138,7 +138,7 @@ export default function BusinessSettingsClient() {
             <input type="email" className="border rounded px-3 py-2 w-full" placeholder="info@mirestaurante.com" value={email} onChange={(e)=>setEmail(e.target.value)} />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-sm text-gray-700">DirecciÃ³n</label>
+            <label className="text-sm text-gray-700">Dirección</label>
             <input className="border rounded px-3 py-2 w-full" placeholder="Calle Mayor 123, 30001 Murcia" value={address} onChange={(e)=>setAddress(e.target.value)} />
           </div>
           <div>
@@ -251,5 +251,6 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
     </div>
   );
 }
+
 
 
