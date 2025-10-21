@@ -39,6 +39,8 @@ export default function CartPage() {
   // Horario de pedidos (ordering_hours || opening_hours)
   const [schedule, setSchedule] = useState<any | null>(null);
   const [timeError, setTimeError] = useState<string | null>(null);
+  // Estado actual: ¿aceptamos pedidos ahora?
+  const [ordersOpenNow, setOrdersOpenNow] = useState<boolean | null>(null);
 
   // Cargar métodos de pago
   useEffect(() => {
@@ -70,6 +72,27 @@ export default function CartPage() {
   }, []);
 
   // Helpers de validación
+  function isDateInSchedule(date: Date, sched: any | null): boolean {
+    try {
+      if (!sched) return true;
+      const dayKey = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][date.getDay()];
+      const list: Array<{ abre?: string; cierra?: string; open?: string; close?: string }> = sched?.[dayKey] || [];
+      if (!Array.isArray(list) || list.length === 0) return false;
+      const mins = date.getHours() * 60 + date.getMinutes();
+      return list.some((t) => {
+        const a = (t.abre ?? t.open) as string | undefined;
+        const c = (t.cierra ?? t.close) as string | undefined;
+        if (!a || !c) return false;
+        const [ha, ma] = String(a).split(':').map(Number);
+        const [hc, mc] = String(c).split(':').map(Number);
+        const from = ha * 60 + ma;
+        const to = hc * 60 + mc;
+        return mins >= from && mins < to;
+      });
+    } catch {
+      return true;
+    }
+  }
   function isTimeInSchedule(dateISO: string, timeHHMM: string, sched: any | null): boolean {
     try {
       if (!sched) return true; // sin restricciones
@@ -117,12 +140,23 @@ export default function CartPage() {
     setTimeError(ok ? null : 'Fuera del horario de pedidos');
   }, [date, time, schedule]);
 
+  // Calcular si AHORA se aceptan pedidos; refrescar cada minuto
+  useEffect(() => {
+    function tick() {
+      setOrdersOpenNow(isDateInSchedule(new Date(), schedule));
+    }
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [schedule]);
+
   const canSubmit =
     items.length > 0 &&
     name.trim().length > 0 &&
     phone.trim().length > 0 &&
     date.trim().length > 0 &&
     time.trim().length > 0 &&
+    ordersOpenNow !== false &&
     !timeError &&
     !sending;
 
@@ -227,7 +261,14 @@ export default function CartPage() {
 
       {/* FORMULARIO */}
       <section className="rounded border bg-white p-4 shadow">
-        <h2 className="mb-4 text-xl font-semibold">Datos del cliente</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Datos del cliente</h2>
+          {ordersOpenNow === false ? (
+            <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">Ahora no se aceptan pedidos</span>
+          ) : ordersOpenNow === true ? (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">Aceptando pedidos</span>
+          ) : null}
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -275,7 +316,13 @@ export default function CartPage() {
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          <ConfirmSubmitButton onClick={onConfirm} />
+          {ordersOpenNow === false ? (
+            <button type="button" disabled className="px-4 py-2 rounded bg-gray-300 text-gray-600 cursor-not-allowed" title="Fuera del horario de pedidos">
+              Confirmar pedido
+            </button>
+          ) : (
+            <ConfirmSubmitButton onClick={onConfirm} />
+          )}
           <button onClick={() => clearCart()} disabled={items.length === 0} className="rounded border px-4 py-2 disabled:opacity-50" type="button">
             Vaciar carrito
           </button>
@@ -284,4 +331,3 @@ export default function CartPage() {
     </main>
   );
 }
-
