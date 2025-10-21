@@ -13,6 +13,19 @@ const TABLE = process.env.NEXT_PUBLIC_PRODUCTS_TABLE || 'products';
 // Bucket para imágenes (crea uno público en Supabase Storage con este nombre)
 const BUCKET = process.env.NEXT_PUBLIC_STORAGE_BUCKET || 'product-images';
 
+function sanitizeFileName(name: string) {
+  try {
+    // Elimina acentos y caracteres fuera de ASCII seguro para claves de Storage
+    const noAccents = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Sustituye espacios y caracteres no válidos por '-'
+    const safe = noAccents.replace(/[^a-zA-Z0-9._-]+/g, '-');
+    // Evita encabezados o dobles puntos raros
+    return safe.replace(/^-+/, '').replace(/-+$/, '').slice(0, 180) || 'file';
+  } catch {
+    return 'file';
+  }
+}
+
 async function supabaseFromCookies() {
   const cookieStore = await cookies();
   return createServerClient(
@@ -139,7 +152,8 @@ export async function PATCH(req: Request) {
       const id = Number(form.get('id'));
       const file = form.get('file');
       if (id && file && file instanceof File) {
-        const filePath = `${id}/${Date.now()}_${file.name}`;
+        const safeName = sanitizeFileName(file.name || 'upload');
+        const filePath = `${id}/${Date.now()}_${safeName}`;
         const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, file, { upsert: true });
         if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
         const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
@@ -153,7 +167,8 @@ export async function PATCH(req: Request) {
         const id = Number(form.get('id'));
         const f = form.get('file');
         if (id && f && f instanceof File) {
-          const filePath = `${id}/${Date.now()}_${(f as File).name}`;
+          const safeName = sanitizeFileName((f as File).name || 'upload');
+          const filePath = `${id}/${Date.now()}_${safeName}`;
           const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, f as File, { upsert: true });
           if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
           const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
@@ -175,7 +190,23 @@ export async function PATCH(req: Request) {
   for (const key of ['name', 'description', 'price', 'image_url', 'available', 'category_id']) {
     if (key in body) updates[key] = body[key];
   }
-  if ('price' in updates) updates.price = parseFloat(String(updates.price ?? 0));
+  if ('price' in updates) {
+    const raw = String(updates.price ?? 0).replace(',', '.');
+    const parsed = parseFloat(raw);
+    updates.price = isNaN(parsed) ? 0 : parsed;
+  }
+  if ('description' in updates) {
+    if (updates.description === null || updates.description === undefined || updates.description === '') {
+      updates.description = null;
+    } else {
+      try {
+        updates.description = String(updates.description).trim().slice(0, 1000);
+      } catch { updates.description = null; }
+    }
+  }
+  if ('image_url' in updates && updates.image_url) {
+    try { updates.image_url = String(updates.image_url).trim().slice(0, 1000); } catch {}
+  }
 
   const { error } = await supabaseAdmin.from(TABLE).update(updates).eq('id', body.id);
 

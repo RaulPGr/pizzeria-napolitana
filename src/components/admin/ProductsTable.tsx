@@ -199,7 +199,8 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     });
     setLoading(false);
     if (!res.ok) {
-      alert("Error al guardar cambios");
+      const txt = await res.text().catch(() => "");
+      alert("Error al guardar cambios" + (txt ? `: ${txt}` : ""));
       return;
     }
     setEditingId(null);
