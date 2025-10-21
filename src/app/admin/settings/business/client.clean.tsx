@@ -26,6 +26,8 @@ export default function BusinessSettingsClient() {
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
+  const [lat, setLat] = useState<string>('');
+  const [lng, setLng] = useState<string>('');
   const [hours, setHours] = useState<any>({});
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
@@ -46,6 +48,8 @@ export default function BusinessSettingsClient() {
         setWhatsapp(j.data.whatsapp || '');
         setEmail(j.data.email || '');
         setAddress([j.data.address_line, j.data.postal_code, j.data.city].filter(Boolean).join(', '));
+        if (j.data.lat != null) setLat(String(j.data.lat));
+        if (j.data.lng != null) setLng(String(j.data.lng));
         setAbout(j.data.description || '');
         try { setHours(j.data.opening_hours || {}); } catch { setHours({}); }
         setInstagram(j.data.social?.instagram || '');
@@ -73,6 +77,8 @@ export default function BusinessSettingsClient() {
           whatsapp,
           email,
           address_line: address,
+          lat: lat !== '' ? Number(lat) : null,
+          lng: lng !== '' ? Number(lng) : null,
           social: { instagram, facebook, tiktok, web },
           opening_hours: (hours && Object.keys(hours).length ? hours : ''),
         }),
@@ -134,6 +140,14 @@ export default function BusinessSettingsClient() {
           <div className="sm:col-span-2">
             <label className="text-sm text-gray-700">Dirección</label>
             <input className="border rounded px-3 py-2 w-full" placeholder="Calle Mayor 123, 30001 Murcia" value={address} onChange={(e)=>setAddress(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm text-gray-700">Latitud</label>
+            <input className="border rounded px-3 py-2 w-full" placeholder="37.9861" value={lat} onChange={(e)=>setLat(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm text-gray-700">Longitud</label>
+            <input className="border rounded px-3 py-2 w-full" placeholder="-1.1303" value={lng} onChange={(e)=>setLng(e.target.value)} />
           </div>
         </div>
 
