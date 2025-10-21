@@ -1,6 +1,6 @@
 // src/app/admin/settings/page.tsx
 import SettingsClient from './settingsClient';
-import BusinessSettingsClient from '@/app/admin/settings/business/client';
+import BusinessSettingsClient from '@/app/admin/settings/business/client.clean';
 
 export default function SettingsPage() {
   return (
