@@ -54,6 +54,7 @@ function eur(cents: number) {
 export default function OrdersClient() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
+  const [activeSort, setActiveSort] = useState<'pickup'|'created'>('pickup');
 
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,10 +101,21 @@ export default function OrdersClient() {
   const { activos, historico } = useMemo(() => {
     const a: OrderRow[] = []; const h: OrderRow[] = [];
     for (const o of orders) { (o.status === "delivered" || o.status === "cancelled") ? h.push(o) : a.push(o); }
-    a.sort((x, y) => y.created_at.localeCompare(x.created_at));
+    const toMs = (iso: string | null) => (iso ? new Date(iso).getTime() : Number.POSITIVE_INFINITY);
+    // Activos: por hora de recogida ascendente (más próxima primero). Si no hay pickup_at, van al final por created_at.
+    if (activeSort === 'pickup') {
+      a.sort((x, y) => {
+        const ax = toMs(x.pickup_at) !== Infinity ? toMs(x.pickup_at) : (new Date(x.created_at).getTime() + 9000000000000);
+        const ay = toMs(y.pickup_at) !== Infinity ? toMs(y.pickup_at) : (new Date(y.created_at).getTime() + 9000000000000);
+        return ax - ay;
+      });
+    } else {
+      a.sort((x, y) => y.created_at.localeCompare(x.created_at));
+    }
+    // Histórico: por creación desc, como antes
     h.sort((x, y) => y.created_at.localeCompare(x.created_at));
     return { activos: a, historico: h };
-  }, [orders]);
+  }, [orders, activeSort]);
 
   async function changeStatus(order: OrderRow, next: OrderStatus) {
     if (order.status === next) return;
@@ -141,8 +153,8 @@ export default function OrdersClient() {
       {/* Filtros */}
       <div className="rounded-lg border bg-white p-4 shadow-sm">
         <div className="mb-2 text-sm text-gray-600">{loading ? "Cargando pedidos..." : `Mostrando ${orders.length} pedido${orders.length === 1 ? "" : "s"}`}</div>
-        <div className="grid items-center gap-3 sm:grid-cols-[1fr,180px,auto,auto]">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nombre, teléfono o código (#abc1234)…" className="h-10 rounded-md border px-3" />
+        <div className="grid items-center gap-3 sm:grid-cols-[1fr,180px,200px,auto,auto]">
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre o tel�fono�" className="h-10 rounded-md border px-3" />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="h-10 rounded-md border px-3">
             <option value="all">Todos</option>
             <option value="pending">Pendiente</option>
@@ -151,6 +163,9 @@ export default function OrdersClient() {
             <option value="ready">Listo</option>
             <option value="delivered">Entregado</option>
             <option value="cancelled">Cancelado</option>
+          </select>          <select value={activeSort} onChange={(e) => setActiveSort(e.target.value as any)} className="h-10 rounded-md border px-3">
+            <option value="pickup">Por hora de recogida</option>
+            <option value="created">Por fecha de creaci�n</option>
           </select>
           <button onClick={() => { setQuery(""); setStatusFilter("all"); void reload(); }} className="h-10 rounded-md border px-4">Limpiar</button>
           <button onClick={() => void reload()} className="h-10 rounded-md bg-black px-4 text-white">Actualizar</button>
@@ -168,7 +183,7 @@ export default function OrdersClient() {
             <div className="space-y-1 text-sm">
               <div><span className="text-gray-500">Cliente:</span> {o.customer_name}</div>
               <div><span className="text-gray-500">Teléfono:</span> {o.customer_phone || "—"}</div>
-              <div><span className="text-gray-500">Recogida:</span> {o.pickup_at ? new Date(o.pickup_at).toLocaleString("es-ES") : "—"}</div>
+              <div><span className="text-gray-500">Recogida:</span> {o.pickup_at ? (<span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium text-emerald-700 border-emerald-200 bg-emerald-50">{new Date(o.pickup_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>) : (<span className="opacity-60">�</span>)}</div>
               <div><span className="text-gray-500">Pago:</span> {pagarEtiqueta[o.payment_method || "cash"] || o.payment_method || "—"} · {o.payment_status === "paid" ? "pagado" : "no pagado"}</div>
               <div className="font-semibold">Total: {eur(o.total_cents)}</div>
             </div>
