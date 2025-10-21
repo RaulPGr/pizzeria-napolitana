@@ -215,8 +215,8 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
       <div className="text-xs text-gray-500">Anade 0, 1 o 2 tramos por dia. Deja vacio para "Cerrado".</div>
       <div className="grid gap-3">
         {days.map(d => {
-      <div className="text-xs text-gray-500">A&ntilde;ade 0, 1 o 2 tramos por d&iacute;a. Deja vac&iacute;o para “Cerrado”.</div>
-          const setTramo = (i:number, field:'abre'|'cierra', v:string) => {
+        {days.map(d => {
+          const tramos: Array<{abre:string;cierra:string}> = Array.isArray(value?.[d.key]) ? value[d.key] : [];
             const arr = [...tramos];
             const base = arr[i] || { abre:'', cierra:'' };
             arr[i] = { ...base, [field]: v };
