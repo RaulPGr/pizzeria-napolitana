@@ -161,8 +161,8 @@ export default function HomePage() {
     email: cfg?.contact?.email || INFO_DEFAULT.email,
     whatsapp: cfg?.contact?.whatsapp || INFO_DEFAULT.whatsapp,
     direccion: cfg?.contact?.address || INFO_DEFAULT.direccion,
-    logoUrl: INFO_DEFAULT.logoUrl,
-    fachadaUrl: INFO_DEFAULT.fachadaUrl,
+    logoUrl: cfg?.images?.logo || INFO_DEFAULT.logoUrl,
+    fachadaUrl: cfg?.images?.hero || INFO_DEFAULT.fachadaUrl,
     menuPath: INFO_DEFAULT.menuPath,
   }), [cfg]);
   const HORARIOS_USED: Horarios = useMemo(() => {
