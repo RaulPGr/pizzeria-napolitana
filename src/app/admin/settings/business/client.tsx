@@ -27,6 +27,7 @@ export default function BusinessSettingsClient() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [ohText, setOhText] = useState('');
+  const [ohObj, setOhObj] = useState<any>({});
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
   const [tiktok, setTiktok] = useState('');
@@ -47,7 +48,11 @@ export default function BusinessSettingsClient() {
         setEmail(j.data.email || '');
         setAddress([j.data.address_line, j.data.postal_code, j.data.city].filter(Boolean).join(', '));
         setAbout(j.data.description || '');
-        try { setOhText(j.data.opening_hours ? JSON.stringify(j.data.opening_hours, null, 2) : ''); } catch { setOhText(''); }
+        try {
+          const obj = j.data.opening_hours || {};
+          setOhObj(obj);
+          setOhText(Object.keys(obj).length ? JSON.stringify(obj, null, 2) : '');
+        } catch { setOhObj({}); setOhText(''); }
         setInstagram(j.data.social?.instagram || '');
         setFacebook(j.data.social?.facebook || '');
         setTiktok(j.data.social?.tiktok || '');
@@ -75,7 +80,7 @@ export default function BusinessSettingsClient() {
           // separamos direcci√≥n en address_line (texto libre)
           address_line: address,
           social: { instagram, facebook, tiktok, web },
-          opening_hours: ohText,
+          opening_hours: (ohObj && Object.keys(ohObj).length ? ohObj : ohText),
         }),
       });
       const j = await r.json();
@@ -111,30 +116,30 @@ export default function BusinessSettingsClient() {
 
       <div className="grid gap-4">
         <label className="text-sm text-gray-700">Nombre comercial</label>
-        <input className="border rounded px-3 py-2" value={name} onChange={(e)=>setName(e.target.value)} />
+        <input className="border rounded px-3 py-2" placeholder="PizzerÌa napolitana" value={name} onChange={(e)=>setName(e.target.value)} />
 
         <label className="text-sm text-gray-700">Slogan</label>
-        <input className="border rounded px-3 py-2" value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
+        <input className="border rounded px-3 py-2" placeholder="La tradiciÛn de N·poles en cada porciÛn." value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
 
         <label className="text-sm text-gray-700">Sobre nosotros</label>
-        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripci√≥n del negocio" />
+        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripciÛn del negocio" />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm text-gray-700">Tel√©fono</label>
-            <input className="border rounded px-3 py-2 w-full" value={phone} onChange={(e)=>setPhone(e.target.value)} />
+            <input className="border rounded px-3 py-2 w-full" placeholder="+34 600 000 000" value={phone} onChange={(e)=>setPhone(e.target.value)} />
           </div>
           <div>
             <label className="text-sm text-gray-700">WhatsApp</label>
-            <input className="border rounded px-3 py-2 w-full" value={whatsapp} onChange={(e)=>setWhatsapp(e.target.value)} />
+            <input className="border rounded px-3 py-2 w-full" placeholder="+34600000000" value={whatsapp} onChange={(e)=>setWhatsapp(e.target.value)} />
           </div>
           <div>
             <label className="text-sm text-gray-700">Email</label>
-            <input type="email" className="border rounded px-3 py-2 w-full" value={email} onChange={(e)=>setEmail(e.target.value)} />
+            <input type="email" className="border rounded px-3 py-2 w-full" placeholder="info@mirestaurante.com" value={email} onChange={(e)=>setEmail(e.target.value)} />
           </div>
           <div className="sm:col-span-2">
             <label className="text-sm text-gray-700">Direcci√≥n</label>
-            <input className="border rounded px-3 py-2 w-full" value={address} onChange={(e)=>setAddress(e.target.value)} />
+            <input className="border rounded px-3 py-2 w-full" placeholder="Calle Mayor 123, 30001 Murcia" value={address} onChange={(e)=>setAddress(e.target.value)} />
           </div>
         </div>
 
@@ -185,3 +190,5 @@ export default function BusinessSettingsClient() {
     </div>
   );
 }
+
+

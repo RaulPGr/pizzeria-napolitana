@@ -63,13 +63,15 @@ export async function PATCH(req: Request) {
       updates.social = body.social && typeof body.social === 'object' ? body.social : null;
     }
     if ('opening_hours' in body) {
-      // opening_hours se espera como objeto JSON; si llega string, intenta parsear
-      try {
-        updates.opening_hours = typeof body.opening_hours === 'string'
-          ? JSON.parse(body.opening_hours)
-          : body.opening_hours;
-      } catch {
-        return NextResponse.json({ ok: false, error: 'opening_hours inválido' }, { status: 400 });
+      const raw = body.opening_hours;
+      if (raw === '' || raw === null || typeof raw === 'undefined') {
+        updates.opening_hours = null;
+      } else {
+        try {
+          updates.opening_hours = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch {
+          return NextResponse.json({ ok: false, error: 'opening_hours inválido' }, { status: 400 });
+        }
       }
     }
     if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
