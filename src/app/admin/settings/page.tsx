@@ -1,15 +1,1 @@
-// src/app/admin/settings/page.tsx
-import SettingsClient from './settingsClient';
-import BusinessSettingsClient from '@/app/admin/settings/business/client.clean';
-
-export default function SettingsPage() {
-  return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      {/* Configuración de negocio (nombre, slogan, logo/hero) */}
-      <BusinessSettingsClient />
-
-      {/* Configuración de pagos (ya existente) */}
-      <SettingsClient />
-    </div>
-  );
-}
+﻿// src/app/admin/settings/page.tsx`nimport SettingsClient from \"./settingsClient\";`nimport BusinessSettingsClient from \"@/app/admin/settings/business/client.clean\";`n`nexport default function SettingsPage() {`n  return (`n    <div className=\"mx-auto max-w-3xl space-y-6\">`n      <details open className=\"rounded-lg border bg-white shadow-sm\">`n        <summary className=\"cursor-pointer select-none px-4 py-3 text-sm font-medium\">Configuración del negocio</summary>`n        <div className=\"p-4\">`n          <BusinessSettingsClient />`n        </div>`n      </details>`n`n      <details className=\"rounded-lg border bg-white shadow-sm\">`n        <summary className=\"cursor-pointer select-none px-4 py-3 text-sm font-medium\">Configuración de pagos</summary>`n        <div className=\"p-4\">`n          <SettingsClient />`n        </div>`n      </details>`n    </div>`n  );`n}

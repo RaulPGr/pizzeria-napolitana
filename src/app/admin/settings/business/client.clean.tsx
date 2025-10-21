@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from 'react';
 
@@ -57,7 +57,7 @@ export default function BusinessSettingsClient() {
         setTiktok(j.data.social?.tiktok || '');
         setWeb(j.data.social?.web || '');
       } else {
-        setMsg(j?.error || 'No se pudo cargar la configuración');
+        setMsg(j?.error || 'No se pudo cargar la configuraciÃ³n');
       }
     })();
   }, []);
@@ -106,8 +106,8 @@ export default function BusinessSettingsClient() {
   return (
     <div className="space-y-6 rounded-lg border bg-white p-4 shadow-sm">
       <div>
-        <h2 className="text-xl font-semibold">Configuración del negocio</h2>
-        <p className="text-sm text-gray-600">Nombre, eslogan y logotipos que verán tus clientes.</p>
+        <h2 className="text-xl font-semibold">ConfiguraciÃ³n del negocio</h2>
+        <p className="text-sm text-gray-600">Nombre, eslogan y logotipos que verÃ¡n tus clientes.</p>
       </div>
 
       {msg && (
@@ -116,17 +116,17 @@ export default function BusinessSettingsClient() {
 
       <div className="grid gap-4">
         <label className="text-sm text-gray-700">Nombre comercial</label>
-        <input className="border rounded px-3 py-2" placeholder="Pizzería napolitana" value={name} onChange={(e)=>setName(e.target.value)} />
+        <input className="border rounded px-3 py-2" placeholder="PizzerÃ­a napolitana" value={name} onChange={(e)=>setName(e.target.value)} />
 
         <label className="text-sm text-gray-700">Slogan</label>
-        <input className="border rounded px-3 py-2" placeholder="La tradición de Nápoles en cada porción." value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
+        <input className="border rounded px-3 py-2" placeholder="La tradiciÃ³n de NÃ¡poles en cada porciÃ³n." value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
 
         <label className="text-sm text-gray-700">Sobre nosotros</label>
-        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripción del negocio" />
+        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripciÃ³n del negocio" />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm text-gray-700">Teléfono</label>
+            <label className="text-sm text-gray-700">TelÃ©fono</label>
             <input className="border rounded px-3 py-2 w-full" placeholder="+34 600 000 000" value={phone} onChange={(e)=>setPhone(e.target.value)} />
           </div>
           <div>
@@ -138,7 +138,7 @@ export default function BusinessSettingsClient() {
             <input type="email" className="border rounded px-3 py-2 w-full" placeholder="info@mirestaurante.com" value={email} onChange={(e)=>setEmail(e.target.value)} />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-sm text-gray-700">Dirección</label>
+            <label className="text-sm text-gray-700">DirecciÃ³n</label>
             <input className="border rounded px-3 py-2 w-full" placeholder="Calle Mayor 123, 30001 Murcia" value={address} onChange={(e)=>setAddress(e.target.value)} />
           </div>
           <div>
@@ -179,15 +179,12 @@ export default function BusinessSettingsClient() {
             <label className="text-sm text-gray-700">TikTok</label>
             <input className="border rounded px-3 py-2 w-full" value={tiktok} onChange={(e)=>setTiktok(e.target.value)} />
           </div>
-          <div>
-            <label className="text-sm text-gray-700">Web</label>
-            <input className="border rounded px-3 py-2 w-full" value={web} onChange={(e)=>setWeb(e.target.value)} />
-          </div>
+          
         </div>
 
         <div>
           <button onClick={()=>void save()} disabled={saving} className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60">
-            {saving ? 'Guardando…' : 'Guardar cambios'}
+            {saving ? 'Guardandoâ€¦' : 'Guardar cambios'}
           </button>
         </div>
       </div>
@@ -199,10 +196,10 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
   const days = [
     { key: 'monday', label: 'Lunes' },
     { key: 'tuesday', label: 'Martes' },
-    { key: 'wednesday', label: 'Miércoles' },
+    { key: 'wednesday', label: 'MiÃ©rcoles' },
     { key: 'thursday', label: 'Jueves' },
     { key: 'friday', label: 'Viernes' },
-    { key: 'saturday', label: 'Sábado' },
+    { key: 'saturday', label: 'SÃ¡bado' },
     { key: 'sunday', label: 'Domingo' },
   ];
 
@@ -244,7 +241,7 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
                 ))}
               </div>
               <div className="mt-2 flex gap-2">
-                <button type="button" className="text-xs text-blue-600" onClick={addTramo}>Añadir tramo</button>
+                <button type="button" className="text-xs text-blue-600" onClick={addTramo}>AÃ±adir tramo</button>
                 {tramos.length>0 && <button type="button" className="text-xs text-gray-600" onClick={()=>updateDay(d.key, [])}>Vaciar</button>}
               </div>
             </div>
@@ -254,4 +251,5 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
     </div>
   );
 }
+
 
