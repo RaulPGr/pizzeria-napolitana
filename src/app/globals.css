@@ -33,6 +33,11 @@
     @apply antialiased;
     color: var(--brand-ink);
     background-color: var(--brand-chalk-bg) !important;
+    /* Fondo opcional por imagen: coloca public/images/fondo.(webp|jpg|png) */
+    background-image: url('/images/fondo.webp'), url('/images/fondo.jpg'), url('/images/fondo.png');
+    background-repeat: repeat;
+    background-size: 800px 800px; /* ajustable: tamaño del patrón */
+    background-position: top left;
   }
 
   h1, h2, h3 {
