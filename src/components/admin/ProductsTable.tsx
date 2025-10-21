@@ -419,7 +419,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
       </div>
 
       {/* Tabla */}
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-md border bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr>
