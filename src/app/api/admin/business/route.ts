@@ -26,7 +26,7 @@ async function getBusinessBySlug(slug: string) {
   const supa = await getAdminClient();
   const { data, error } = await supa
     .from('businesses')
-    .select('id, slug, name, slogan, logo_url, hero_url')
+    .select('id, slug, name, slogan, logo_url, hero_url, phone, whatsapp, email, address_line, opening_hours, social')
     .eq('slug', slug)
     .maybeSingle();
   if (error) throw error;
@@ -56,8 +56,21 @@ export async function PATCH(req: Request) {
 
     const body = await req.json();
     const updates: any = {};
-    for (const k of ['name','slogan','logo_url','hero_url']) {
+    for (const k of ['name','slogan','logo_url','hero_url','phone','whatsapp','email','address_line']) {
       if (k in body) updates[k] = body[k] === '' ? null : body[k];
+    }
+    if ('social' in body) {
+      updates.social = body.social && typeof body.social === 'object' ? body.social : null;
+    }
+    if ('opening_hours' in body) {
+      // opening_hours se espera como objeto JSON; si llega string, intenta parsear
+      try {
+        updates.opening_hours = typeof body.opening_hours === 'string'
+          ? JSON.parse(body.opening_hours)
+          : body.opening_hours;
+      } catch {
+        return NextResponse.json({ ok: false, error: 'opening_hours inválido' }, { status: 400 });
+      }
     }
     if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
@@ -101,4 +114,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: e?.message || 'Error' }, { status: 500 });
   }
 }
-
