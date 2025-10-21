@@ -156,7 +156,6 @@ export default function CartPage() {
     phone.trim().length > 0 &&
     date.trim().length > 0 &&
     time.trim().length > 0 &&
-    ordersOpenNow !== false &&
     !timeError &&
     !sending;
 
@@ -316,17 +315,14 @@ export default function CartPage() {
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          {ordersOpenNow === false ? (
-            <button type="button" disabled className="px-4 py-2 rounded bg-gray-300 text-gray-600 cursor-not-allowed" title="Fuera del horario de pedidos">
-              Confirmar pedido
-            </button>
-          ) : (
-            <ConfirmSubmitButton onClick={onConfirm} />
-          )}
+          <ConfirmSubmitButton onClick={onConfirm} />
           <button onClick={() => clearCart()} disabled={items.length === 0} className="rounded border px-4 py-2 disabled:opacity-50" type="button">
             Vaciar carrito
           </button>
         </div>
+        {ordersOpenNow === false && !timeError && time && (
+          <div className="mt-2 text-xs text-gray-600">El local no acepta pedidos ahora, pero tu hora de recogida seleccionada está dentro del horario.</div>
+        )}
       </section>
     </main>
   );
