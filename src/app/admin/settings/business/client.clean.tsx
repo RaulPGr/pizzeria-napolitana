@@ -196,10 +196,10 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
   const days = [
     { key: 'monday', label: 'Lunes' },
     { key: 'tuesday', label: 'Martes' },
-    { key: 'wednesday', label: 'MiÃ©rcoles' },
+    { key: 'wednesday', label: 'Miércoles' },
     { key: 'thursday', label: 'Jueves' },
     { key: 'friday', label: 'Viernes' },
-    { key: 'saturday', label: 'SÃ¡bado' },
+    { key: 'saturday', label: 'Sábado' },
     { key: 'sunday', label: 'Domingo' },
   ];
 
@@ -215,7 +215,7 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
       <div className="text-xs text-gray-500">Anade 0, 1 o 2 tramos por dia. Deja vacio para "Cerrado".</div>
       <div className="grid gap-3">
         {days.map(d => {
-          const tramos: Array<{abre:string;cierra:string}> = Array.isArray(value?.[d.key]) ? value[d.key] : [];
+      <div className="text-xs text-gray-500">A&ntilde;ade 0, 1 o 2 tramos por d&iacute;a. Deja vac&iacute;o para “Cerrado”.</div>
           const setTramo = (i:number, field:'abre'|'cierra', v:string) => {
             const arr = [...tramos];
             const base = arr[i] || { abre:'', cierra:'' };
@@ -241,7 +241,7 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void 
                 ))}
               </div>
               <div className="mt-2 flex gap-2">
-                <button type="button" className="text-xs text-blue-600" onClick={addTramo}>AÃ±adir tramo</button>
+                <button type="button" className="text-xs text-blue-600" onClick={addTramo}>A&ntilde;adir tramo</button>
                 {tramos.length>0 && <button type="button" className="text-xs text-gray-600" onClick={()=>updateDay(d.key, [])}>Vaciar</button>}
               </div>
             </div>
