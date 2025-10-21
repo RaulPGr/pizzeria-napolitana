@@ -1,0 +1,222 @@
+   1: // /src/app/cart/page.tsx
+   2: "use client";
+   3: 
+   4: import { useEffect, useMemo, useState } from "react";
+   5: import { useRouter } from "next/navigation";
+   6: import { CartItem, subscribe, setQty, removeItem, clearCart } from "@/lib/cart-storage";
+   7: import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+   8: 
+   9: type PaymentMethod = "cash" | "card";
+  10: 
+  11: function todayISO(): string {
+  12:   const d = new Date();
+  13:   const yyyy = d.getFullYear();
+  14:   const mm = String(d.getMonth() + 1).padStart(2, "0");
+  15:   const dd = String(d.getDate()).padStart(2, "0");
+  16:   return `${yyyy}-${mm}-${dd}`;
+  17: }
+  18: 
+  19: export default function CartPage() {
+  20:   const router = useRouter();
+  21:   // Carrito
+  22:   const [items, setItems] = useState<CartItem[]>([]);
+  23:   useEffect(() => {
+  24:     const unsub = subscribe((next) => setItems(next));
+  25:     return () => unsub();
+  26:   }, []);
+  27:   const total = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items]);
+  28: 
+  29:   // Formulario
+  30:   const [name, setName] = useState("");
+  31:   const [phone, setPhone] = useState("");
+  32:   const [email, setEmail] = useState("");
+  33:   const [notes, setNotes] = useState("");
+  34:   const [date, setDate] = useState(todayISO());
+  35:   const [time, setTime] = useState("");
+  36:   const [payment, setPayment] = useState<PaymentMethod>("cash");
+  37:   const [methods, setMethods] = useState<{ cash: boolean; card: boolean }>({ cash: true, card: true });
+  38:   const [sending, setSending] = useState(false);
+  39: 
+  40:   const canSubmit =
+  41:     items.length > 0 &&
+  42:     name.trim().length > 0 &&
+  43:     phone.trim().length > 0 &&
+  44:     date.trim().length > 0 &&
+  45:     time.trim().length > 0 &&
+  46:     !sending;
+  47: 
+  48:   useEffect(() => {
+  49:     (async () => {
+  50:       try {
+  51:         const res = await fetch('/api/settings/payments', { cache: 'no-store' });
+  52:         const j = await res.json();
+  53:         if (j?.ok && j?.data) {
+  54:           setMethods({ cash: !!j.data.cash, card: !!j.data.card });
+  55:           // Si el método actual no está permitido, selecciona uno disponible
+  56:           setPayment((prev) => {
+  57:             if (prev === 'cash' && j.data.cash) return 'cash';
+  58:             if (prev === 'card' && j.data.card) return 'card';
+  59:             return j.data.cash ? 'cash' : 'card';
+  60:           });
+  61:         }
+  62:       } catch {}
+  63:     })();
+  64:   }, []);
+  65: 
+  66:   // Envío
+  67:   async function onConfirm() {
+  68:     if (!canSubmit) return;
+  69: 
+  70:     // Validación fecha/hora
+  71:     const timeOk = /^\d{2}:\d{2}$/.test(time);
+  72:     if (!timeOk) {
+  73:       alert("Introduce una hora válida (HH:MM).");
+  74:       return;
+  75:     }
+  76:     const [y, m, d] = date.split("-").map(Number);
+  77:     const [hh, mi] = time.split(":").map(Number);
+  78:     const pickup = new Date(y, (m || 1) - 1, d || 1, hh || 0, mi || 0);
+  79:     if (isNaN(pickup.getTime())) {
+  80:       alert("La fecha y hora no son válidas.");
+  81:       return;
+  82:     }
+  83: 
+  84:     const payload = {
+  85:       customer: { name: name.trim(), phone: phone.trim(), email: email.trim() || undefined },
+  86:       notes: notes.trim() || undefined,
+  87:       pickupAt: pickup.toISOString(),
+  88:       paymentMethod: payment,
+  89:       items: items.map((it) => ({ productId: it.id as number, quantity: it.qty })),
+  90:     } as const;
+  91: 
+  92:     try {
+  93:       setSending(true);
+  94:       const res = await fetch("/api/orders", {
+  95:         method: "POST",
+  96:         headers: { "Content-Type": "application/json" },
+  97:         body: JSON.stringify(payload),
+  98:       });
+  99:       if (!res.ok) {
+ 100:         const txt = await res.text();
+ 101:         throw new Error(txt || `HTTP ${res.status}`);
+ 102:       }
+ 103:       const j = (await res.json().catch(() => ({}))) as any;
+ 104:       clearCart();
+ 105:       // Redirigimos a la pantalla de detalle con opción de imprimir/descargar
+ 106:       if (j?.orderId) {
+ 107:         router.replace(`/order/${j.orderId}`);
+ 108:       } else {
+ 109:         alert("Pedido creado correctamente");
+ 110:       }
+ 111:     } catch (e: any) {
+ 112:       alert(`No se pudo crear el pedido. ${e?.message ?? ""}`);
+ 113:     } finally {
+ 114:       setSending(false);
+ 115:     }
+ 116:   }
+ 117: 
+ 118:   // UI
+ 119:   return (
+ 120:     <main className="mx-auto max-w-5xl px-4 py-8">
+ 121:       <h1 className="mb-6 text-3xl font-bold">Tu carrito</h1>
+ 122: 
+ 123:       {/* LÍNEAS DEL CARRITO */}
+ 124:       <div className="mb-6">
+ 125:         {items.length === 0 ? (
+ 126:           <div className="rounded border bg-white p-4 text-gray-600 shadow">Tu carrito está vacío.</div>
+ 127:         ) : (
+ 128:           <ul className="space-y-3">
+ 129:             {items.map((it) => (
+ 130:               <li key={String(it.id)} className="rounded border bg-white p-4 shadow">
+ 131:                 <div className="flex items-center justify-between gap-4">
+ 132:                   <div className="flex items-center gap-3">
+ 133:                     {it.image && <img src={it.image} alt={it.name} className="h-12 w-12 rounded object-cover" />}
+ 134:                     <div>
+ 135:                       <div className="font-medium">{it.name}</div>
+ 136:                       <div className="text-sm text-gray-500">{it.price.toFixed(2)} €</div>
+ 137:                     </div>
+ 138:                   </div>
+ 139:                   <div className="flex items-center gap-2">
+ 140:                     <button onClick={() => setQty(it.id, Math.max(1, it.qty - 1))} className="rounded border px-2 py-1">
+ 141:                       -
+ 142:                     </button>
+ 143:                     <span className="w-8 text-center">{it.qty}</span>
+ 144:                     <button onClick={() => setQty(it.id, it.qty + 1)} className="rounded border px-2 py-1">
+ 145:                       +
+ 146:                     </button>
+ 147:                     <button onClick={() => removeItem(it.id)} className="rounded border border-red-300 px-3 py-1 text-red-600">
+ 148:                       Quitar
+ 149:                     </button>
+ 150:                   </div>
+ 151:                 </div>
+ 152:               </li>
+ 153:             ))}
+ 154:           </ul>
+ 155:         )}
+ 156:       </div>
+ 157: 
+ 158:       {/* TOTAL */}
+ 159:       <div className="mb-6 flex items-center justify-end rounded border bg-white p-4 shadow">
+ 160:         <div className="text-lg">
+ 161:           <span className="font-semibold">Total: </span>
+ 162:         </div>
+ 163:         <div className="ml-2 text-lg">{total.toFixed(2)} €</div>
+ 164:       </div>
+ 165: 
+ 166:       {/* FORMULARIO */}
+ 167:       <section className="rounded border bg-white p-4 shadow">
+ 168:         <h2 className="mb-4 text-xl font-semibold">Datos del cliente</h2>
+ 169: 
+ 170:         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+ 171:           <div>
+ 172:             <label className="mb-1 block text-sm text-gray-600">Nombre</label>
+ 173:             <input className="w-full rounded border px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del cliente" />
+ 174:           </div>
+ 175:           <div>
+ 176:             <label className="mb-1 block text-sm text-gray-600">Teléfono</label>
+ 177:             <input className="w-full rounded border px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono de contacto" inputMode="tel" />
+ 178:           </div>
+ 179:           <div>
+ 180:             <label className="mb-1 block text-sm text-gray-600">Email (opcional)</label>
+ 181:             <input className="w-full rounded border px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" type="email" />
+ 182:           </div>
+ 183:           <div>
+ 184:             <label className="mb-1 block text-sm text-gray-600">Notas (opcional)</label>
+ 185:             <input className="w-full rounded border px-3 py-2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Sin cebolla, alergias, etc." />
+ 186:           </div>
+ 187:           <div>
+ 188:             <label className="mb-1 block text-sm text-gray-600">Fecha de recogida</label>
+ 189:             <input type="date" className="w-full rounded border px-3 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
+ 190:           </div>
+ 191:           <div>
+ 192:             <label className="mb-1 block text-sm text-gray-600">Hora de recogida</label>
+ 193:             <input type="time" className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
+ 194:           </div>
+ 195:         </div>
+ 196: 
+ 197:         <div className="mt-4">
+ 198:           <div className="mb-2 text-sm text-gray-600">Método de pago</div>
+ 199:           {methods.cash && (
+ 200:             <label className="mr-6 inline-flex items-center gap-2">
+ 201:               <input type="radio" name="payment" checked={payment === "cash"} onChange={() => setPayment("cash")} />
+ 202:               Pago en tienda
+ 203:             </label>
+ 204:           )}
+ 205:           {methods.card && (
+ 206:             <label className="inline-flex items-center gap-2">
+ 207:               <input type="radio" name="payment" checked={payment === "card"} onChange={() => setPayment("card")} />
+ 208:               Tarjeta
+ 209:             </label>
+ 210:           )}
+ 211:         </div>
+ 212: 
+ 213:         <div className="mt-6 flex items-center gap-3">
+ 214:           <ConfirmSubmitButton onClick={onConfirm} />
+ 215:           <button onClick={() => clearCart()} disabled={items.length === 0} className="rounded border px-4 py-2 disabled:opacity-50" type="button">
+ 216:             Vaciar carrito
+ 217:           </button>
+ 218:         </div>
+ 219:       </section>
+ 220:     </main>
+ 221:   );
+ 222: }

@@ -36,15 +36,11 @@ export default function CartPage() {
   const [payment, setPayment] = useState<PaymentMethod>("cash");
   const [methods, setMethods] = useState<{ cash: boolean; card: boolean }>({ cash: true, card: true });
   const [sending, setSending] = useState(false);
+  // Horario de pedidos (ordering_hours || opening_hours)
+  const [schedule, setSchedule] = useState<any | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
 
-  const canSubmit =
-    items.length > 0 &&
-    name.trim().length > 0 &&
-    phone.trim().length > 0 &&
-    date.trim().length > 0 &&
-    time.trim().length > 0 &&
-    !sending;
-
+  // Cargar métodos de pago
   useEffect(() => {
     (async () => {
       try {
@@ -52,7 +48,6 @@ export default function CartPage() {
         const j = await res.json();
         if (j?.ok && j?.data) {
           setMethods({ cash: !!j.data.cash, card: !!j.data.card });
-          // Si el método actual no está permitido, selecciona uno disponible
           setPayment((prev) => {
             if (prev === 'cash' && j.data.cash) return 'cash';
             if (prev === 'card' && j.data.card) return 'card';
@@ -62,6 +57,74 @@ export default function CartPage() {
       } catch {}
     })();
   }, []);
+
+  // Cargar horario de pedidos
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/schedule', { cache: 'no-store' });
+        const j = await res.json();
+        if (j?.ok) setSchedule(j.data || null);
+      } catch {}
+    })();
+  }, []);
+
+  // Helpers de validación
+  function isTimeInSchedule(dateISO: string, timeHHMM: string, sched: any | null): boolean {
+    try {
+      if (!sched) return true; // sin restricciones
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO) || !/^\d{2}:\d{2}$/.test(timeHHMM)) return true;
+      const [y, m, d] = dateISO.split('-').map(Number);
+      const [hh, mi] = timeHHMM.split(':').map(Number);
+      const dt = new Date(y, (m || 1) - 1, d || 1, hh || 0, mi || 0);
+      const dayKey = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][dt.getDay()];
+      const list: Array<{ abre?: string; cierra?: string; open?: string; close?: string }> = sched?.[dayKey] || [];
+      if (!Array.isArray(list) || list.length === 0) return false;
+      const mins = hh * 60 + mi;
+      return list.some((t) => {
+        const a = (t.abre ?? t.open) as string | undefined;
+        const c = (t.cierra ?? t.close) as string | undefined;
+        if (!a || !c) return false;
+        const [ha, ma] = String(a).split(':').map(Number);
+        const [hc, mc] = String(c).split(':').map(Number);
+        const from = ha * 60 + ma;
+        const to = hc * 60 + mc;
+        return mins >= from && mins < to;
+      });
+    } catch {
+      return true;
+    }
+  }
+
+  function formatDaySchedule(dateISO: string, sched: any | null): string {
+    try {
+      if (!sched) return 'Sin restricciones específicas.';
+      const [y, m, d] = dateISO.split('-').map(Number);
+      const dt = new Date(y, (m || 1) - 1, d || 1);
+      const dayKey = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][dt.getDay()];
+      const list: Array<{ abre?: string; cierra?: string; open?: string; close?: string }> = sched?.[dayKey] || [];
+      if (!Array.isArray(list) || list.length === 0) return 'Cerrado';
+      return list.map((t) => `${t.abre ?? t.open}–${t.cierra ?? t.close}`).join(', ');
+    } catch {
+      return '';
+    }
+  }
+
+  // Validar cada cambio de fecha/hora
+  useEffect(() => {
+    if (!time) { setTimeError(null); return; }
+    const ok = isTimeInSchedule(date, time, schedule);
+    setTimeError(ok ? null : 'Fuera del horario de pedidos');
+  }, [date, time, schedule]);
+
+  const canSubmit =
+    items.length > 0 &&
+    name.trim().length > 0 &&
+    phone.trim().length > 0 &&
+    date.trim().length > 0 &&
+    time.trim().length > 0 &&
+    !timeError &&
+    !sending;
 
   // Envío
   async function onConfirm() {
@@ -102,7 +165,6 @@ export default function CartPage() {
       }
       const j = (await res.json().catch(() => ({}))) as any;
       clearCart();
-      // Redirigimos a la pantalla de detalle con opción de imprimir/descargar
       if (j?.orderId) {
         router.replace(`/order/${j.orderId}`);
       } else {
@@ -127,7 +189,7 @@ export default function CartPage() {
         ) : (
           <ul className="space-y-3">
             {items.map((it) => (
-              <li key={String(it.id)} className="rounded border bg-white p-4 shadow">
+              <li key={String(it.id)} className="rounded border bg-white p-3 shadow">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {it.image && <img src={it.image} alt={it.name} className="h-12 w-12 rounded object-cover" />}
@@ -191,6 +253,8 @@ export default function CartPage() {
           <div>
             <label className="mb-1 block text-sm text-gray-600">Hora de recogida</label>
             <input type="time" className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
+            <div className="mt-1 text-xs text-gray-600">Horario para este día: {formatDaySchedule(date, schedule)}</div>
+            {time && timeError && <div className="mt-1 text-xs text-red-600">{timeError}</div>}
           </div>
         </div>
 
@@ -220,3 +284,4 @@ export default function CartPage() {
     </main>
   );
 }
+
