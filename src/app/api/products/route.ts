@@ -145,7 +145,7 @@ export async function PATCH(req: Request) {
   const auth = await assertAdmin();
   if (!auth.ok) return auth.res;
 
-  // Subida de imagen (multipart/form-data), con fallback por si el header no llega
+  // Subida de imagen (multipart/form-data)
   try {
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
@@ -160,22 +160,6 @@ export async function PATCH(req: Request) {
         const { error: updErr } = await supabaseAdmin.from(TABLE).update({ image_url: pub.data.publicUrl }).eq('id', id);
         if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
         return NextResponse.json({ ok: true, url: pub.data.publicUrl });
-      }
-    } else {
-      const form = await req.formData().catch(() => null as any);
-      if (form) {
-        const id = Number(form.get('id'));
-        const f = form.get('file');
-        if (id && f && f instanceof File) {
-          const safeName = sanitizeFileName((f as File).name || 'upload');
-          const filePath = `${id}/${Date.now()}_${safeName}`;
-          const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(filePath, f as File, { upsert: true });
-          if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
-          const pub = supabaseAdmin.storage.from(BUCKET).getPublicUrl(filePath);
-          const { error: updErr } = await supabaseAdmin.from(TABLE).update({ image_url: pub.data.publicUrl }).eq('id', id);
-          if (updErr) return NextResponse.json({ ok: false, error: updErr.message }, { status: 400 });
-          return NextResponse.json({ ok: true, url: pub.data.publicUrl });
-        }
       }
     }
   } catch {}
