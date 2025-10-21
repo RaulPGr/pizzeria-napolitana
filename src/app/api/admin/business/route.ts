@@ -26,7 +26,7 @@ async function getBusinessBySlug(slug: string) {
   const supa = await getAdminClient();
   const { data, error } = await supa
     .from('businesses')
-    .select('id, slug, name, slogan, logo_url, hero_url, phone, whatsapp, email, address_line, opening_hours, social')
+    .select('id, slug, name, slogan, description, logo_url, hero_url, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, social')
     .eq('slug', slug)
     .maybeSingle();
   if (error) throw error;
@@ -56,7 +56,7 @@ export async function PATCH(req: Request) {
 
     const body = await req.json();
     const updates: any = {};
-    for (const k of ['name','slogan','logo_url','hero_url','phone','whatsapp','email','address_line']) {
+    for (const k of ['name','slogan','description','logo_url','hero_url','phone','whatsapp','email','address_line','city','postal_code','lat','lng']) {
       if (k in body) updates[k] = body[k] === '' ? null : body[k];
     }
     if ('social' in body) {

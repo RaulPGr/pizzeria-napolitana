@@ -21,6 +21,7 @@ export default function BusinessSettingsClient() {
   const [biz, setBiz] = useState<Biz | null>(null);
   const [name, setName] = useState('');
   const [slogan, setSlogan] = useState('');
+  const [about, setAbout] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
@@ -44,7 +45,8 @@ export default function BusinessSettingsClient() {
         setPhone(j.data.phone || '');
         setWhatsapp(j.data.whatsapp || '');
         setEmail(j.data.email || '');
-        setAddress(j.data.address_line || '');
+        setAddress([j.data.address_line, j.data.postal_code, j.data.city].filter(Boolean).join(', '));
+        setAbout(j.data.description || '');
         try { setOhText(j.data.opening_hours ? JSON.stringify(j.data.opening_hours, null, 2) : ''); } catch { setOhText(''); }
         setInstagram(j.data.social?.instagram || '');
         setFacebook(j.data.social?.facebook || '');
@@ -66,9 +68,11 @@ export default function BusinessSettingsClient() {
         body: JSON.stringify({
           name,
           slogan,
+          description: about,
           phone,
           whatsapp,
           email,
+          // separamos dirección en address_line (texto libre)
           address_line: address,
           social: { instagram, facebook, tiktok, web },
           opening_hours: ohText,
@@ -111,6 +115,9 @@ export default function BusinessSettingsClient() {
 
         <label className="text-sm text-gray-700">Slogan</label>
         <input className="border rounded px-3 py-2" value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
+
+        <label className="text-sm text-gray-700">Sobre nosotros</label>
+        <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripción del negocio" />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

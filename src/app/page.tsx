@@ -270,7 +270,7 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-4 pb-14">
         <div className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Sobre nosotros</h2>
-          <p className="text-sm leading-6 text-gray-700">{cfg?.about ? cfg.about : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
+          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
 
 <p>Preparamos cada día nuestras auténticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
 

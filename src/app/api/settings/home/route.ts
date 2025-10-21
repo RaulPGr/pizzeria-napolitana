@@ -22,7 +22,7 @@ export async function GET() {
     const supa = adminClient();
     const { data: biz, error } = await supa
       .from('businesses')
-      .select('name, slogan, phone, whatsapp, email, address_line, opening_hours, logo_url, hero_url')
+      .select('name, slogan, description, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, logo_url, hero_url, social')
       .eq('slug', slug)
       .maybeSingle();
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -31,19 +31,20 @@ export async function GET() {
 
     const hours = biz.opening_hours || null;
     const out = {
-      business: { name: biz.name || null, slogan: biz.slogan || null },
+      business: { name: biz.name || null, slogan: biz.slogan || null, description: biz.description || null },
       contact: {
         phone: biz.phone || null,
         whatsapp: biz.whatsapp || null,
         email: biz.email || null,
-        address: biz.address_line || null,
+        address: [biz.address_line, biz.postal_code, biz.city].filter(Boolean).join(', ') || null,
       },
       hours: hours,
       images: { logo: biz.logo_url || null, hero: biz.hero_url || null },
+      coords: biz.lat != null && biz.lng != null ? { lat: Number(biz.lat), lng: Number(biz.lng) } : null,
+      social: biz.social || null,
     };
     return NextResponse.json({ ok: true, data: out });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'Error' }, { status: 500 });
   }
 }
-
