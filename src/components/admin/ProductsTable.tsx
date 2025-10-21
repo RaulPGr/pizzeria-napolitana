@@ -437,7 +437,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               const isEditing = editingId === p.id;
               if (isEditing) {
                 return (
-                  <tr key={p.id} className="border-t">
+                  <tr key={p.id} className="border-t odd:bg-gray-50 hover:bg-gray-100">
                     <td className="px-3 py-2">{p.id}</td>
                     <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">-</span>}</td>
                     <td className="px-3 py-2">
@@ -478,7 +478,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               }
 
               return (
-                <tr key={p.id} className="border-t">
+                <tr key={p.id} className="border-t odd:bg-gray-50 hover:bg-gray-100">
                   <td className="px-3 py-2">{p.id}</td>
                   <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">—</span>}</td>
                   <td className="px-3 py-2">
