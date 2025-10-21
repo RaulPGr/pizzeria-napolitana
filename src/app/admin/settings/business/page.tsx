@@ -2,7 +2,7 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import BusinessSettingsClient from './client';
+import BusinessSettingsClient from './client.clean';
 
 export default function BusinessSettingsPage() {
   return (
@@ -11,4 +11,3 @@ export default function BusinessSettingsPage() {
     </div>
   );
 }
-
