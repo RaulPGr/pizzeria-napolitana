@@ -150,14 +150,18 @@ export default function CartPage() {
     return () => clearInterval(id);
   }, [schedule]);
 
-  const canSubmit =
-    items.length > 0 &&
-    name.trim().length > 0 &&
-    phone.trim().length > 0 &&
-    date.trim().length > 0 &&
-    time.trim().length > 0 &&
-    !timeError &&
-    !sending;
+  const submitReason = (() => {
+    if (items.length === 0) return 'Añade algún producto al carrito';
+    if (name.trim().length === 0) return 'Introduce tu nombre';
+    if (phone.trim().length === 0) return 'Introduce un teléfono de contacto';
+    if (date.trim().length === 0) return 'Selecciona fecha de recogida';
+    if (time.trim().length === 0) return 'Selecciona hora de recogida';
+    if (timeError) return timeError;
+    if (sending) return 'Enviando…';
+    return null;
+  })();
+
+  const canSubmit = submitReason === null;
 
   // Envío
   async function onConfirm() {
@@ -315,11 +319,14 @@ export default function CartPage() {
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          <ConfirmSubmitButton onClick={onConfirm} disabled={!canSubmit} title={timeError || undefined} />
+          <ConfirmSubmitButton onClick={onConfirm} disabled={!canSubmit} title={submitReason || undefined} />
           <button onClick={() => clearCart()} disabled={items.length === 0} className="rounded border px-4 py-2 disabled:opacity-50" type="button">
             Vaciar carrito
           </button>
         </div>
+        {(!canSubmit && submitReason) && (
+          <div className="mt-2 text-xs text-red-600">No puedes confirmar: {submitReason}.</div>
+        )}
         {ordersOpenNow === false && !timeError && time && (
           <div className="mt-2 text-xs text-gray-600">El local no acepta pedidos ahora, pero tu hora de recogida seleccionada está dentro del horario.</div>
         )}
