@@ -74,6 +74,18 @@ export async function PATCH(req: Request) {
         }
       }
     }
+    if ('ordering_hours' in body) {
+      const raw = body.ordering_hours;
+      if (raw === '' || raw === null || typeof raw === 'undefined') {
+        updates.ordering_hours = null;
+      } else {
+        try {
+          updates.ordering_hours = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch {
+          return NextResponse.json({ ok: false, error: 'ordering_hours inválido' }, { status: 400 });
+        }
+      }
+    }
     if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
     const supa = await getAdminClient();
