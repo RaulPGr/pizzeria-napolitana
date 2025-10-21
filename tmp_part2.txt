@@ -1,0 +1,55 @@
+ 202:     { key: 'saturday', label: 'Sábado' },
+ 203:     { key: 'sunday', label: 'Domingo' },
+ 204:   ];
+ 205: 
+ 206:   function updateDay(key: string, tramos: Array<{abre:string;cierra:string}>) {
+ 207:     const next = { ...(value || {}) };
+ 208:     next[key] = tramos;
+ 209:     onChange(next);
+ 210:   }
+ 211: 
+ 212:   return (
+ 213:     <div className="space-y-3">
+ 214:       <div className="text-sm font-medium">Horarios</div>
+ 215:       <div className="text-xs text-gray-500">Anade 0, 1 o 2 tramos por dia. Deja vacio para "Cerrado".</div>
+ 216:       <div className="grid gap-3">
+ 217:         {days.map((d) => {
+ 218:           const tramos: Array<{abre:string;cierra:string}> = Array.isArray(value?.[d.key]) ? value[d.key] : [];
+ 219:           const setTramo = (i:number, field:'abre'|'cierra', v:string) => {
+ 220:             const arr = [...tramos];
+ 221:             const base = arr[i] || { abre:'', cierra:'' };
+ 222:             arr[i] = { ...base, [field]: v };
+ 223:             updateDay(d.key, arr);
+ 224:           };
+ 225:           const addTramo = () => updateDay(d.key, [...tramos, { abre:'', cierra:'' }]);
+ 226:           const delTramo = (i:number) => updateDay(d.key, tramos.filter((_,idx)=>idx!==i));
+ 227:           return (
+ 228:             <div key={d.key} className="rounded border p-2">
+ 229:               <div className="text-sm font-medium mb-2">{d.label}</div>
+ 230:               {tramos.length === 0 && (
+ 231:                 <div className="text-xs text-gray-500 mb-2">Cerrado</div>
+ 232:               )}
+ 233:               <div className="space-y-2">
+ 234:                 {tramos.map((t, i) => (
+ 235:                   <div key={i} className="flex items-center gap-2">
+ 236:                     <input type="time" value={t.abre} onChange={(e)=>setTramo(i,'abre',e.target.value)} className="border rounded px-2 py-1" />
+ 237:                     <span className="text-sm">a</span>
+ 238:                     <input type="time" value={t.cierra} onChange={(e)=>setTramo(i,'cierra',e.target.value)} className="border rounded px-2 py-1" />
+ 239:                     <button type="button" className="text-xs text-red-600" onClick={()=>delTramo(i)}>Quitar</button>
+ 240:                   </div>
+ 241:                 ))}
+ 242:               </div>
+ 243:               <div className="mt-2 flex gap-2">
+ 244:                 <button type="button" className="text-xs text-blue-600" onClick={addTramo}>A&ntilde;adir tramo</button>
+ 245:                 {tramos.length>0 && <button type="button" className="text-xs text-gray-600" onClick={()=>updateDay(d.key, [])}>Vaciar</button>}
+ 246:               </div>
+ 247:             </div>
+ 248:           );
+ 249:         })}
+ 250:       </div>
+ 251:     </div>
+ 252:   );
+ 253: }
+ 254: 
+ 255: 
+ 256: 

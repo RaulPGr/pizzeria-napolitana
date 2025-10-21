@@ -1,0 +1,201 @@
+   1: "use client";
+   2: 
+   3: import { useEffect, useState } from 'react';
+   4: 
+   5: type Biz = {
+   6:   id: string;
+   7:   slug: string;
+   8:   name: string;
+   9:   slogan: string | null;
+  10:   logo_url: string | null;
+  11:   hero_url: string | null;
+  12:   phone?: string | null;
+  13:   whatsapp?: string | null;
+  14:   email?: string | null;
+  15:   address_line?: string | null;
+  16:   opening_hours?: any | null;
+  17:   social?: { instagram?: string | null; facebook?: string | null; tiktok?: string | null; web?: string | null } | null;
+  18: };
+  19: 
+  20: export default function BusinessSettingsClient() {
+  21:   const [biz, setBiz] = useState<Biz | null>(null);
+  22:   const [name, setName] = useState('');
+  23:   const [slogan, setSlogan] = useState('');
+  24:   const [about, setAbout] = useState('');
+  25:   const [phone, setPhone] = useState('');
+  26:   const [whatsapp, setWhatsapp] = useState('');
+  27:   const [email, setEmail] = useState('');
+  28:   const [address, setAddress] = useState('');
+  29:   const [lat, setLat] = useState<string>('');
+  30:   const [lng, setLng] = useState<string>('');
+  31:   const [hours, setHours] = useState<any>({});
+  32:   const [instagram, setInstagram] = useState('');
+  33:   const [facebook, setFacebook] = useState('');
+  34:   const [tiktok, setTiktok] = useState('');
+  35:   const [web, setWeb] = useState('');
+  36:   const [saving, setSaving] = useState(false);
+  37:   const [msg, setMsg] = useState<string | null>(null);
+  38: 
+  39:   useEffect(() => {
+  40:     (async () => {
+  41:       const r = await fetch('/api/admin/business', { cache: 'no-store' });
+  42:       const j = await r.json();
+  43:       if (j?.ok) {
+  44:         setBiz(j.data);
+  45:         setName(j.data.name || '');
+  46:         setSlogan(j.data.slogan || '');
+  47:         setPhone(j.data.phone || '');
+  48:         setWhatsapp(j.data.whatsapp || '');
+  49:         setEmail(j.data.email || '');
+  50:         setAddress([j.data.address_line, j.data.postal_code, j.data.city].filter(Boolean).join(', '));
+  51:         if (j.data.lat != null) setLat(String(j.data.lat));
+  52:         if (j.data.lng != null) setLng(String(j.data.lng));
+  53:         setAbout(j.data.description || '');
+  54:         try { setHours(j.data.opening_hours || {}); } catch { setHours({}); }
+  55:         setInstagram(j.data.social?.instagram || '');
+  56:         setFacebook(j.data.social?.facebook || '');
+  57:         setTiktok(j.data.social?.tiktok || '');
+  58:         setWeb(j.data.social?.web || '');
+  59:       } else {
+  60:         setMsg(j?.error || 'No se pudo cargar la configuraciÃ³n');
+  61:       }
+  62:     })();
+  63:   }, []);
+  64: 
+  65:   async function save() {
+  66:     setSaving(true);
+  67:     setMsg(null);
+  68:     try {
+  69:       const r = await fetch('/api/admin/business', {
+  70:         method: 'PATCH',
+  71:         headers: { 'Content-Type': 'application/json' },
+  72:         body: JSON.stringify({
+  73:           name,
+  74:           slogan,
+  75:           description: about,
+  76:           phone,
+  77:           whatsapp,
+  78:           email,
+  79:           address_line: address,
+  80:           lat: lat !== '' ? Number(lat) : null,
+  81:           lng: lng !== '' ? Number(lng) : null,
+  82:           social: { instagram, facebook, tiktok, web },
+  83:           opening_hours: (hours && Object.keys(hours).length ? hours : ''),
+  84:         }),
+  85:       });
+  86:       const j = await r.json();
+  87:       if (!j?.ok) throw new Error(j?.error || 'Error');
+  88:       setMsg('Guardado correctamente');
+  89:     } catch (e: any) {
+  90:       setMsg(e?.message || 'No se pudo guardar');
+  91:     } finally {
+  92:       setSaving(false);
+  93:     }
+  94:   }
+  95: 
+  96:   async function upload(kind: 'logo'|'hero', file: File) {
+  97:     const fd = new FormData();
+  98:     fd.append('type', kind);
+  99:     fd.append('file', file);
+ 100:     const r = await fetch('/api/admin/business', { method: 'POST', body: fd });
+ 101:     const j = await r.json();
+ 102:     if (!j?.ok) throw new Error(j?.error || 'Error subiendo');
+ 103:     setBiz((b) => b ? { ...b, [kind + '_url' as any]: j.url } as any : b);
+ 104:   }
+ 105: 
+ 106:   return (
+ 107:     <div className="space-y-6 rounded-lg border bg-white p-4 shadow-sm">
+ 108:       <div>
+ 109:         <h2 className="text-xl font-semibold">Configuración del negocio</h2>
+ 110:         <p className="text-sm text-gray-600">Nombre, eslogan y logotipos que verÃ¡n tus clientes.</p>
+ 111:       </div>
+ 112: 
+ 113:       {msg && (
+ 114:         <div className="rounded border p-2 text-sm" style={{ borderColor:'#cbd5e1', background:'#f8fafc' }}>{msg}</div>
+ 115:       )}
+ 116: 
+ 117:       <div className="grid gap-4">
+ 118:         <label className="text-sm text-gray-700">Nombre comercial</label>
+ 119:         <input className="border rounded px-3 py-2" placeholder="Pizzería napolitana" value={name} onChange={(e)=>setName(e.target.value)} />
+ 120: 
+ 121:         <label className="text-sm text-gray-700">Slogan</label>
+ 122:         <input className="border rounded px-3 py-2" placeholder="La tradiciÃ³n de NÃ¡poles en cada porciÃ³n." value={slogan} onChange={(e)=>setSlogan(e.target.value)} />
+ 123: 
+ 124:         <label className="text-sm text-gray-700">Sobre nosotros</label>
+ 125:         <textarea className="border rounded px-3 py-2 w-full" rows={4} value={about} onChange={(e)=>setAbout(e.target.value)} placeholder="Breve descripción del negocio" />
+ 126: 
+ 127:         <div className="grid gap-4 sm:grid-cols-2">
+ 128:           <div>
+ 129:             <label className="text-sm text-gray-700">TelÃ©fono</label>
+ 130:             <input className="border rounded px-3 py-2 w-full" placeholder="+34 600 000 000" value={phone} onChange={(e)=>setPhone(e.target.value)} />
+ 131:           </div>
+ 132:           <div>
+ 133:             <label className="text-sm text-gray-700">WhatsApp</label>
+ 134:             <input className="border rounded px-3 py-2 w-full" placeholder="+34600000000" value={whatsapp} onChange={(e)=>setWhatsapp(e.target.value)} />
+ 135:           </div>
+ 136:           <div>
+ 137:             <label className="text-sm text-gray-700">Email</label>
+ 138:             <input type="email" className="border rounded px-3 py-2 w-full" placeholder="info@mirestaurante.com" value={email} onChange={(e)=>setEmail(e.target.value)} />
+ 139:           </div>
+ 140:           <div className="sm:col-span-2">
+ 141:             <label className="text-sm text-gray-700">Dirección</label>
+ 142:             <input className="border rounded px-3 py-2 w-full" placeholder="Calle Mayor 123, 30001 Murcia" value={address} onChange={(e)=>setAddress(e.target.value)} />
+ 143:           </div>
+ 144:           <div>
+ 145:             <label className="text-sm text-gray-700">Latitud</label>
+ 146:             <input className="border rounded px-3 py-2 w-full" placeholder="37.9861" value={lat} onChange={(e)=>setLat(e.target.value)} />
+ 147:           </div>
+ 148:           <div>
+ 149:             <label className="text-sm text-gray-700">Longitud</label>
+ 150:             <input className="border rounded px-3 py-2 w-full" placeholder="-1.1303" value={lng} onChange={(e)=>setLng(e.target.value)} />
+ 151:           </div>
+ 152:         </div>
+ 153: 
+ 154:         <HoursEditor value={hours} onChange={setHours} />
+ 155: 
+ 156:         <div className="grid gap-2 sm:grid-cols-2">
+ 157:           <div>
+ 158:             <div className="text-sm text-gray-700 mb-1">Logo</div>
+ 159:             {biz?.logo_url && <img src={biz.logo_url} alt="logo" className="h-16 w-auto rounded border mb-2" />}
+ 160:             <input type="file" accept="image/*" onChange={(e)=>{ const f=e.target.files?.[0]; if(f) upload('logo', f).catch(err=>setMsg(err.message)); }} />
+ 161:           </div>
+ 162:           <div>
+ 163:             <div className="text-sm text-gray-700 mb-1">Imagen de cabecera</div>
+ 164:             {biz?.hero_url && <img src={biz.hero_url} alt="hero" className="h-24 w-full object-cover rounded border mb-2" />}
+ 165:             <input type="file" accept="image/*" onChange={(e)=>{ const f=e.target.files?.[0]; if(f) upload('hero', f).catch(err=>setMsg(err.message)); }} />
+ 166:           </div>
+ 167:         </div>
+ 168: 
+ 169:         <div className="grid gap-4 sm:grid-cols-2">
+ 170:           <div>
+ 171:             <label className="text-sm text-gray-700">Instagram</label>
+ 172:             <input className="border rounded px-3 py-2 w-full" value={instagram} onChange={(e)=>setInstagram(e.target.value)} />
+ 173:           </div>
+ 174:           <div>
+ 175:             <label className="text-sm text-gray-700">Facebook</label>
+ 176:             <input className="border rounded px-3 py-2 w-full" value={facebook} onChange={(e)=>setFacebook(e.target.value)} />
+ 177:           </div>
+ 178:           <div>
+ 179:             <label className="text-sm text-gray-700">TikTok</label>
+ 180:             <input className="border rounded px-3 py-2 w-full" value={tiktok} onChange={(e)=>setTiktok(e.target.value)} />
+ 181:           </div>
+ 182:           
+ 183:         </div>
+ 184: 
+ 185:         <div>
+ 186:           <button onClick={()=>void save()} disabled={saving} className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60">
+ 187:             {saving ? 'Guardandoâ€¦' : 'Guardar cambios'}
+ 188:           </button>
+ 189:         </div>
+ 190:       </div>
+ 191:     </div>
+ 192:   );
+ 193: }
+ 194: 
+ 195: function HoursEditor({ value, onChange }: { value: any; onChange: (v:any)=>void }) {
+ 196:   const days = [
+ 197:     { key: 'monday', label: 'Lunes' },
+ 198:     { key: 'tuesday', label: 'Martes' },
+ 199:     { key: 'wednesday', label: 'Miércoles' },
+ 200:     { key: 'thursday', label: 'Jueves' },
+ 201:     { key: 'friday', label: 'Viernes' },
