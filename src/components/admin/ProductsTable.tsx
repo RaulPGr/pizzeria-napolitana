@@ -494,15 +494,37 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                   </td>
                   <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '—' : '—'}</td>
                   <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => startEdit(p)} className="rounded bg-blue-600 px-3 py-1 text-white">
-                        Editar
+                    <div className="flex w-full justify-end gap-2">
+                      <button
+                        onClick={() => startEdit(p)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded bg-blue-600 text-white hover:bg-blue-700"
+                        title="Editar producto"
+                        aria-label="Editar producto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                          <path d="M16.862 3.487a1.75 1.75 0 0 1 2.476 2.476l-9.8 9.8a4 4 0 0 1-1.693.99l-2.707.77a.75.75 0 0 1-.923-.923l.77-2.707a4 4 0 0 1 .99-1.693l9.8-9.8Z"/>
+                          <path d="M5.25 19.5h13.5a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1 0-1.5Z"/>
+                        </svg>
                       </button>
-                      <button onClick={() => triggerUpload(p.id)} className="rounded bg-gray-700 px-3 py-1 text-white">
-                        Cambiar imagen
+                      <button
+                        onClick={() => triggerUpload(p.id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded bg-gray-700 text-white hover:bg-gray-800"
+                        title="Cambiar imagen del producto"
+                        aria-label="Cambiar imagen del producto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                          <path d="M9 3a1 1 0 0 0-.894.553L7.105 5H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3h-2.105l-.999-1.447A1 1 0 0 0 14.999 3H9Zm3 5.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/>
+                        </svg>
                       </button>
-                      <button onClick={() => onDelete(p.id)} className="rounded bg-red-600 px-3 py-1 text-white">
-                        Eliminar
+                      <button
+                        onClick={() => onDelete(p.id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700"
+                        title="Eliminar producto"
+                        aria-label="Eliminar producto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                          <path d="M9 3.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75V5h4a.75.75 0 0 1 0 1.5h-1.052l-1.05 12.6A2.25 2.25 0 0 1 14.658 21H9.342a2.25 2.25 0 0 1-2.29-1.9L6.002 6.5H5a.75.75 0 0 1 0-1.5h4V3.75ZM8.507 6.5l1.05 12.6c.04.48.44.85.915.85h5.186a.95.95 0 0 0 .915-.85l1.05-12.6H8.507Z"/>
+                        </svg>
                       </button>
                     </div>
                   </td>
