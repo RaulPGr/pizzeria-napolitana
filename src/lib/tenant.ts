@@ -13,11 +13,10 @@ export async function getTenant() {
 
   const { data, error } = await supa
     .from('businesses')
-    .select('id, slug, name, logo_url, hero_url, brand_primary, brand_secondary, opening_hours, phone, whatsapp, email, address_line, city, postal_code, social')
+    .select('id, slug, name, logo_url, hero_url, brand_primary, brand_secondary, opening_hours, ordering_hours, phone, whatsapp, email, address_line, city, postal_code, social')
     .eq('slug', slug)
     .maybeSingle();
 
   if (error) return null;
   return data;
 }
-

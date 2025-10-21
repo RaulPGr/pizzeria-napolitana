@@ -1,6 +1,7 @@
 // src/app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getTenant } from '@/lib/tenant';
 
 type ItemInput = { productId: number; quantity: number };
 type BodyInput = {
@@ -14,6 +15,18 @@ type BodyInput = {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BodyInput;
+
+    // 0) Validar contra horario de pedidos si existe
+    const tenant = await getTenant();
+    const schedule = (tenant as any)?.ordering_hours && Object.keys((tenant as any).ordering_hours || {}).length
+      ? (tenant as any).ordering_hours
+      : (tenant as any)?.opening_hours || null;
+    if (body.pickupAt && schedule) {
+      const when = new Date(body.pickupAt);
+      if (!isInSchedule(when, schedule)) {
+        return NextResponse.json({ ok: false, message: 'La hora seleccionada está fuera del horario de pedidos.' }, { status: 400 });
+      }
+    }
 
     if (!body.customer?.name || !body.customer?.phone)
       return NextResponse.json(
@@ -71,6 +84,7 @@ export async function POST(req: NextRequest) {
         payment_method: body.paymentMethod,
         payment_status: 'unpaid',
         notes: body.notes || null,
+        business_id: (tenant as any)?.id || null,
       })
       .select('id')
       .single();
@@ -89,7 +103,7 @@ export async function POST(req: NextRequest) {
     // Insertar los items
     const { error: itemsErr } = await supabaseAdmin
       .from('order_items')
-      .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId })));
+      .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId, business_id: (tenant as any)?.id || null })));
     if (itemsErr) throw itemsErr;
 
     return NextResponse.json({ ok: true, orderId, code });
@@ -98,5 +112,27 @@ export async function POST(req: NextRequest) {
       { ok: false, message: err?.message || 'Error creando pedido' },
       { status: 400 }
     );
+  }
+}
+
+// Helpers
+function isInSchedule(date: Date, schedule: any): boolean {
+  try {
+    const dayKey = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][date.getDay()];
+    const list: Array<{ abre?: string; cierra?: string; open?: string; close?: string }> = schedule?.[dayKey] || [];
+    if (!Array.isArray(list) || list.length === 0) return false;
+    const mins = date.getHours() * 60 + date.getMinutes();
+    return list.some((t) => {
+      const a = (t.abre ?? t.open) as string | undefined;
+      const c = (t.cierra ?? t.close) as string | undefined;
+      if (!a || !c) return false;
+      const [ha, ma] = String(a).split(':').map(Number);
+      const [hc, mc] = String(c).split(':').map(Number);
+      const from = ha * 60 + ma;
+      const to = hc * 60 + mc;
+      return mins >= from && mins < to;
+    });
+  } catch {
+    return true; // si hay problemas de formato, no bloquear
   }
 }

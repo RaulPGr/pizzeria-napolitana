@@ -1,6 +1,7 @@
 // src/app/admin/settings/page.tsx
 import SettingsClient from './settingsClient';
 import BusinessSettingsClient from '@/app/admin/settings/business/client.clean';
+import OrdersHoursSettingsClient from '@/app/admin/settings/orders/client';
 
 export default function SettingsPage() {
   return (
@@ -18,7 +19,13 @@ export default function SettingsPage() {
           <SettingsClient />
         </div>
       </details>
+
+      <details className="rounded-lg border bg-white shadow-sm">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">Configuración horario de pedidos</summary>
+        <div className="p-4">
+          <OrdersHoursSettingsClient />
+        </div>
+      </details>
     </div>
   );
 }
-
