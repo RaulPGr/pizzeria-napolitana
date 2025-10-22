@@ -10,17 +10,28 @@ type Props = {
 
 export default function CartQtyActions({ productId, allowAdd = true }: Props) {
   const [qty, setLocalQty] = useState(0);
+  const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
     return subscribe((items: CartItem[]) => {
       const it = items.find((x) => String(x.id) === String(productId));
-      setLocalQty(it?.qty ?? 0);
+      const next = it?.qty ?? 0;
+      setLocalQty((prev) => {
+        if (prev !== next) {
+          try {
+            setPulse(true);
+            setTimeout(() => setPulse(false), 180);
+          } catch {}
+        }
+        return next;
+      });
     });
   }, [productId]);
 
   if (!qty) return null;
 
   function dec() {
+    // Si hay 1 unidad y resta, se eliminan todas (qty -> 0)
     const next = Math.max(0, qty - 1);
     if (next === 0) removeItem(productId);
     else setQty(productId, next);
@@ -35,39 +46,30 @@ export default function CartQtyActions({ productId, allowAdd = true }: Props) {
 
   return (
     <div className="absolute right-2 top-2 flex items-center gap-1">
-      <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-emerald-600 px-1.5 py-0.5 text-[11px] font-semibold text-white shadow">
+      <button
+        type="button"
+        onClick={dec}
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border bg-white ${qty === 1 ? 'border-red-500 text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-100'}`}
+        title={qty === 1 ? 'Eliminar todas' : 'Quitar 1'}
+        aria-label={qty === 1 ? 'Eliminar todas' : 'Quitar 1'}
+      >
+        −
+      </button>
+      <span
+        className={`inline-flex min-w-[22px] items-center justify-center rounded-full bg-emerald-600 px-1.5 py-0.5 text-[11px] font-semibold text-white shadow transition-transform duration-150 ${pulse ? 'scale-110' : 'scale-100'}`}
+      >
         {qty}
       </span>
       <button
         type="button"
-        onClick={dec}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border bg-white text-gray-700 hover:bg-gray-100"
-        title="Quitar 1"
-        aria-label="Quitar 1"
+        onClick={inc}
+        disabled={!allowAdd}
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border bg-white text-gray-700 ${allowAdd ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'}`}
+        title={allowAdd ? 'Añadir 1' : 'No disponible hoy'}
+        aria-label={allowAdd ? 'Añadir 1' : 'No disponible hoy'}
       >
-        −
+        +
       </button>
-      <button
-        type="button"
-        onClick={clear}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border bg-white text-gray-700 hover:bg-gray-100"
-        title="Eliminar del carrito"
-        aria-label="Eliminar del carrito"
-      >
-        ×
-      </button>
-      {allowAdd && (
-        <button
-          type="button"
-          onClick={inc}
-          className="inline-flex h-5 w-5 items-center justify-center rounded-full border bg-white text-gray-700 hover:bg-gray-100"
-          title="Añadir 1"
-          aria-label="Añadir 1"
-        >
-          +
-        </button>
-      )}
     </div>
   );
 }
-
