@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 
-type Category = { id: number; name: string };
+type Category = { id: number; name: string; sort_order?: number | null };
 type Product = {
   id: number;
   name: string;
