@@ -63,6 +63,7 @@ export default function OrdersClient() {
   const [openDetailId, setOpenDetailId] = useState<string | null>(null);
   const [detailCache, setDetailCache] = useState<Record<string, OrderItem[]>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
+  const [highlights, setHighlights] = useState<Record<string, boolean>>({});
   const [initialized, setInitialized] = useState(false);
   const seenIdsRef = (globalThis as any).__pl_seen_orders || new Set<string>();
   ;(globalThis as any).__pl_seen_orders = seenIdsRef;
@@ -112,6 +113,12 @@ export default function OrdersClient() {
           const newOnes = incoming.filter(o => !seenIdsRef.has(o.id));
           if (newOnes.length > 0) {
             try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
+            // Marcar los nuevos para resaltar visualmente
+            setHighlights((prev) => {
+              const next = { ...prev } as Record<string, boolean>;
+              newOnes.forEach((o) => { next[o.id] = true; });
+              return next;
+            });
             newOnes.forEach(o => seenIdsRef.add(o.id));
             // Mantener el set razonable
             if (seenIdsRef.size > 2000) {
@@ -171,6 +178,8 @@ export default function OrdersClient() {
   async function toggleDetail(order: OrderRow) {
     const id = order.id;
     setOpenDetailId(id === openDetailId ? null : id);
+    // Quitar resaltado al revisar el pedido (abrir detalle)
+    setHighlights((prev) => (prev[id] ? { ...prev, [id]: false } : prev));
     if (id === openDetailId || detailCache[id]) return;
     setDetailLoading((s) => ({ ...s, [id]: true }));
     try {
@@ -238,7 +247,13 @@ export default function OrdersClient() {
 
       {/* Activos */}
       {activos.map((o) => (
-        <div key={o.id} className="rounded-lg border bg-white shadow-sm">
+        <div
+          key={o.id}
+          className={[
+            'rounded-lg border shadow-sm transition-colors',
+            highlights[o.id] ? 'bg-blue-50 ring-2 ring-blue-300' : 'bg-white'
+          ].join(' ')}
+        >
           <div className="flex items-center justify-between border-b px-4 py-3 text-sm text-gray-600">
             <div className="font-medium">#{(o.code ?? o.id).slice(0, 7)}</div>
             <div className="flex items-center gap-2">
