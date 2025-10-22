@@ -380,12 +380,19 @@ export default function CartPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Hora de recogida</label>
-            <input list="time-options" type="time" step={300} min={minTimeFor(date)} className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
-            <datalist id="time-options">
+            <select
+              className="w-full rounded border px-3 py-2 bg-white"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              disabled={timeSuggestions.length === 0}
+            >
+              <option value="" disabled>
+                Selecciona hora
+              </option>
               {timeSuggestions.map((t) => (
-                <option key={t} value={t} />
+                <option key={t} value={t}>{t}</option>
               ))}
-            </datalist>
+            </select>
             <div className="mt-1 text-xs text-gray-600">Horario para este día: {formatDaySchedule(date, schedule)}</div>
             {time && timeError && <div className="mt-1 text-xs text-red-600">{timeError}</div>}
           </div>
