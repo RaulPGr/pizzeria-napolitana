@@ -255,7 +255,15 @@ export default function OrdersClient() {
           ].join(' ')}
         >
           <div className="flex items-center justify-between border-b px-4 py-3 text-sm text-gray-600">
-            <div className="font-medium">#{(o.code ?? o.id).slice(0, 7)}</div>
+            <div className="font-medium">
+              #{(o.code ?? o.id).slice(0, 7)}
+              {highlights[o.id] && (
+                <span className="ml-2 inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">NUEVO</span>
+              )}
+              {!highlights[o.id] && openDetailId === o.id && (
+                <span className="ml-2 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">VISTO</span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {o.pickup_at && (
                 <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium text-emerald-700 border-emerald-200 bg-emerald-50">
