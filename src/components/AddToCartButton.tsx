@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { addItem } from "@/lib/cart-storage";
 import { useState } from "react";
@@ -6,9 +6,10 @@ import { useState } from "react";
 type Props = {
   product: { id: number | string; name: string; price: number; image_url?: string };
   disabled?: boolean;
+  disabledLabel?: string;
 };
 
-export default function AddToCartButton({ product, disabled }: Props) {
+export default function AddToCartButton({ product, disabled, disabledLabel }: Props) {
   const [busy, setBusy] = useState(false);
 
   async function onAdd() {
@@ -30,8 +31,7 @@ export default function AddToCartButton({ product, disabled }: Props) {
         disabled ? "opacity-50 cursor-not-allowed" : "bg-emerald-600 text-white hover:bg-emerald-700"
       }`}
     >
-      {disabled ? "Agotado" : busy ? "Añadiendo..." : "Añadir"}
+      {disabled ? (disabledLabel || "Agotado") : busy ? "Añadiendo..." : "Añadir"}
     </button>
   );
 }
-
