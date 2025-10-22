@@ -8,12 +8,15 @@ export default function NewOrderSound() {
   const [notifyOn, setNotifyOn] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const enabledRef = useRef(false);
+  const notifyRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioBufRef = useRef<AudioBuffer | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== 'undefined' ? document.title : '');
   const blinkTimerRef = useRef<number | null>(null);
   const originalFaviconsRef = useRef<HTMLLinkElement[] | null>(null);
   const faviconTimerRef = useRef<number | null>(null);
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -25,7 +28,9 @@ export default function NewOrderSound() {
 
     try {
       const nstored = localStorage.getItem('new-order-notify');
-      setNotifyOn(nstored === 'on');
+      const no = nstored === 'on';
+      setNotifyOn(no);
+      notifyRef.current = no;
     } catch {}
 
     // Crear elemento <audio> real en el DOM para máxima compatibilidad
@@ -131,6 +136,13 @@ export default function NewOrderSound() {
     const handler = () => {
       // Sonido si está activado
       if (enabledRef.current) { try { void playSound(); } catch {} }
+      // Notificación si está activada
+      if (notifyRef.current && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          const n = new Notification('Nuevo pedido', { body: 'Ha llegado un pedido nuevo.', icon: '/favicon.ico', tag: 'pl-new-order' });
+          n.onclick = () => { try { window.focus(); } catch {} };
+        } catch {}
+      }
       // Parpadeo del título siempre
       try { startBlinkTitle('Nuevo pedido', { original: originalTitleRef, timer: blinkTimerRef }); } catch {}
       // Parpadeo del favicon
@@ -168,11 +180,46 @@ export default function NewOrderSound() {
     }
     const ok = Notification.permission === 'granted' && wantOn;
     setNotifyOn(ok);
+    notifyRef.current = ok;
     try { localStorage.setItem('new-order-notify', ok ? 'on' : 'off'); } catch {}
     if (ok) {
       try { new Notification('Notificaciones activadas', { body: 'Avisaremos al llegar un pedido.' }); } catch {}
     }
   };
+
+  // Polling de respaldo global (funciona aunque no estés en /admin/orders)
+  useEffect(() => {
+    // Solo tiene sentido si al menos sonido o notificación están activos
+    if (!enabled && !notifyOn) return;
+    let iv: number | null = null;
+    const tick = async () => {
+      try {
+        const res = await fetch('/api/orders/list', { cache: 'no-store' });
+        const j = await res.json();
+        const arr = Array.isArray(j?.data) ? j.data as Array<{ id: string }> : [];
+        if (!initializedRef.current) {
+          arr.forEach(o => seenIdsRef.current.add(o.id));
+          initializedRef.current = true;
+          return;
+        }
+        const newOnes = arr.filter(o => !seenIdsRef.current.has(o.id));
+        if (newOnes.length > 0) {
+          try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
+          newOnes.forEach(o => seenIdsRef.current.add(o.id));
+          if (seenIdsRef.current.size > 2000) {
+            const fresh = new Set(arr.map(o => o.id));
+            seenIdsRef.current = fresh;
+          }
+        }
+      } catch {}
+    };
+    // Primer tick tras 2s para no duplicar con montajes
+    const first = window.setTimeout(() => void tick(), 2000);
+    iv = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void tick();
+    }, 10000);
+    return () => { try { window.clearTimeout(first); } catch {}; if (iv) window.clearInterval(iv); };
+  }, [enabled, notifyOn]);
 
   return (
     <div className="fixed z-50 bottom-6 right-6">
