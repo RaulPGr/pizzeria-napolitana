@@ -274,7 +274,14 @@ export async function PATCH(req: Request) {
     try { updates.image_url = String(updates.image_url).trim().slice(0, 1000); } catch {}
   }
 
-  const { error } = await supabaseAdmin.from(TABLE).update(updates).eq('id', body.id);
+  // Limita la actualización al negocio actual
+  {
+    const slug = await getTenantSlug();
+    const bid = await getBusinessIdBySlug(slug);
+    let qUpd = supabaseAdmin.from(TABLE).update(updates).eq('id', body.id);
+    const { error } = bid ? await qUpd.eq('business_id', bid) : await qUpd;
+    if (error) return NextResponse.json({ ok: false, error: error?.message || 'Error' }, { status: 400 });
+  }
 
   // Update weekdays (replace) if provided
   try {
@@ -308,7 +315,7 @@ export async function DELETE(req: Request) {
   const bid = await getBusinessIdBySlug(slug);
   let qDel = supabaseAdmin.from(TABLE).delete().eq('id', id);
   const { error } = bid ? await qDel.eq('business_id', bid) : await qDel;
-  if (error) return NextResponse.json({ ok: false, error: error?.message || 'Error' }, { status: 400 });
+  // si llega aquí, ya no hay error
 
   return NextResponse.json({ ok: true });
 }
