@@ -89,16 +89,16 @@ export default function ThemeSettingsClient() {
   useEffect(() => {
     const r = document.documentElement;
     const c = merged.colors;
-    r.style.setProperty('--brand-chalk-bg', c.background);
-    r.style.setProperty('--brand-ink', merged.colors.text);
-    r.style.setProperty('--brand-muted', merged.colors.muted);
-    r.style.setProperty('--brand-accent', merged.colors.accent);
-    r.style.setProperty('--brand-accent-700', merged.colors.accentHover);
-    r.style.setProperty('--brand-green', merged.colors.topbarEnd || merged.colors.secondary);
-    r.style.setProperty('--brand-green-700', merged.colors.secondaryHover);
-    r.style.setProperty('--brand-orange', merged.colors.topbarStart || merged.colors.accent);
-    if (merged.fonts.body) r.style.setProperty('--font-body', merged.fonts.body);
-    if (merged.fonts.headings) r.style.setProperty('--font-headings', merged.fonts.headings);
+    r.style.setProperty('--brand-chalk-bg', c.background ?? '');
+    r.style.setProperty('--brand-ink', merged.colors.text ?? '');
+    r.style.setProperty('--brand-muted', merged.colors.muted ?? '');
+    r.style.setProperty('--brand-accent', merged.colors.accent ?? '');
+    r.style.setProperty('--brand-accent-700', merged.colors.accentHover ?? '');
+    r.style.setProperty('--brand-green', (merged.colors.topbarEnd || merged.colors.secondary) ?? '');
+    r.style.setProperty('--brand-green-700', merged.colors.secondaryHover ?? '');
+    r.style.setProperty('--brand-orange', (merged.colors.topbarStart || merged.colors.accent) ?? '');
+    if (merged.fonts.body) r.style.setProperty('--font-body', merged.fonts.body ?? '');
+    if (merged.fonts.headings) r.style.setProperty('--font-headings', merged.fonts.headings ?? '');
   }, [merged]);
 
   useEffect(() => {
