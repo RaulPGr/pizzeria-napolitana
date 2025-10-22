@@ -209,13 +209,13 @@ function DayTabs({ selectedDay }: { selectedDay?: number }) {
   const today = ((jsDay + 6) % 7) + 1; // 1..7 Mon..Sun
   const current = (selectedDay && selectedDay >= 1 && selectedDay <= 7) ? selectedDay : today;
   const days = [
-    { d: 1, label: 'L' },
-    { d: 2, label: 'M' },
-    { d: 3, label: 'X' },
-    { d: 4, label: 'J' },
-    { d: 5, label: 'V' },
-    { d: 6, label: 'S' },
-    { d: 7, label: 'D' },
+    { d: 1, label: 'Lunes' },
+    { d: 2, label: 'Martes' },
+    { d: 3, label: 'Miércoles' },
+    { d: 4, label: 'Jueves' },
+    { d: 5, label: 'Viernes' },
+    { d: 6, label: 'Sábado' },
+    { d: 7, label: 'Domingo' },
   ];
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -236,4 +236,3 @@ function DayTabs({ selectedDay }: { selectedDay?: number }) {
     </div>
   );
 }
-
