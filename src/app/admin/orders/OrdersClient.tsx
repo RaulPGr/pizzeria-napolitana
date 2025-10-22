@@ -113,7 +113,13 @@ export default function OrdersClient() {
     const onNew = (ev: any) => {
       try {
         const id = ev?.detail?.id as string | undefined;
-        if (id) setHighlights((prev) => ({ ...prev, [id]: true }));
+        if (id) {
+          setHighlights((prev) => ({ ...prev, [id]: true }));
+        } else {
+          // Si no viene id (p.ej. evento desde el polling global), forzamos un refresh breve
+          // para que reload() detecte el nuevo pedido y lo marque como NUEVO
+          setTimeout(() => { void reload(); }, 150);
+        }
       } catch {}
     };
     window.addEventListener('pl:new-order', onNew as any);
