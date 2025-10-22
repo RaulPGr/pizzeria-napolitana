@@ -6,19 +6,31 @@ import { supabase } from '@/lib/supabase';
 export default function NewOrderSound() {
   const [enabled, setEnabled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const enabledRef = useRef(false);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem('new-order-sound');
-      setEnabled(stored === 'on');
+      const isOn = stored === 'on';
+      setEnabled(isOn);
+      enabledRef.current = isOn;
     } catch {}
 
-    const el = new Audio('/sounds/new-order.mp3');
-    el.crossOrigin = 'anonymous';
-    el.preload = 'auto';
-    el.volume = 1.0;
-    el.preload = 'auto';
-    audioRef.current = el;
+    // Crear elemento <audio> real en el DOM para máxima compatibilidad
+    try {
+      const el = document.createElement('audio');
+      el.src = '/sounds/new-order.mp3';
+      el.preload = 'auto';
+      el.controls = false;
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+      audioRef.current = el as HTMLAudioElement;
+      try { el.load(); } catch {}
+      return () => { try { el.pause(); } catch {}; try { el.remove(); } catch {}; };
+    } catch {
+      // fallback: no DOM available
+    }
   }, []);
 
   const beepFallback = () => {
@@ -48,39 +60,29 @@ export default function NewOrderSound() {
     }
   };
 
-  // Solo INSERT en orders
+  // Realtime: escuchamos siempre; solo sonamos si está activado
   useEffect(() => {
-    if (!enabled) return;
-
     const channel = supabase
       .channel('orders-sound')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
-        try {
-          playSound();
-        } catch (e) {
-          // ignore
-        }
+        if (!enabledRef.current) return;
+        try { playSound(); } catch {}
       })
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [enabled]);
-
-  // Disparador secundario: evento personalizado desde OrdersClient
+  // Disparador secundario: evento personalizado desde OrdersClient (siempre registrado)
   useEffect(() => {
-    if (!enabled) return;
-    const handler = () => {
-      try { playSound(); } catch {}
-    };
+    const handler = () => { if (enabledRef.current) { try { playSound(); } catch {} } };
     window.addEventListener('pl:new-order', handler);
     return () => { window.removeEventListener('pl:new-order', handler); };
-  }, [enabled]);
+  }, []);
 
   const toggle = () => {
     const next = !enabled;
     setEnabled(next);
+    enabledRef.current = next;
     try {
       localStorage.setItem('new-order-sound', next ? 'on' : 'off');
     } catch {}
