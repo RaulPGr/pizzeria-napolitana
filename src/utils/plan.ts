@@ -11,3 +11,10 @@ export const adminEmails = () =>
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
+
+// Diseñadores/superadmins para acceder a opciones ocultas (no público)
+export const designAdminEmails = () =>
+  (process.env.DESIGN_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
