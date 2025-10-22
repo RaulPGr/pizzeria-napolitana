@@ -151,8 +151,8 @@ export default function CartPage() {
       if (!Array.isArray(list) || list.length === 0) return null;
       const out: Array<[number, number]> = [];
       for (const t of list) {
-        const a = String(t.abre ?? t.open || '00:00');
-        const c = String(t.cierra ?? t.close || '23:59');
+        const a = String((t.abre ?? t.open) ?? '00:00');
+        const c = String((t.cierra ?? t.close) ?? '23:59');
         const [ha,ma] = a.split(':').map(Number);
         const [hc,mc] = c.split(':').map(Number);
         out.push([ha*60+ma, hc*60+mc]);
