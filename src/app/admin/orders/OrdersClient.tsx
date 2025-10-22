@@ -53,6 +53,7 @@ function eur(cents: number) {
 }
 
 export default function OrdersClient() {
+  const NEW_WINDOW_MS = 120000; // 2 minutos para considerar "reciente"
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [activeSort, setActiveSort] = useState<"pickup" | "created">("pickup");
@@ -71,6 +72,15 @@ export default function OrdersClient() {
   ;(globalThis as any).__pl_seen_orders = seenIdsRef;
 
   useEffect(() => {
+    // Cargar vistos persistidos
+    try {
+      const raw = localStorage.getItem('orders-seen');
+      if (raw) {
+        const obj = JSON.parse(raw || '{}');
+        if (obj && typeof obj === 'object') setSeen(obj);
+      }
+    } catch {}
+
     void reload();
   }, []);
 
@@ -80,6 +90,8 @@ export default function OrdersClient() {
     const schedule = () => {
       if (t) window.clearTimeout(t);
       t = window.setTimeout(() => void reload(), 200);
+      // Backup extra por si el INSERT tarda en estar disponible en la lista
+      window.setTimeout(() => void reload(), 1200);
     };
     const channel = supabase
       .channel("orders-admin")
@@ -228,7 +240,11 @@ export default function OrdersClient() {
     if (opening) {
       // Quitar "NUEVO" y marcar como visto de forma persistente (incluso al cerrar)
       setHighlights((prev) => (prev[id] ? { ...prev, [id]: false } : prev));
-      setSeen((prev) => ({ ...prev, [id]: true }));
+      setSeen((prev) => {
+        const next = { ...prev, [id]: true };
+        try { localStorage.setItem('orders-seen', JSON.stringify(next)); } catch {}
+        return next;
+      });
     }
     if (!opening) return; // al cerrar, no recargamos detalle
     if (detailCache[id]) return; // ya lo tenemos cacheado
@@ -308,7 +324,7 @@ export default function OrdersClient() {
           <div className="flex items-center justify-between border-b px-4 py-3 text-sm text-gray-600">
             <div className="font-medium">
               #{(o.code ?? o.id).slice(0, 7)}
-              {highlights[o.id]
+              {(highlights[o.id] || (!seen[o.id] && (Date.now() - new Date(o.created_at).getTime()) < NEW_WINDOW_MS))
                 ? (<span className="ml-2 inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">NUEVO</span>)
                 : (seen[o.id]
                     ? (<span className="ml-2 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">VISTO</span>)
