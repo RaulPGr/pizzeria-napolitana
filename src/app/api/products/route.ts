@@ -128,29 +128,16 @@ export async function GET(req: Request) {
 
   let products: any[] | null = null;
   let error: any = null;
-  if (menu_mode === 'daily' && selectedDay) {
-    const q = supabase
-      .from(TABLE)
-      .select('*, product_weekdays!inner(day)')
-      .eq('product_weekdays.day', selectedDay as any)
-      .eq('active', true as any)
-      .order('category_id', { ascending: true })
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
-    const { data, error: err } = await q;
-    products = data as any[] | null;
-    error = err;
-  } else {
-    const { data, error: err } = await supabase
-      .from(TABLE)
-      .select('*')
-      .eq('active', true as any)
-      .order('category_id', { ascending: true })
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
-    products = data as any[] | null;
-    error = err;
-  }
+  // Siempre devolvemos todos los productos activos; si el modo es 'daily', adjuntamos los días
+  const { data, error: err } = await supabase
+    .from(TABLE)
+    .select('*, product_weekdays(day)')
+    .eq('active', true as any)
+    .order('category_id', { ascending: true })
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+  products = data as any[] | null;
+  error = err;
 
   const { data: categories, error: catErr } = await supabase
     .from('categories')
