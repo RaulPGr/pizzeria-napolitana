@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { designAdminEmails } from '@/utils/plan';
+import { designAdminEmails, adminEmails } from '@/utils/plan';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,7 +28,13 @@ async function assertDesignAdmin(): Promise<{ ok: true; email: string } | { ok: 
     );
     const { data } = await supa.auth.getUser();
     const email = data.user?.email?.toLowerCase() || '';
-    const allowed = (designAdminEmails()).includes(email);
+    const designers = designAdminEmails();
+    let allowed = designers.length > 0 ? designers.includes(email) : false;
+    if (!allowed && designers.length === 0) {
+      // Fallback: si no hay lista de diseño, permite a admins normales
+      const admins = adminEmails();
+      allowed = admins.includes(email);
+    }
     if (!allowed) {
       return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
     }
@@ -77,4 +83,3 @@ export async function PATCH(req: Request) {
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
-
