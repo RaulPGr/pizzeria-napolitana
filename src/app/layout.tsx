@@ -11,18 +11,39 @@ export const metadata: Metadata = {
   description: "Pedidos online",
 };
 
-async function getThemeStyle(): Promise<string> {
+type ThemeConfig = { colors?: Record<string, string | undefined>; fonts?: Record<string, string | undefined> };
+
+function primaryFontName(stack?: string): string | null {
+  if (!stack) return null;
+  const first = stack.split(',')[0]?.trim() || '';
+  const unquoted = first.replace(/^\"|\"$/g, '').replace(/^'|'$/g, '');
+  return unquoted || null;
+}
+
+function googleFontHrefFor(name: string): string | null {
+  const n = name.toLowerCase();
+  const weights = 'wght@400;500;600;700';
+  if (n === 'inter') return `https://fonts.googleapis.com/css2?family=Inter:${weights}&display=swap`;
+  if (n === 'poppins') return `https://fonts.googleapis.com/css2?family=Poppins:${weights}&display=swap`;
+  if (n === 'montserrat') return `https://fonts.googleapis.com/css2?family=Montserrat:${weights}&display=swap`;
+  if (n === 'roboto') return `https://fonts.googleapis.com/css2?family=Roboto:${weights}&display=swap`;
+  if (n === 'open sans') return `https://fonts.googleapis.com/css2?family=Open+Sans:${weights}&display=swap`;
+  if (n === 'lato') return `https://fonts.googleapis.com/css2?family=Lato:${weights}&display=swap`;
+  return null;
+}
+
+async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[] }> {
   try {
     const cookieStore = await cookies();
     const slug = cookieStore.get('x-tenant-slug')?.value || '';
-    if (!slug) return '';
+    if (!slug) return { css: '', fontHrefs: [] };
     const { data } = await supabaseAdmin
       .from('businesses')
       .select('theme_config')
       .eq('slug', slug)
       .maybeSingle();
-    const theme = (data as any)?.theme_config as any | null;
-    if (!theme) return '';
+    const theme = (data as any)?.theme_config as ThemeConfig | null;
+    if (!theme) return { css: '', fontHrefs: [] };
     const colors = theme.colors || {};
     const fonts = theme.fonts || {};
     const vars: Record<string, string | undefined> = {
@@ -41,9 +62,15 @@ async function getThemeStyle(): Promise<string> {
       .filter(([, v]) => typeof v === 'string' && v)
       .map(([k, v]) => `${k}: ${v};`)
       .join(' ');
-    return `${cssVars ? `:root{${cssVars}}` : ''}`;
+    const fBody = primaryFontName(fonts.body);
+    const fHead = primaryFontName(fonts.headings);
+    const hrefs = [fBody, fHead]
+      .filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i)
+      .map((n) => googleFontHrefFor(n))
+      .filter((x): x is string => !!x);
+    return { css: `${cssVars ? `:root{${cssVars}}` : ''}`, fontHrefs: hrefs };
   } catch {
-    return '';
+    return { css: '', fontHrefs: [] };
   }
 }
 
@@ -52,11 +79,22 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const themeStyle = await getThemeStyle();
+  const themeAssets = await getThemeAssets();
   return (
     <html lang="es">
+      <head>
+        {themeAssets.fontHrefs.length > 0 && (
+          <>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            {themeAssets.fontHrefs.map((href) => (
+              <link key={href} href={href} rel="stylesheet" />
+            ))}
+          </>
+        )}
+      </head>
       <body className="bg-brand-chalk">
-        {themeStyle && <style suppressHydrationWarning>{themeStyle}</style>}
+        {themeAssets.css && <style suppressHydrationWarning>{themeAssets.css}</style>}
         <CartProvider>
           {/* Header fijo en todas las páginas */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-brand-crust">

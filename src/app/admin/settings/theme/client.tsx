@@ -76,6 +76,49 @@ function TextInput({ label, desc, value, onChange, placeholder }: { label: strin
   );
 }
 
+function FontSelect({ label, desc, value, onChange, placeholder }: { label: string; desc?: string; value?: string; onChange: (v: string) => void; placeholder?: string; }) {
+  const presets = [
+    { label: 'Sistema (recomendada)', val: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"' },
+    { label: 'Inter', val: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' },
+    { label: 'Poppins', val: 'Poppins, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' },
+    { label: 'Roboto', val: 'Roboto, ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial' },
+    { label: 'Open Sans', val: '"Open Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' },
+    { label: 'Montserrat', val: 'Montserrat, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' },
+    { label: 'Lato', val: 'Lato, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' },
+    { label: 'Georgia (serif)', val: 'Georgia, Cambria, "Times New Roman", Times, serif' },
+  ];
+  const matchIdx = presets.findIndex(p => (value || '').toLowerCase() === p.val.toLowerCase());
+  const selectVal = matchIdx >= 0 ? presets[matchIdx].val : '';
+  return (
+    <div className="text-sm">
+      <label className="block">
+        <span className="text-slate-700">{label}</span>
+        {desc && <span className="block text-xs text-slate-500">{desc}</span>}
+        <select
+          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1"
+          value={selectVal}
+          onChange={(e) => onChange(e.target.value || value || '')}
+        >
+          <option value="">— Personalizada —</option>
+          {presets.map((p) => (
+            <option key={p.label} value={p.val} style={{ fontFamily: p.val }}>{p.label}</option>
+          ))}
+        </select>
+      </label>
+      <div className="mt-2">
+        <input
+          className="w-full rounded-md border border-slate-300 px-2 py-1"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{ fontFamily: value || undefined }}
+        />
+        <div className="mt-1 text-xs text-slate-500">Puedes elegir una opción o escribir tu propia pila de fuentes.</div>
+      </div>
+    </div>
+  );
+}
+
 export default function ThemeSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -297,14 +340,14 @@ export default function ThemeSettingsClient() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextInput
+        <FontSelect
           label="Fuente del cuerpo"
           desc="Familia tipográfica para párrafos y la interfaz."
           value={theme.fonts?.body}
           onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, body: v } }))}
           placeholder="Ej: Inter, system-ui, sans-serif"
         />
-        <TextInput
+        <FontSelect
           label="Fuente de títulos"
           desc="Familia tipográfica para encabezados (H1–H5)."
           value={theme.fonts?.headings}

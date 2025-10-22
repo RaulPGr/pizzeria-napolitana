@@ -96,20 +96,20 @@
   /* Fondo base claro */
   .bg-slate-50, .bg-gray-50 { background-color: var(--brand-chalk-bg) !important; }
 
-  /* Botones que usan clases azules -> Verde Albahaca (evita confundir con error) */
-  .bg-blue-600   { background-color: var(--brand-green) !important; }
-  .hover\:bg-blue-700:hover { background-color: var(--brand-green-700) !important; }
+  /* Botones que usan clases azules -> Primario (acento) */
+  .bg-blue-600   { background-color: var(--brand-accent) !important; }
+  .hover\:bg-blue-700:hover { background-color: var(--brand-accent-700) !important; }
   .text-blue-600 { color: var(--brand-accent) !important; }
   .bg-blue-50    { background-color: var(--brand-green-50) !important; }
   .text-blue-700 { color: var(--brand-tomato-700) !important; }
   .text-blue-800 { color: var(--brand-tomato-800) !important; }
   .border-blue-200 { border-color: var(--brand-green-100) !important; }
   .border-blue-600 { border-color: var(--brand-green-700) !important; }
-  .bg-blue-500 { background-color: var(--brand-green) !important; }
+  .bg-blue-500 { background-color: var(--brand-accent) !important; }
 
-  /* Botones emerald -> Verde Albahaca (coherente con acción positiva) */
-  .bg-emerald-600 { background-color: var(--brand-green) !important; }
-  .hover\:bg-emerald-700:hover { background-color: var(--brand-green-700) !important; }
+  /* Botones emerald -> usar Primario (acento) para unificar CTA */
+  .bg-emerald-600 { background-color: var(--brand-accent) !important; }
+  .hover\:bg-emerald-700:hover { background-color: var(--brand-accent-700) !important; }
   .bg-green-500 { background-color: var(--brand-green) !important; }
 
   /* Tonos verdes (estados/chips) siguen siendo Albahaca */
