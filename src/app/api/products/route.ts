@@ -298,8 +298,6 @@ export async function PATCH(req: Request) {
     }
   } catch {}
 
-  if (error) return NextResponse.json({ ok: false, error: error?.message || 'Error' }, { status: 400 });
-
   return NextResponse.json({ ok: true });
 }
 
