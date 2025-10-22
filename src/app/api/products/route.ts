@@ -64,6 +64,21 @@ async function getTenantSlug(): Promise<string> {
   }
 }
 
+async function getBusinessIdBySlug(slug: string): Promise<string | null> {
+  if (!slug) return null;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('businesses')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (error) return null;
+    return (data as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response }> {
   try {
     const cookieStore = await cookies();
@@ -139,11 +154,17 @@ export async function GET(req: Request) {
   products = data as any[] | null;
   error = err;
 
-  const { data: categories, error: catErr } = await supabase
-    .from('categories')
-    .select('*')
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+  let categories: any[] | null = null; let catErr: any = null;
+  try {
+    const slugX = await getTenantSlug();
+    const bidX = await getBusinessIdBySlug(slugX);
+    let q = supabase.from('categories').select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+    const { data: cats, error } = bidX ? await q.eq('business_id', bidX) : await q;
+    categories = cats as any[] | null;
+    catErr = error;
+  } catch (e) { catErr = e; }
 
   if (error || catErr) {
     return NextResponse.json(
@@ -164,6 +185,8 @@ export async function POST(req: Request) {
   // Creamos el producto (JSON). Si luego quieres subir imagen, usa PATCH multipart con id.
   if (contentType.includes('application/json')) {
     const body = await req.json();
+    const slug = await getTenantSlug();
+    const bid = await getBusinessIdBySlug(slug);
     const { data, error } = await supabaseAdmin
       .from(TABLE)
       .insert({
@@ -173,11 +196,12 @@ export async function POST(req: Request) {
         image_url: body.image_url ?? null,
         available: !!body.available,
         category_id: body.category_id ?? null,
+        business_id: bid ?? null,
       })
       .select('id')
       .single();
 
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ ok: false, error: error?.message || 'Error' }, { status: 400 });
     try {
       if (data?.id && Array.isArray(body.weekdays)) {
         const pid = Number(data.id);
@@ -267,7 +291,7 @@ export async function PATCH(req: Request) {
     }
   } catch {}
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ ok: false, error: error?.message || 'Error' }, { status: 400 });
 
   return NextResponse.json({ ok: true });
 }
@@ -280,8 +304,13 @@ export async function DELETE(req: Request) {
   const id = Number(searchParams.get('id'));
   if (!id) return NextResponse.json({ ok: false, error: 'id requerido' }, { status: 400 });
 
-  const { error } = await supabaseAdmin.from(TABLE).delete().eq('id', id);
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  const slug = await getTenantSlug();
+  const bid = await getBusinessIdBySlug(slug);
+  let qDel = supabaseAdmin.from(TABLE).delete().eq('id', id);
+  const { error } = bid ? await qDel.eq('business_id', bid) : await qDel;
+  if (error) return NextResponse.json({ ok: false, error: error?.message || 'Error' }, { status: 400 });
 
   return NextResponse.json({ ok: true });
 }
+
+
