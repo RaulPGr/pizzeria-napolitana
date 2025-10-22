@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 import { headers } from 'next/headers';
@@ -24,6 +25,18 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedCat = (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase();
   const rawDay = sp?.day;
   const selectedDay = Number(Array.isArray(rawDay) ? (rawDay[0] ?? '') : (rawDay ?? ''));
+
+  // Si no se especifica ?day, redirigir al día actual (1..7 ISO)
+  // Preservamos ?cat si viene en la URL. No tocamos cuando day=0 ("Todos los días").
+  if (rawDay == null || (Array.isArray(rawDay) && rawDay[0] == null) || (typeof rawDay === 'string' && rawDay.trim() === '')) {
+    const now = new Date();
+    const jsDay = now.getDay(); // 0..6 (Sun..Sat)
+    const todayIso = ((jsDay + 6) % 7) + 1; // 1..7 (Mon..Sun)
+    const params = new URLSearchParams();
+    params.set('day', String(todayIso));
+    if (selectedCat) params.set('cat', selectedCat === 'nocat' ? 'nocat' : selectedCat);
+    redirect(`/menu?${params.toString()}`);
+  }
 
   const h = await headers();
   const cookie = h.get('cookie') ?? '';
