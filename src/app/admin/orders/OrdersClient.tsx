@@ -63,6 +63,9 @@ export default function OrdersClient() {
   const [openDetailId, setOpenDetailId] = useState<string | null>(null);
   const [detailCache, setDetailCache] = useState<Record<string, OrderItem[]>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
+  const [initialized, setInitialized] = useState(false);
+  const seenIdsRef = (globalThis as any).__pl_seen_orders || new Set<string>();
+  ;(globalThis as any).__pl_seen_orders = seenIdsRef;
 
   useEffect(() => {
     void reload();
@@ -99,7 +102,27 @@ export default function OrdersClient() {
       if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
       const r = await fetch(url.toString(), { cache: "no-store" });
       const json: ListResponse = await r.json();
-      if (json.ok && json.data) setOrders(json.data);
+      if (json.ok && json.data) {
+        // Detectar pedidos nuevos por ID (fallback si Realtime falla)
+        const incoming = json.data;
+        if (!initialized) {
+          incoming.forEach(o => seenIdsRef.add(o.id));
+          setInitialized(true);
+        } else {
+          const newOnes = incoming.filter(o => !seenIdsRef.has(o.id));
+          if (newOnes.length > 0) {
+            try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
+            newOnes.forEach(o => seenIdsRef.add(o.id));
+            // Mantener el set razonable
+            if (seenIdsRef.size > 2000) {
+              // Reinicializa con los IDs actuales
+              const fresh = new Set(incoming.map(o => o.id));
+              (globalThis as any).__pl_seen_orders = fresh;
+            }
+          }
+        }
+        setOrders(incoming);
+      }
       else setOrders([]);
     } catch {
       setOrders([]);
@@ -261,8 +284,9 @@ export default function OrdersClient() {
               {openDetailId === o.id && (
                 <div className="mt-3 overflow-hidden rounded-md border">
                   {o.notes && (
-                    <div className="px-3 py-2 text-sm text-gray-700 bg-white border-b">
-                      <span className="text-gray-500">Notas:</span> {o.notes}
+                    <div className="px-3 py-2 text-sm bg-rose-50 text-rose-800 border-b border-rose-200">
+                      <span className="mr-2 inline-block rounded bg-rose-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">NOTA</span>
+                      {o.notes}
                     </div>
                   )}
                   <table className="w-full text-left text-sm">
