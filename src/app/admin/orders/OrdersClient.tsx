@@ -64,6 +64,7 @@ export default function OrdersClient() {
   const [detailCache, setDetailCache] = useState<Record<string, OrderItem[]>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
   const [highlights, setHighlights] = useState<Record<string, boolean>>({});
+  const [seen, setSeen] = useState<Record<string, boolean>>({});
   const [initialized, setInitialized] = useState(false);
   const seenIdsRef = (globalThis as any).__pl_seen_orders || new Set<string>();
   ;(globalThis as any).__pl_seen_orders = seenIdsRef;
@@ -185,10 +186,15 @@ export default function OrdersClient() {
 
   async function toggleDetail(order: OrderRow) {
     const id = order.id;
-    setOpenDetailId(id === openDetailId ? null : id);
-    // Quitar resaltado al revisar el pedido (abrir detalle)
-    setHighlights((prev) => (prev[id] ? { ...prev, [id]: false } : prev));
-    if (id === openDetailId || detailCache[id]) return;
+    const opening = id !== openDetailId; // si estamos abriendo ahora
+    setOpenDetailId(opening ? id : null);
+    if (opening) {
+      // Quitar "NUEVO" y marcar como visto de forma persistente (incluso al cerrar)
+      setHighlights((prev) => (prev[id] ? { ...prev, [id]: false } : prev));
+      setSeen((prev) => ({ ...prev, [id]: true }));
+    }
+    if (!opening) return; // al cerrar, no recargamos detalle
+    if (detailCache[id]) return; // ya lo tenemos cacheado
     setDetailLoading((s) => ({ ...s, [id]: true }));
     try {
       const r = await fetch(`/api/orders/${id}`);
@@ -265,12 +271,11 @@ export default function OrdersClient() {
           <div className="flex items-center justify-between border-b px-4 py-3 text-sm text-gray-600">
             <div className="font-medium">
               #{(o.code ?? o.id).slice(0, 7)}
-              {highlights[o.id] && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">NUEVO</span>
-              )}
-              {!highlights[o.id] && openDetailId === o.id && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">VISTO</span>
-              )}
+              {highlights[o.id]
+                ? (<span className="ml-2 inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">NUEVO</span>)
+                : (seen[o.id]
+                    ? (<span className="ml-2 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">VISTO</span>)
+                    : null)}
             </div>
             <div className="flex items-center gap-2">
               {o.pickup_at && (
