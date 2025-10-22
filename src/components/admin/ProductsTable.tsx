@@ -103,7 +103,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
   );
 }
 
-  // EdiciÃ³n
+  // Edición
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<Partial<Product>>({});
 
@@ -167,7 +167,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
 
   // Eliminar
   async function onDelete(id: number) {
-    if (!confirm("Â¿Eliminar producto?")) return;
+    if (!confirm("¿Eliminar producto?")) return;
     setLoading(true);
     const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
     setLoading(false);
@@ -175,7 +175,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     await refresh();
   }
 
-  // EdiciÃ³n
+  // Edición
   const [editDays, setEditDays] = useState<number[]>([]);
   function startEdit(p: Product) {
     setEditingId(p.id);
@@ -233,21 +233,21 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
       {/* Form crear */}
       <div ref={addFormRef}>
         <details className="rounded-md border p-4">
-          <summary className="cursor-pointer select-none text-sm font-medium">AÃ±adir producto</summary>
+          <summary className="cursor-pointer select-none text-sm font-medium">Añadir producto</summary>
           <div className="space-y-3">
             <div className="mt-3" />
             <div className="flex flex-col max-w-xl">
               <label className="text-sm text-gray-700">Nombre del producto</label>
-              <input className="border rounded px-3 py-2 w-full" placeholder="Ej. Croqueta de jamÃ³n" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <input className="border rounded px-3 py-2 w-full" placeholder="Ej. Croqueta de jamón" value={newName} onChange={(e) => setNewName(e.target.value)} />
             </div>
             <div className="flex flex-col max-w-xs">
               <label className="text-sm text-gray-700">Precio</label>
               <input className="border rounded px-3 py-2" placeholder="0.00" type="number" step="0.01" value={newPrice} onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))} />
             </div>
             <div className="flex flex-col max-w-xl">
-              <label className="text-sm text-gray-700">CategorÃ­a</label>
+              <label className="text-sm text-gray-700">Categoría</label>
               <select className="border rounded px-3 py-2 w-full" value={newCat} onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}>
-                <option value="">Sin CategorÃ­a</option>
+                <option value="">Sin Categoría</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -268,7 +268,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
               )}
             </div>
             <div className="flex flex-col max-w-xl">
-              <label className="text-sm text-gray-700">DescripciÃ³n (opcional)</label>
+              <label className="text-sm text-gray-700">Descripción (opcional)</label>
               <textarea className="border rounded px-3 py-2 w-full" rows={3} placeholder="Describe el producto" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
             </div>
             {menuMode === 'daily' && (
@@ -281,14 +281,14 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                       checked={newDays.length === 7}
                       onChange={(e) => setNewDays(e.target.checked ? ALL_DAYS.slice() : [])}
                     />
-                    <span>Todos los dÃ­as</span>
+                  <span>Todos los días</span>
                   </label>
                 </div>
                 <WeekdaySelector value={newDays} onChange={setNewDays} />
               </div>
             )}
             <label className="mt-1 inline-flex items-center gap-2"><input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} /><span>Disponible</span></label>
-            <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">AÃ±adir</button>
+            <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">Añadir</button>
           </div>
         </details>
       </div>
@@ -296,11 +296,11 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
       {/* Filtros */}
       <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr,160px,160px,160px,1fr,auto]">
         <input className="w-full rounded border px-3 py-2" placeholder="Buscar por nombre" value={filterName} onChange={(e) => setFilterName(e.target.value)} />
-        <input className="w-full rounded border px-3 py-2" placeholder="Precio mÃ­n." value={priceMin === "" ? "" : String(priceMin)} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} />
-        <input className="w-full rounded border px-3 py-2" placeholder="Precio mÃ¡x." value={priceMax === "" ? "" : String(priceMax)} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} />
+        <input className="w-full rounded border px-3 py-2" placeholder="Precio mín." value={priceMin === "" ? "" : String(priceMin)} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} />
+        <input className="w-full rounded border px-3 py-2" placeholder="Precio máx." value={priceMax === "" ? "" : String(priceMax)} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} />
         <select className="w-full rounded border px-3 py-2" value={filterAvail} onChange={(e) => setFilterAvail(e.target.value as any)}>
           <option value="all">Todos</option>
-          <option value="yes">SÃ­</option>
+          <option value="yes">Sí</option>
           <option value="no">No</option>
         </select>
         <select className="w-full rounded border px-3 py-2" value={filterCat} onChange={(e) => setFilterCat(e.target.value === "" ? "" : Number(e.target.value))}>
@@ -319,7 +319,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Precio</th>
               <th className="px-3 py-2 text-left">Disponible</th>
-              <th className="px-3 py-2 text-left">CategorÃ­a</th>
+              <th className="px-3 py-2 text-left">Categoría</th>
               <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -333,7 +333,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                     <td className="px-3 py-2">
                       <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
                       <div className="mt-1 text-xs text-gray-500">
-                        <input className="w-full rounded border px-2 py-1" placeholder="DescripciÃ³n (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
+                        <input className="w-full rounded border px-2 py-1" placeholder="Descripción (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
                       </div>
                       {menuMode === 'daily' && (
                         <div className="mt-2">
@@ -345,7 +345,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                                 checked={editDays.length === 7}
                                 onChange={(e) => setEditDays(e.target.checked ? ALL_DAYS.slice() : [])}
                               />
-                              <span>Todos los dÃ­as</span>
+                              <span>Todos los días</span>
                             </label>
                           </div>
                           <WeekdaySelector value={editDays} onChange={setEditDays} compact />
@@ -358,12 +358,12 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                     <td className="w-[110px] px-3 py-2">
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
-                        <span>{editRow.available ? "SÃ­" : "No"}</span>
+                        <span>{editRow.available ? "Sí" : "No"}</span>
                       </label>
                     </td>
                     <td className="w-[220px] px-3 py-2">
                       <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === "" ? null : Number(e.target.value) }))}>
-                        <option value="">Sin CategorÃ­a</option>
+                        <option value="">Sin Categoría</option>
                         {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                       </select>
                     </td>
@@ -388,7 +388,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? "SÃ­" : "No"}</span>
+                      <span>{p.available ? "Sí" : "No"}</span>
                     </label>
                   </td>
                   <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '-' : '-'}</td>
