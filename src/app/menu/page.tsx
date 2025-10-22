@@ -48,6 +48,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   });
 
   // Filtrado por día en modo diario (day=0 -> solo 7/7)
+  const todayDefault = ((new Date().getDay() + 6) % 7) + 1;
   const filteredProducts = (() => {
     if (menuMode !== 'daily') return (products || []);
     const list = (products || []);
@@ -59,8 +60,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         return days.length === 7;
       });
     }
-    const d = Number(selectedDay);
-    if (d >= 1 && d <= 7) {
+    const d = (typeof selectedDay === "number" && !Number.isNaN(selectedDay) && selectedDay >= 1 && selectedDay <= 7) ? Number(selectedDay) : todayDefault; if (d >= 1 && d <= 7) {
       return list.filter((p: any) => {
         const days: number[] = Array.isArray(p.product_weekdays)
           ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
@@ -231,7 +231,7 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
   const now = new Date();
   const jsDay = now.getDay();
   const today = ((jsDay + 6) % 7) + 1;
-  const current = selectedDay !== undefined ? (hasAllDays ? selectedDay : (selectedDay === 0 ? today : selectedDay)) : today;
+  const valid = typeof selectedDay === "number" && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7; const current = valid ? (selectedDay as number) : today;
   const days = hasAllDays
     ? [
         { d: 0, label: 'Todos los días' },
@@ -268,5 +268,6 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
+
 
 
