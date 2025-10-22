@@ -233,7 +233,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
       {/* Form crear */}
       <div ref={addFormRef}>
         <details className="rounded-md border p-4">
-          <summary className="cursor-pointer select-none text-sm font-medium">Añadir producto</summary>
+          <summary className="cursor-pointer select-none text-sm font-medium">+ Añadir producto</summary>
           <div className="space-y-3">
             <div className="mt-3" />
             <div className="flex flex-col max-w-xl">
@@ -414,3 +414,5 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     </div>
   );
 }
+
+

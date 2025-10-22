@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx
+﻿// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -10,7 +10,7 @@ function formatPrice(n: number) {
   try {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
   } catch {
-    return n.toFixed(2) + ' \u20AC';
+    return n.toFixed(2) + ' €';
   }
 }
 
@@ -39,7 +39,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const menuMode = (payload?.menu_mode as 'fixed' | 'daily') || 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Mostrar pesta\u00F1a "Todos los d\u00EDas" solo si hay productos 7/7
+  // Mostrar pestaña "Todos los días" solo si hay productos 7/7
   const hasAllDays = menuMode === 'daily' && (products || []).some((p: any) => {
     const days: number[] = Array.isArray(p.product_weekdays)
       ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
@@ -47,7 +47,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return days.length === 7;
   });
 
-  // Filtrado por d\u00EDa en modo diario (day=0 -> solo 7/7)
+  // Filtrado por día en modo diario (day=0 -> solo 7/7)
   const filteredProducts = (() => {
     if (menuMode !== 'daily') return (products || []);
     const list = (products || []);
@@ -71,7 +71,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return list;
   })();
 
-  // Agrupar por categor\u00EDa
+  // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
   filteredProducts.forEach((p: any) => {
     const key = (p.category_id ?? 'nocat') as number | 'nocat';
@@ -92,7 +92,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Men\u00FA</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} />
@@ -113,13 +113,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el men\u00FA</div>
+          <div className="font-medium">No se pudo cargar el Menú</div>
           <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
 
       {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categor\u00EDa seleccionada.</p>
+        <p className="text-slate-600">No hay productos para la categoría seleccionada.</p>
       )}
 
       {visibleSections.map((section) => {
@@ -163,7 +163,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                     {!availableToday && menuMode === 'daily' && (
                       <span className="absolute left-2 top-2 rounded border border-amber-700 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 shadow">
                         Disponible: {(() => {
-                          const names = ['','Lunes','Martes','Mi\u00E9rcoles','Jueves','Viernes','S\u00E1bado','Domingo'];
+                          const names = ['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
                           const sorted = [...pDays].sort((a,b)=>a-b);
                           return sorted.map((d)=>names[d]).join(', ');
                         })()}
@@ -234,22 +234,22 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
   const current = selectedDay !== undefined ? (hasAllDays ? selectedDay : (selectedDay === 0 ? today : selectedDay)) : today;
   const days = hasAllDays
     ? [
-        { d: 0, label: 'Todos los d\u00EDas' },
+        { d: 0, label: 'Todos los días' },
         { d: 1, label: 'Lunes' },
         { d: 2, label: 'Martes' },
-        { d: 3, label: 'Mi\u00E9rcoles' },
+        { d: 3, label: 'Miércoles' },
         { d: 4, label: 'Jueves' },
         { d: 5, label: 'Viernes' },
-        { d: 6, label: 'S\u00E1bado' },
+        { d: 6, label: 'Sábado' },
         { d: 7, label: 'Domingo' },
       ]
     : [
         { d: 1, label: 'Lunes' },
         { d: 2, label: 'Martes' },
-        { d: 3, label: 'Mi\u00E9rcoles' },
+        { d: 3, label: 'Miércoles' },
         { d: 4, label: 'Jueves' },
         { d: 5, label: 'Viernes' },
-        { d: 6, label: 'S\u00E1bado' },
+        { d: 6, label: 'Sábado' },
         { d: 7, label: 'Domingo' },
       ];
   return (
@@ -268,3 +268,5 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
+
+
