@@ -81,7 +81,15 @@ export default function OrdersClient() {
     };
     const channel = supabase
       .channel("orders-admin")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, () => { try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {} schedule(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload: any) => {
+        try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
+        // Marca visual inmediata por ID si viene en el payload
+        try {
+          const newId = payload?.new?.id as string | undefined;
+          if (newId) setHighlights((prev) => ({ ...prev, [newId]: true }));
+        } catch {}
+        schedule();
+      })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, schedule)
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "orders" }, schedule)
       .subscribe();
