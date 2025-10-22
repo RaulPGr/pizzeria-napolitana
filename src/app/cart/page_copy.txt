@@ -119,27 +119,6 @@ export default function CartPage() {
     }
   }
 
-  // Helpers adicionales: mínimos y validación contra pasado
-  function pad2(n: number) { return String(n).padStart(2, '0'); }
-  function roundUpTo5Minutes(d: Date): string {
-    const stepMs = 5 * 60 * 1000;
-    const up = new Date(Math.ceil(d.getTime() / stepMs) * stepMs);
-    return `${pad2(up.getHours())}:${pad2(up.getMinutes())}`;
-  }
-  function minTimeFor(dateISO: string): string {
-    try { if (dateISO === todayISO()) return roundUpTo5Minutes(new Date()); } catch {}
-    return '00:00';
-  }
-  function isSelectedInPast(dateISO: string, timeHHMM: string): boolean {
-    try {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO) || !/^\d{2}:\d{2}$/.test(timeHHMM)) return false;
-      const [y,m,d] = dateISO.split('-').map(Number);
-      const [hh,mi] = timeHHMM.split(':').map(Number);
-      const when = new Date(y,(m||1)-1,d||1,hh||0,mi||0);
-      return when.getTime() < Date.now();
-    } catch { return false; }
-  }
-
   function formatDaySchedule(dateISO: string, sched: any | null): string {
     try {
       if (!sched) return 'Sin restricciones específicas.';
@@ -156,18 +135,9 @@ export default function CartPage() {
 
   // Validar cada cambio de fecha/hora
   useEffect(() => {
-    // No permitir fechas anteriores a hoy
-    if (date && date < todayISO()) setDate(todayISO());
-    // Ajustar hora mínima para hoy
-    if (date === todayISO()) {
-      const minT = minTimeFor(date);
-      if (time && time < minT) setTime(minT);
-    }
     if (!time) { setTimeError(null); return; }
     const ok = isTimeInSchedule(date, time, schedule);
-    if (!ok) { setTimeError('Fuera del horario de pedidos'); return; }
-    if (isSelectedInPast(date, time)) { setTimeError('No puedes seleccionar una hora pasada'); return; }
-    setTimeError(null);
+    setTimeError(ok ? null : 'Fuera del horario de pedidos');
   }, [date, time, schedule]);
 
   // Calcular si AHORA se aceptan pedidos; refrescar cada minuto
@@ -186,7 +156,6 @@ export default function CartPage() {
     if (phone.trim().length === 0) return 'Introduce un teléfono de contacto';
     if (date.trim().length === 0) return 'Selecciona fecha de recogida';
     if (time.trim().length === 0) return 'Selecciona hora de recogida';
-    if (isSelectedInPast(date, time)) return 'No puedes seleccionar una hora pasada';
     if (timeError) return timeError;
     if (sending) return 'Enviando…';
     return null;
@@ -209,11 +178,6 @@ export default function CartPage() {
     const pickup = new Date(y, (m || 1) - 1, d || 1, hh || 0, mi || 0);
     if (isNaN(pickup.getTime())) {
       alert("La fecha y hora no son válidas.");
-      return;
-    }
-
-    if (pickup.getTime() < Date.now()) {
-      alert('No puedes seleccionar una hora pasada.');
       return;
     }
 
@@ -328,11 +292,11 @@ export default function CartPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Fecha de recogida</label>
-            <input type="date" min={todayISO()} className="w-full rounded border px-3 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input type="date" className="w-full rounded border px-3 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Hora de recogida</label>
-            <input type="time" step={300} min={minTimeFor(date)} className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
+            <input type="time" className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
             <div className="mt-1 text-xs text-gray-600">Horario para este día: {formatDaySchedule(date, schedule)}</div>
             {time && timeError && <div className="mt-1 text-xs text-red-600">{timeError}</div>}
           </div>
@@ -370,4 +334,3 @@ export default function CartPage() {
     </main>
   );
 }
-
