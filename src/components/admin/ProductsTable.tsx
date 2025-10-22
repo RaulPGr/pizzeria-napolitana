@@ -25,6 +25,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [loading, setLoading] = useState(false);
   const [weekdays, setWeekdays] = useState<Record<number, number[]>>(initialWeekdays || {});
   const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
+  const [cats, setCats] = useState<Category[]>(categories);
 
   React.useEffect(() => {
     (async () => {
@@ -112,7 +113,17 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
   const [uploadTargetId, setUploadTargetId] = useState<number | null>(null);
   const addFormRef = React.useRef<HTMLDivElement>(null);
 
-  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c.name] as const)), [categories]);
+  const catById = useMemo(() => new Map(cats.map((c) => [c.id, c.name] as const)), [cats]);
+
+  async function reloadCats() {
+    try {
+      const r = await fetch('/api/admin/categories', { cache: 'no-store' });
+      const j = await r.json();
+      if (j?.ok && Array.isArray(j.categories)) setCats(j.categories);
+    } catch {}
+  }
+
+  React.useEffect(() => { void reloadCats(); }, []);
 
   function resetNewForm() {
     setNewName("");
@@ -130,6 +141,85 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     setFilterAvail("all");
     setPriceMin("");
     setPriceMax("");
+  }
+
+  // --- UI sencillo de gestión de categorías ---
+  function CategoriesManager() {
+    const [newCatName, setNewCatName] = useState("");
+    const [busy, setBusy] = useState(false);
+
+    async function addCategory() {
+      if (!newCatName.trim()) return;
+      try {
+        setBusy(true);
+        const res = await fetch('/api/admin/categories', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: newCatName.trim() }) });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.ok) throw new Error(j?.error || 'No se pudo crear la categoría');
+        setNewCatName("");
+        await reloadCats();
+      } catch (e: any) {
+        alert(e?.message || 'Error');
+      } finally { setBusy(false); }
+    }
+
+    async function renameCategory(id: number, name: string) {
+      try {
+        setBusy(true);
+        const res = await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, name }) });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.ok) throw new Error(j?.error || 'No se pudo renombrar');
+        await reloadCats();
+      } catch (e: any) { alert(e?.message || 'Error'); } finally { setBusy(false); }
+    }
+
+    async function reorder(id: number, dir: -1 | 1) {
+      const me = cats.find(c => c.id === id);
+      if (!me) return;
+      const targetIdx = cats.findIndex(c => c.id === id) + (dir as number);
+      if (targetIdx < 0 || targetIdx >= cats.length) return;
+      const neighbor = cats[targetIdx];
+      try {
+        setBusy(true);
+        // swap sort_order (fallback to index)
+        const a = me.sort_order ?? cats.findIndex(c => c.id === me.id);
+        const b = (neighbor as any).sort_order ?? targetIdx;
+        await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: me.id, sort_order: b }) });
+        await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: neighbor.id, sort_order: a }) });
+        await reloadCats();
+      } catch (e: any) { alert(e?.message || 'Error'); } finally { setBusy(false); }
+    }
+
+    async function remove(id: number) {
+      if (!confirm('¿Eliminar la categoría? Si tiene productos no se podrá borrar.')) return;
+      try {
+        setBusy(true);
+        const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.ok) throw new Error(j?.error || 'No se pudo eliminar');
+        await reloadCats();
+      } catch (e: any) { alert(e?.message || 'Error'); } finally { setBusy(false); }
+    }
+
+    return (
+      <div className="mb-4 rounded border bg-white p-3 shadow-sm">
+        <div className="mb-2 text-sm font-medium">Categorías</div>
+        <div className="mb-3 flex items-center gap-2">
+          <input className="w-full rounded border px-2 py-1" placeholder="Nueva categoría" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+          <button onClick={addCategory} disabled={busy || !newCatName.trim()} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">Añadir</button>
+        </div>
+        <ul className="space-y-2">
+          {cats.map((c, idx) => (
+            <li key={c.id} className="flex items-center gap-2">
+              <input className="flex-1 rounded border px-2 py-1" defaultValue={c.name} onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== c.name) renameCategory(c.id, v); }} />
+              <button onClick={() => reorder(c.id, -1)} disabled={busy || idx===0} className="rounded border px-2 py-1">↑</button>
+              <button onClick={() => reorder(c.id, +1)} disabled={busy || idx===cats.length-1} className="rounded border px-2 py-1">↓</button>
+              <button onClick={() => remove(c.id)} disabled={busy} className="rounded border px-2 py-1 text-red-600">Eliminar</button>
+            </li>
+          ))}
+          {cats.length === 0 && (<li className="text-sm text-gray-500">Sin categorías todavía.</li>)}
+        </ul>
+      </div>
+    );
   }
 
   async function refresh() {
@@ -230,6 +320,9 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
       {/* input para subir imagen */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFilePicked} />
 
+      {/* Gestión de categorías (por negocio) */}
+      <CategoriesManager />
+
       {/* Form crear */}
       <div ref={addFormRef}>
         <details className="rounded-md border p-4">
@@ -248,9 +341,9 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
               <label className="text-sm text-gray-700">Categoría</label>
               <select className="border rounded px-3 py-2 w-full" value={newCat} onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}>
                 <option value="">Sin Categoría</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+        {cats.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
               </select>
             </div>
             <div className="flex flex-col max-w-xl">
@@ -305,7 +398,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
         </select>
         <select className="w-full rounded border px-3 py-2" value={filterCat} onChange={(e) => setFilterCat(e.target.value === "" ? "" : Number(e.target.value))}>
           <option value="">Todas</option>
-          {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+          {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
         </select>
         <button onClick={resetFilters} className="h-[38px] rounded border px-3">Restablecer</button>
       </div>
@@ -364,7 +457,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                     <td className="w-[220px] px-3 py-2">
                       <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === "" ? null : Number(e.target.value) }))}>
                         <option value="">Sin Categoría</option>
-                        {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                        {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                       </select>
                     </td>
                     <td className="px-3 py-2">
