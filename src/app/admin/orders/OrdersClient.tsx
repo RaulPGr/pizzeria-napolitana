@@ -84,7 +84,10 @@ export default function OrdersClient() {
     const channel = supabase
       .channel("orders-admin")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload: any) => {
-        try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
+        try {
+          const newId = (payload && (payload as any).new && (payload as any).new.id) ? (payload as any).new.id : undefined;
+          window.dispatchEvent(new CustomEvent('pl:new-order', { detail: { id: newId } } as any));
+        } catch {}
         // Marca visual inmediata por ID si viene en el payload
         try {
           const newId = payload?.new?.id as string | undefined;
@@ -103,6 +106,18 @@ export default function OrdersClient() {
       window.clearInterval(iv);
       supabase.removeChannel(channel);
     };
+  }, []);
+
+  // Listener de eventos globales por si el disparo llega desde otro componente (polling/sound)
+  useEffect(() => {
+    const onNew = (ev: any) => {
+      try {
+        const id = ev?.detail?.id as string | undefined;
+        if (id) setHighlights((prev) => ({ ...prev, [id]: true }));
+      } catch {}
+    };
+    window.addEventListener('pl:new-order', onNew as any);
+    return () => { window.removeEventListener('pl:new-order', onNew as any); };
   }, []);
 
   async function reload() {
@@ -133,7 +148,10 @@ export default function OrdersClient() {
             newOnes = incoming.filter((o) => String(o.created_at) > lastStamp);
           }
           if (newOnes.length > 0) {
-            try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
+            try {
+              const firstId = newOnes[0]?.id;
+              window.dispatchEvent(new CustomEvent('pl:new-order', { detail: { id: firstId } } as any));
+            } catch {}
             // Marcar los nuevos para resaltar visualmente
             setHighlights((prev) => {
               const next = { ...prev } as Record<string, boolean>;
