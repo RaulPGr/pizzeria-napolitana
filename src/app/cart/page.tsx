@@ -140,6 +140,54 @@ export default function CartPage() {
     } catch { return false; }
   }
 
+  // Sugerencias (UI) en saltos de 5 min, según horario si existe
+  function dayWindowsMinutes(dateISO: string, sched: any | null): Array<[number, number]> | null {
+    try {
+      if (!sched) return null;
+      const [y,m,d] = dateISO.split('-').map(Number);
+      const dt = new Date(y,(m||1)-1,d||1);
+      const key = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][dt.getDay()];
+      const list: Array<{ abre?: string; cierra?: string; open?: string; close?: string }> = sched?.[key] || [];
+      if (!Array.isArray(list) || list.length === 0) return null;
+      const out: Array<[number, number]> = [];
+      for (const t of list) {
+        const a = String(t.abre ?? t.open || '00:00');
+        const c = String(t.cierra ?? t.close || '23:59');
+        const [ha,ma] = a.split(':').map(Number);
+        const [hc,mc] = c.split(':').map(Number);
+        out.push([ha*60+ma, hc*60+mc]);
+      }
+      return out;
+    } catch { return null; }
+  }
+
+  const timeSuggestions: string[] = useMemo(() => {
+    const minsStart = (() => {
+      if (date === todayISO()) {
+        const [hh, mm] = minTimeFor(date).split(':').map(Number);
+        return hh*60 + mm;
+      }
+      return 0;
+    })();
+    const windows = dayWindowsMinutes(date, schedule);
+    const result: string[] = [];
+    const addRange = (fromMin: number, toMin: number) => {
+      let m = Math.max(minsStart, fromMin);
+      m = Math.ceil(m / 5) * 5;
+      for (; m < toMin; m += 5) {
+        const hh = Math.floor(m/60); const mi = m % 60;
+        result.push(`${pad2(hh)}:${pad2(mi)}`);
+      }
+    };
+    if (windows && windows.length > 0) {
+      windows.forEach(([a,b]) => addRange(a,b));
+    } else {
+      // Sin horario definido: no forzamos sugerencias para no confundir.
+      return [];
+    }
+    return result.slice(0, 288);
+  }, [date, schedule]);
+
   function formatDaySchedule(dateISO: string, sched: any | null): string {
     try {
       if (!sched) return 'Sin restricciones específicas.';
@@ -332,7 +380,12 @@ export default function CartPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Hora de recogida</label>
-            <input type="time" step={300} min={minTimeFor(date)} className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
+            <input list="time-options" type="time" step={300} min={minTimeFor(date)} className="w-full rounded border px-3 py-2" value={time} onChange={(e) => setTime(e.target.value)} />
+            <datalist id="time-options">
+              {timeSuggestions.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
             <div className="mt-1 text-xs text-gray-600">Horario para este día: {formatDaySchedule(date, schedule)}</div>
             {time && timeError && <div className="mt-1 text-xs text-red-600">{timeError}</div>}
           </div>
@@ -370,4 +423,5 @@ export default function CartPage() {
     </main>
   );
 }
+
 
