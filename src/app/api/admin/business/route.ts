@@ -26,7 +26,7 @@ async function getBusinessBySlug(slug: string) {
   const supa = await getAdminClient();
   const { data, error } = await supa
     .from('businesses')
-    .select('id, slug, name, slogan, description, logo_url, hero_url, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, ordering_hours, social')
+    .select('id, slug, name, slogan, description, logo_url, hero_url, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, ordering_hours, social, menu_mode')
     .eq('slug', slug)
     .maybeSingle();
   if (error) throw error;
@@ -58,6 +58,17 @@ export async function PATCH(req: Request) {
     const updates: any = {};
     for (const k of ['name','slogan','description','logo_url','hero_url','phone','whatsapp','email','address_line','city','postal_code','lat','lng']) {
       if (k in body) updates[k] = body[k] === '' ? null : body[k];
+    }
+    if ('menu_mode' in body) {
+      const mm = String(body.menu_mode || '').toLowerCase();
+      if (mm === 'fixed' || mm === 'daily') {
+        updates.menu_mode = mm;
+      } else if (body.menu_mode === '' || body.menu_mode == null) {
+        // allow reset to default
+        updates.menu_mode = 'fixed';
+      } else {
+        return NextResponse.json({ ok: false, error: 'menu_mode inválido' }, { status: 400 });
+      }
     }
     if ('social' in body) {
       updates.social = body.social && typeof body.social === 'object' ? body.social : null;

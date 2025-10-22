@@ -15,6 +15,7 @@ type Biz = {
   address_line?: string | null;
   opening_hours?: any | null;
   social?: { instagram?: string | null; facebook?: string | null; tiktok?: string | null; web?: string | null } | null;
+  menu_mode?: 'fixed' | 'daily';
 };
 
 export default function BusinessSettingsClient() {
@@ -35,6 +36,7 @@ export default function BusinessSettingsClient() {
   const [web, setWeb] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
 
   useEffect(() => {
     (async () => {
@@ -60,6 +62,7 @@ export default function BusinessSettingsClient() {
         setFacebook(j.data.social?.facebook || '');
         setTiktok(j.data.social?.tiktok || '');
         setWeb(j.data.social?.web || '');
+        setMenuMode((j.data.menu_mode as 'fixed' | 'daily') || 'fixed');
       } else {
         setMsg(j?.error || 'No se pudo cargar la configuración');
       }
@@ -85,6 +88,7 @@ export default function BusinessSettingsClient() {
           lng: lng !== '' ? Number(lng) : null,
           social: { instagram, facebook, tiktok, web },
           opening_hours: hours && Object.keys(hours).length ? hours : '',
+          menu_mode: menuMode,
         }),
       });
       const j = await r.json();
@@ -201,6 +205,35 @@ export default function BusinessSettingsClient() {
               value={lng}
               onChange={(e) => setLng(e.target.value)}
             />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Tipo de menú</div>
+          <div className="flex gap-6 items-center text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="menu_mode"
+                value="fixed"
+                checked={menuMode === 'fixed'}
+                onChange={() => setMenuMode('fixed')}
+              />
+              <span>Menú fijo</span>
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="menu_mode"
+                value="daily"
+                checked={menuMode === 'daily'}
+                onChange={() => setMenuMode('daily')}
+              />
+              <span>Menú por días</span>
+            </label>
+          </div>
+          <div className="text-xs text-gray-600">
+            - Fijo: el catálogo funciona como ahora. - Por días: al crear/editar productos podrás marcar qué días aparecen, y el menú público mostrará pestañas L-D.
           </div>
         </div>
 
@@ -365,4 +398,3 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v: any) => vo
     </div>
   );
 }
-

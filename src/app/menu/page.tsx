@@ -3,36 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import AddToCartButton from '@/components/AddToCartButton';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-
-const PRODUCTS_TABLE   = process.env.NEXT_PUBLIC_PRODUCTS_TABLE   || 'products';
-const CATEGORIES_TABLE = process.env.NEXT_PUBLIC_CATEGORIES_TABLE || 'categories';
-
-async function getSupabase() {
-  const cookieStore = await cookies();
-  const tenant = cookieStore.get('x-tenant-slug')?.value || '';
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: tenant ? { 'x-tenant-slug': tenant } : {},
-      },
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          try { cookieStore.set(name, value, options); } catch {}
-        },
-        remove(name: string, options: any) {
-          try { cookieStore.set(name, '', { ...options, maxAge: 0 }); } catch {}
-        },
-      },
-    }
-  );
-}
+import { headers } from 'next/headers';
 
 function formatPrice(n: number) {
   try {
@@ -42,33 +13,32 @@ function formatPrice(n: number) {
   }
 }
 
-/** 👇 Next 15 tipa searchParams como Promise */
+// Next 15 tipa searchParams como Promise
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function MenuPage({ searchParams }: PageProps) {
-  // 👇 ahora hay que await
-  const rawCat = (await searchParams)?.cat;
-  const selectedCat =
-    (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase(); // '', '123', 'nocat'
+  const sp = await searchParams;
+  const rawCat = sp?.cat;
+  const selectedCat = (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase();
+  const rawDay = sp?.day;
+  const selectedDay = Number(Array.isArray(rawDay) ? (rawDay[0] ?? '') : (rawDay ?? ''));
 
-  const supabase = await getSupabase();
-
-  // 1) categorías ordenadas
-  const { data: categories } = await supabase
-    .from(CATEGORIES_TABLE)
-    .select('id,name,sort_order')
-    .order('sort_order', { ascending: true })
-    .order('id', { ascending: true });
-
-  // 2) productos activos (no filtramos por available)
-  const { data: products, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select('id,name,description,price,image_url,available,active,category_id,categories(name,sort_order)')
-    .eq('active', true)
-    .order('sort_order', { ascending: true })
-    .order('id', { ascending: true });
+  // SSR fetch to internal API, preserving cookies for tenant
+  const h = await headers();
+  const cookie = h.get('cookie') ?? '';
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const host = h.get('host');
+  const baseUrl = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
+  const apiUrl = new URL('/api/products', baseUrl);
+  if (selectedDay >= 1 && selectedDay <= 7) apiUrl.searchParams.set('day', String(selectedDay));
+  const resp = await fetch(String(apiUrl), { cache: 'no-store', headers: { cookie } });
+  const payload = await resp.json();
+  const products = (payload?.products || []) as any[];
+  const categories = (payload?.categories || []) as any[];
+  const menuMode = (payload?.menu_mode as 'fixed' | 'daily') || 'fixed';
+  const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
   // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
@@ -78,7 +48,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     groups.get(key)!.push(p);
   });
 
-  // Secciones en orden: categorías + "Otros" si procede
+  // Secciones: categorías + "Otros" si procede
   const orderedSections: Array<{ id: number | 'nocat'; name: string; sort_order?: number }> = [
     ...(categories || []),
     ...(groups.has('nocat') ? [{ id: 'nocat' as const, name: 'Otros', sort_order: 9999 }] : []),
@@ -95,6 +65,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-6xl p-4 md:p-6">
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
+      {menuMode === 'daily' && (
+        <DayTabs selectedDay={selectedDay} />
+      )}
+
       {/* Filtros por categoría */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <FilterPill href="/menu" active={!selectedCat}>
@@ -106,8 +80,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
             s.id === 'nocat'
               ? '/menu?cat=nocat'
               : `/menu?cat=${encodeURIComponent(String(s.id))}`;
-          const active =
-            selectedCat === (s.id === 'nocat' ? 'nocat' : String(s.id));
+          const active = selectedCat === (s.id === 'nocat' ? 'nocat' : String(s.id));
           return (
             <FilterPill key={String(s.id)} href={href} active={active}>
               {s.name}
@@ -119,7 +92,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
           <div className="font-medium">No se pudo cargar el menú</div>
-          <div className="text-sm">{error.message}</div>
+          <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
 
@@ -160,7 +133,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                       </span>
                     )}
 
-                    {/* Imagen (sin next/image para evitar configurar dominios) */}
+                    {/* Imagen */}
                     {p.image_url && (
                       <img
                         src={p.image_url}
@@ -229,3 +202,38 @@ function FilterPill({
     </Link>
   );
 }
+
+function DayTabs({ selectedDay }: { selectedDay?: number }) {
+  const now = new Date();
+  const jsDay = now.getDay(); // 0..6 (Sun..Sat)
+  const today = ((jsDay + 6) % 7) + 1; // 1..7 Mon..Sun
+  const current = (selectedDay && selectedDay >= 1 && selectedDay <= 7) ? selectedDay : today;
+  const days = [
+    { d: 1, label: 'L' },
+    { d: 2, label: 'M' },
+    { d: 3, label: 'X' },
+    { d: 4, label: 'J' },
+    { d: 5, label: 'V' },
+    { d: 6, label: 'S' },
+    { d: 7, label: 'D' },
+  ];
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-2">
+      {days.map(({ d, label }) => (
+        <Link
+          key={d}
+          href={`/menu?day=${d}`}
+          className={[
+            'rounded-full border px-3 py-1 text-sm transition-colors',
+            d === current
+              ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
+          ].join(' ')}
+        >
+          {label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+

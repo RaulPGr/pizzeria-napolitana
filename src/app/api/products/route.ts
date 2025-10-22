@@ -55,6 +55,15 @@ async function supabaseFromCookies() {
   );
 }
 
+async function getTenantSlug(): Promise<string> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get('x-tenant-slug')?.value || '';
+  } catch {
+    return '';
+  }
+}
+
 async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response }> {
   try {
     const cookieStore = await cookies();
@@ -87,15 +96,61 @@ async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response 
 }
 
 // ---------- GET: productos + categorías ----------
-export async function GET() {
+export async function GET(req: Request) {
   const supabase = await supabaseFromCookies();
 
-  const { data: products, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .order('category_id', { ascending: true })
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+  // Detect business menu_mode via admin (RLS on businesses is member-only)
+  let menu_mode: 'fixed' | 'daily' = 'fixed';
+  try {
+    const slug = await getTenantSlug();
+    if (slug) {
+      const { data: biz, error: berr } = await supabaseAdmin
+        .from('businesses')
+        .select('menu_mode')
+        .eq('slug', slug)
+        .maybeSingle();
+      if (!berr && biz?.menu_mode) menu_mode = (biz.menu_mode as any) === 'daily' ? 'daily' : 'fixed';
+    }
+  } catch {}
+
+  // Selected day (1..7 ISO) if daily; default today
+  let selectedDay: number | null = null;
+  if (menu_mode === 'daily') {
+    const now = new Date();
+    const jsDay = now.getDay(); // 0..6 (Sun..Sat)
+    selectedDay = ((jsDay + 6) % 7) + 1; // 1..7 Mon..Sun
+    try {
+      const url = new URL(req.url);
+      const qd = Number(url.searchParams.get('day'));
+      if (qd >= 1 && qd <= 7) selectedDay = qd;
+    } catch {}
+  }
+
+  let products: any[] | null = null;
+  let error: any = null;
+  if (menu_mode === 'daily' && selectedDay) {
+    const q = supabase
+      .from(TABLE)
+      .select('*, product_weekdays!inner(day)')
+      .eq('product_weekdays.day', selectedDay as any)
+      .eq('active', true as any)
+      .order('category_id', { ascending: true })
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+    const { data, error: err } = await q;
+    products = data as any[] | null;
+    error = err;
+  } else {
+    const { data, error: err } = await supabase
+      .from(TABLE)
+      .select('*')
+      .eq('active', true as any)
+      .order('category_id', { ascending: true })
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+    products = data as any[] | null;
+    error = err;
+  }
 
   const { data: categories, error: catErr } = await supabase
     .from('categories')
@@ -110,7 +165,7 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ ok: true, products, categories });
+  return NextResponse.json({ ok: true, products, categories, menu_mode });
 }
 
 // ---------- POST: crear ----------
@@ -136,6 +191,18 @@ export async function POST(req: Request) {
       .single();
 
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+    try {
+      if (data?.id && Array.isArray(body.weekdays)) {
+        const pid = Number(data.id);
+        const days = (body.weekdays as any[])
+          .map((d) => Number(d))
+          .filter((d) => d >= 1 && d <= 7);
+        if (days.length > 0) {
+          const rows = days.map((d) => ({ product_id: pid, day: d }));
+          await supabaseAdmin.from('product_weekdays').upsert(rows, { onConflict: 'product_id,day' } as any);
+        }
+      }
+    } catch {}
 
     return NextResponse.json({ ok: true, id: data?.id });
   }
@@ -197,6 +264,21 @@ export async function PATCH(req: Request) {
   }
 
   const { error } = await supabaseAdmin.from(TABLE).update(updates).eq('id', body.id);
+
+  // Update weekdays (replace) if provided
+  try {
+    if (Array.isArray(body.weekdays)) {
+      const pid = Number(body.id);
+      await supabaseAdmin.from('product_weekdays').delete().eq('product_id', pid);
+      const days = (body.weekdays as any[])
+        .map((d) => Number(d))
+        .filter((d) => d >= 1 && d <= 7);
+      if (days.length > 0) {
+        const rows = days.map((d) => ({ product_id: pid, day: d }));
+        await supabaseAdmin.from('product_weekdays').upsert(rows, { onConflict: 'product_id,day' } as any);
+      }
+    }
+  } catch {}
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 

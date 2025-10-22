@@ -61,7 +61,20 @@ export async function GET() {
       .order('id', { ascending: true });
     if (catErr) throw catErr;
 
-    return NextResponse.json({ products, categories });
+    // Días por producto (para edición en modo menú diario)
+    const { data: weekdaysRows, error: wdErr } = await admin
+      .from('product_weekdays')
+      .select('product_id, day');
+    if (wdErr) throw wdErr;
+    const weekdays: Record<number, number[]> = {};
+    (weekdaysRows || []).forEach((r: any) => {
+      const pid = Number(r.product_id);
+      const d = Number(r.day);
+      if (!weekdays[pid]) weekdays[pid] = [];
+      weekdays[pid].push(d);
+    });
+
+    return NextResponse.json({ products, categories, weekdays });
   } catch (e: any) {
     return NextResponse.json(
       { error: e?.message ?? 'Unknown error' },

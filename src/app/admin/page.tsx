@@ -44,7 +44,7 @@ export default async function AdminPage() {
     throw new Error(txt || `Request to ${baseUrl}/api/admin/orders/products failed`);
   }
 
-  const { products, categories } = await res.json();
+  const { products, categories, weekdays } = await res.json();
 
   return (
     <div className="space-y-6">
@@ -54,6 +54,7 @@ export default async function AdminPage() {
       <ProductsTable
         initialProducts={products ?? []}
         categories={categories ?? []}
+        initialWeekdays={weekdays ?? {}}
       />
     </div>
   );

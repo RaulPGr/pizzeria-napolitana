@@ -17,11 +17,26 @@ type Product = {
 type Props = {
   initialProducts: Product[];
   categories: Category[];
+  initialWeekdays?: Record<number, number[]>;
 };
 
-export default function ProductsTable({ initialProducts, categories }: Props) {
+export default function ProductsTable({ initialProducts, categories, initialWeekdays }: Props) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
+  const [weekdays, setWeekdays] = useState<Record<number, number[]>>(initialWeekdays || {});
+  const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/admin/business', { cache: 'no-store' });
+        const j = await r.json();
+        if (j?.ok && (j.data?.menu_mode === 'daily' || j.data?.menu_mode === 'fixed')) {
+          setMenuMode(j.data.menu_mode);
+        }
+      } catch {}
+    })();
+  }, []);
 
   // Filtros
   const [filterCat, setFilterCat] = useState<number | "">("");
@@ -38,6 +53,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   const [newAvail, setNewAvail] = useState(true);
   const [newFile, setNewFile] = useState<File | null>(null);
   const [newFilePreview, setNewFilePreview] = useState<string | null>(null);
+  const [newDays, setNewDays] = useState<number[]>([]); // weekdays for daily mode (1..7)
 
   // Vista previa de imagen del formulario de alta
   React.useEffect(() => {
@@ -55,7 +71,36 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     if (kb < 1024) return `${Math.round(kb)} KB`;
     const mb = kb / 1024;
     return `${mb.toFixed(1)} MB`;
+}
+
+function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChange: (v: number[]) => void; compact?: boolean }) {
+  const days = [
+    { d: 1, label: 'L' },
+    { d: 2, label: 'M' },
+    { d: 3, label: 'X' },
+    { d: 4, label: 'J' },
+    { d: 5, label: 'V' },
+    { d: 6, label: 'S' },
+    { d: 7, label: 'D' },
+  ];
+  function toggle(day: number, checked: boolean) {
+    const set = new Set(value);
+    if (checked) set.add(day); else set.delete(day);
+    const arr = Array.from(set);
+    arr.sort((a, b) => a - b);
+    onChange(arr);
   }
+  return (
+    <div className={compact ? 'flex gap-2' : 'flex flex-wrap gap-3'}>
+      {days.map(({ d, label }) => (
+        <label key={d} className="inline-flex items-center gap-1 text-sm">
+          <input type="checkbox" checked={value.includes(d)} onChange={(e) => toggle(d, e.target.checked)} />
+          <span>{label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
 
   // Edición
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -75,6 +120,7 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     setNewDesc("");
     setNewAvail(true);
     setNewFile(null);
+    setNewDays([]);
   }
 
   function resetFilters() {
@@ -86,23 +132,27 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   }
 
   async function refresh() {
-    const res = await fetch("/api/products", { cache: "no-store" });
-    const { products: p } = await res.json();
+    const res = await fetch("/api/admin/orders/products", { cache: "no-store" });
+    const { products: p, weekdays: wd } = await res.json();
     setProducts(p ?? []);
+    setWeekdays(wd ?? {});
   }
 
   // Crear producto y (opcional) subir imagen
   async function onCreate() {
     if (!newName.trim()) return;
     setLoading(true);
-    const body = {
+    const body: any = {
       name: newName.trim(),
       price: Number(newPrice || 0),
       category_id: newCat === "" ? null : Number(newCat),
       description: newDesc.trim() || null,
       available: newAvail,
       image_url: null,
-    } as const;
+    };
+    if (menuMode === 'daily') {
+      body.weekdays = newDays.slice();
+    }
     const res = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) { setLoading(false); alert("Error al crear producto"); return; }
     const { id } = (await res.json()) as { id: number };
@@ -125,16 +175,21 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
   }
 
   // Edición
+  const [editDays, setEditDays] = useState<number[]>([]);
   function startEdit(p: Product) {
     setEditingId(p.id);
     setEditRow({ id: p.id, name: p.name, description: p.description, price: p.price, available: p.available, category_id: p.category_id });
+    setEditDays(weekdays[p.id] ? [...weekdays[p.id]] : []);
   }
 
   async function saveEdit() {
     if (!editingId) return; setLoading(true);
-    const res = await fetch("/api/products", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingId, ...editRow, price: parseFloat(String(editRow.price ?? 0)) }) });
+    const payload: any = { id: editingId, ...editRow, price: parseFloat(String(editRow.price ?? 0)) };
+    if (menuMode === 'daily') payload.weekdays = editDays.slice();
+    const res = await fetch("/api/products", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     setLoading(false);
     if (!res.ok) { const txt = await res.text().catch(() => ""); alert("Error al guardar cambios" + (txt ? `: ${txt}` : "")); return; }
+    setWeekdays((prev) => ({ ...prev, [editingId]: menuMode === 'daily' ? editDays.slice() : (prev[editingId] || []) }));
     setEditingId(null); setEditRow({}); await refresh();
   }
 
@@ -215,6 +270,12 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
               <label className="text-sm text-gray-700">Descripción (opcional)</label>
               <textarea className="border rounded px-3 py-2 w-full" rows={3} placeholder="Describe el producto" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
             </div>
+            {menuMode === 'daily' && (
+              <div className="flex flex-col max-w-xl">
+                <label className="text-sm text-gray-700">D��as de la semana</label>
+                <WeekdaySelector value={newDays} onChange={setNewDays} />
+              </div>
+            )}
             <label className="mt-1 inline-flex items-center gap-2"><input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} /><span>Disponible</span></label>
             <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">Añadir</button>
           </div>
@@ -263,6 +324,12 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
                       <div className="mt-1 text-xs text-gray-500">
                         <input className="w-full rounded border px-2 py-1" placeholder="Descripción (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
                       </div>
+                      {menuMode === 'daily' && (
+                        <div className="mt-2">
+                          <div className="text-xs text-gray-700 mb-1">D��as visibles</div>
+                          <WeekdaySelector value={editDays} onChange={setEditDays} compact />
+                        </div>
+                      )}
                     </td>
                     <td className="w-[120px] px-3 py-2">
                       <input type="number" step="0.01" className="w-[110px] rounded border px-2 py-1" value={String(editRow.price ?? 0)} onChange={(e) => setEditRow((r) => ({ ...r, price: e.target.value === "" ? 0 : Number(e.target.value) }))} />
@@ -326,4 +393,3 @@ export default function ProductsTable({ initialProducts, categories }: Props) {
     </div>
   );
 }
-
