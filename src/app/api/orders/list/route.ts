@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
         customer_name,
         customer_phone,
         customer_email,
+        notes,
         pickup_at,
         status,
         total_cents,

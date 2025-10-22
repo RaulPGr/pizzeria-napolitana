@@ -12,7 +12,7 @@ export async function GET(_req: Request, { params }: Params) {
     const { data: order, error: e1 } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, customer_name, customer_phone, pickup_at, status, total_cents, payment_method, payment_status, created_at"
+        "id, code, customer_name, customer_phone, pickup_at, status, total_cents, payment_method, payment_status, created_at, notes"
       )
       .eq("id", id)
       .single();

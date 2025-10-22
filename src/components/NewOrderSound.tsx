@@ -68,6 +68,16 @@ export default function NewOrderSound() {
     };
   }, [enabled]);
 
+  // Disparador secundario: evento personalizado desde OrdersClient
+  useEffect(() => {
+    if (!enabled) return;
+    const handler = () => {
+      try { playSound(); } catch {}
+    };
+    window.addEventListener('pl:new-order', handler);
+    return () => { window.removeEventListener('pl:new-order', handler); };
+  }, [enabled]);
+
   const toggle = () => {
     const next = !enabled;
     setEnabled(next);

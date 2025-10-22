@@ -11,6 +11,7 @@ type OrderRow = {
   code: string | null;
   customer_name: string;
   customer_phone: string | null;
+  notes?: string | null;
   pickup_at: string | null;
   status: OrderStatus;
   total_cents: number;
@@ -76,7 +77,7 @@ export default function OrdersClient() {
     };
     const channel = supabase
       .channel("orders-admin")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, schedule)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, () => { try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {} schedule(); })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, schedule)
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "orders" }, schedule)
       .subscribe();
@@ -259,6 +260,11 @@ export default function OrdersClient() {
               </button>
               {openDetailId === o.id && (
                 <div className="mt-3 overflow-hidden rounded-md border">
+                  {o.notes && (
+                    <div className="px-3 py-2 text-sm text-gray-700 bg-white border-b">
+                      <span className="text-gray-500">Notas:</span> {o.notes}
+                    </div>
+                  )}
                   <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50">
                       <tr>
@@ -378,4 +384,3 @@ export default function OrdersClient() {
     </div>
   );
 }
-
