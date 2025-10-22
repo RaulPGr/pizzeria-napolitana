@@ -42,11 +42,12 @@ const DEFAULTS: Required<ThemeConfig> = {
   },
 };
 
-function ColorInput({ label, value, onChange }: { label: string; value?: string; onChange: (v: string) => void }) {
+function ColorInput({ label, desc, value, onChange }: { label: string; desc?: string; value?: string; onChange: (v: string) => void }) {
   const hex = (value || '').match(/^#?[0-9a-fA-F]{6}$/) ? (value!.startsWith('#') ? value! : `#${value}`) : '';
   return (
     <label className="block text-sm">
       <span className="text-slate-700">{label}</span>
+      {desc && <span className="block text-xs text-slate-500">{desc}</span>}
       <div className="mt-1 flex items-center gap-3">
         <input type="color" className="h-9 w-14" value={hex || '#ffffff'} onChange={(e) => onChange(e.target.value)} />
         <input
@@ -60,10 +61,11 @@ function ColorInput({ label, value, onChange }: { label: string; value?: string;
   );
 }
 
-function TextInput({ label, value, onChange, placeholder }: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string; }) {
+function TextInput({ label, desc, value, onChange, placeholder }: { label: string; desc?: string; value?: string; onChange: (v: string) => void; placeholder?: string; }) {
   return (
     <label className="block text-sm">
       <span className="text-slate-700">{label}</span>
+      {desc && <span className="block text-xs text-slate-500">{desc}</span>}
       <input
         className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1"
         value={value || ''}
@@ -146,21 +148,169 @@ export default function ThemeSettingsClient() {
         <p className="text-sm text-slate-600">Ajusta colores y tipografías de la web. Solo visible para cuentas autorizadas.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ColorInput label="Fondo principal" value={theme.colors?.background} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, background: v } }))} />
-        <ColorInput label="Texto" value={theme.colors?.text} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, text: v } }))} />
-        <ColorInput label="Texto secundario" value={theme.colors?.muted} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, muted: v } }))} />
-        <ColorInput label="Primario (botones/enlaces)" value={theme.colors?.accent} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, accent: v } }))} />
-        <ColorInput label="Primario hover" value={theme.colors?.accentHover} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, accentHover: v } }))} />
-        <ColorInput label="Secundario (verde)" value={theme.colors?.secondary} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, secondary: v } }))} />
-        <ColorInput label="Secundario hover" value={theme.colors?.secondaryHover} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, secondaryHover: v } }))} />
-        <ColorInput label="Barra superior inicio" value={theme.colors?.topbarStart} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, topbarStart: v } }))} />
-        <ColorInput label="Barra superior fin" value={theme.colors?.topbarEnd} onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, topbarEnd: v } }))} />
+      {/* Vista previa de la barra superior */}
+      <div className="rounded border overflow-hidden">
+        <div
+          className="px-4 py-3 text-white text-sm font-medium"
+          style={{
+            background: `linear-gradient(90deg, ${merged.colors.topbarStart || merged.colors.accent}, ${merged.colors.topbarEnd || merged.colors.secondary})`,
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex gap-6">
+              <span>Inicio</span>
+              <span>Menú</span>
+            </div>
+            <span>Carrito</span>
+          </div>
+        </div>
+        <div className="bg-white px-4 py-2 text-xs text-slate-600">Vista previa de la barra superior</div>
+      </div>
+
+      {/* Vista previa de botones y tipografía */}
+      <div className="rounded border bg-white p-4">
+        <div className="mb-3 text-sm font-medium text-slate-700">Vista previa de estilos</div>
+
+        {/* Botones primarios */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
+            style={{ backgroundColor: merged.colors.accent || '#999' }}
+            aria-label="Botón primario"
+          >
+            Botón primario
+          </button>
+          <button
+            type="button"
+            className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
+            style={{ backgroundColor: merged.colors.accentHover || merged.colors.accent || '#777' }}
+            aria-label="Botón primario (hover)"
+          >
+            Hover (primario)
+          </button>
+          <span className="text-xs text-slate-600">Uso: acciones principales</span>
+        </div>
+
+        {/* Botones secundarios */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
+            style={{ backgroundColor: (merged.colors.secondary || '#557a52') }}
+            aria-label="Botón secundario"
+          >
+            Botón secundario
+          </button>
+          <button
+            type="button"
+            className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
+            style={{ backgroundColor: (merged.colors.secondaryHover || merged.colors.secondary || '#476646') }}
+            aria-label="Botón secundario (hover)"
+          >
+            Hover (secundario)
+          </button>
+          <span className="text-xs text-slate-600">Uso: acentos y confirmaciones</span>
+        </div>
+
+        {/* Tipografía y colores de texto */}
+        <div
+          className="rounded border p-3"
+          style={{ backgroundColor: merged.colors.background || '#f5f5f5' }}
+        >
+          <div
+            className="mb-1 text-lg"
+            style={{ color: merged.colors.text || '#333', fontFamily: merged.fonts.headings || 'inherit', fontWeight: 600 }}
+          >
+            Título de ejemplo
+          </div>
+          <div
+            className="text-sm"
+            style={{ color: merged.colors.text || '#333', fontFamily: merged.fonts.body || 'inherit' }}
+          >
+            Este es un texto de párrafo para comprobar la legibilidad con la combinación de colores y la fuente del cuerpo.
+          </div>
+          <div
+            className="mt-1 text-xs"
+            style={{ color: merged.colors.muted || '#777', fontFamily: merged.fonts.body || 'inherit' }}
+          >
+            Texto secundario o de ayuda (menos destacado).
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TextInput label="Fuente del cuerpo" value={theme.fonts?.body} onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, body: v } }))} placeholder="Ej: Inter, system-ui, sans-serif" />
-        <TextInput label="Fuente de títulos" value={theme.fonts?.headings} onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, headings: v } }))} placeholder="Ej: Poppins, system-ui, sans-serif" />
+        <ColorInput
+          label="Fondo principal"
+          desc="Color de fondo de la web y superficies claras."
+          value={theme.colors?.background}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, background: v } }))}
+        />
+        <ColorInput
+          label="Texto"
+          desc="Color principal de los textos."
+          value={theme.colors?.text}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, text: v } }))}
+        />
+        <ColorInput
+          label="Texto secundario"
+          desc="Color para descripciones, etiquetas y texto menos destacado."
+          value={theme.colors?.muted}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, muted: v } }))}
+        />
+        <ColorInput
+          label="Primario (botones/enlaces)"
+          desc="Color de acción principal en botones y enlaces."
+          value={theme.colors?.accent}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, accent: v } }))}
+        />
+        <ColorInput
+          label="Primario hover"
+          desc="Color del primario al pasar el cursor."
+          value={theme.colors?.accentHover}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, accentHover: v } }))}
+        />
+        <ColorInput
+          label="Secundario (verde)"
+          desc="Color para acciones positivas y acentos secundarios."
+          value={theme.colors?.secondary}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, secondary: v } }))}
+        />
+        <ColorInput
+          label="Secundario hover"
+          desc="Color del secundario al pasar el cursor."
+          value={theme.colors?.secondaryHover}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, secondaryHover: v } }))}
+        />
+        <ColorInput
+          label="Barra superior inicio"
+          desc="Color izquierdo del degradado de la barra superior."
+          value={theme.colors?.topbarStart}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, topbarStart: v } }))}
+        />
+        <ColorInput
+          label="Barra superior fin"
+          desc="Color derecho del degradado de la barra superior."
+          value={theme.colors?.topbarEnd}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, topbarEnd: v } }))}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <TextInput
+          label="Fuente del cuerpo"
+          desc="Familia tipográfica para párrafos y la interfaz."
+          value={theme.fonts?.body}
+          onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, body: v } }))}
+          placeholder="Ej: Inter, system-ui, sans-serif"
+        />
+        <TextInput
+          label="Fuente de títulos"
+          desc="Familia tipográfica para encabezados (H1–H5)."
+          value={theme.fonts?.headings}
+          onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, headings: v } }))}
+          placeholder="Ej: Poppins, system-ui, sans-serif"
+        />
       </div>
 
       <div className="flex items-center gap-3">
