@@ -12,6 +12,8 @@ export default function NewOrderSound() {
   const audioBufRef = useRef<AudioBuffer | null>(null);
   const originalTitleRef = useRef<string>(typeof document !== 'undefined' ? document.title : '');
   const blinkTimerRef = useRef<number | null>(null);
+  const originalFaviconsRef = useRef<HTMLLinkElement[] | null>(null);
+  const faviconTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -131,6 +133,8 @@ export default function NewOrderSound() {
       if (enabledRef.current) { try { void playSound(); } catch {} }
       // Parpadeo del título siempre
       try { startBlinkTitle('Nuevo pedido', { original: originalTitleRef, timer: blinkTimerRef }); } catch {}
+      // Parpadeo del favicon
+      try { startBlinkFavicon({ originals: originalFaviconsRef, timer: faviconTimerRef }); } catch {}
     };
     const onFocus = () => { try { stopBlinkTitle({ original: originalTitleRef, timer: blinkTimerRef }); } catch {} };
     const onVis = () => { if (document.visibilityState === 'visible') onFocus(); };
@@ -142,6 +146,7 @@ export default function NewOrderSound() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVis);
       try { stopBlinkTitle({ original: originalTitleRef, timer: blinkTimerRef }); } catch {}
+      try { stopBlinkFavicon({ originals: originalFaviconsRef, timer: faviconTimerRef }); } catch {}
     };
   }, []);
 
@@ -237,5 +242,85 @@ function stopBlinkTitle(refs: { original: React.MutableRefObject<string>; timer:
   }
   try {
     if (typeof document !== 'undefined' && refs.original.current) document.title = refs.original.current;
+  } catch {}
+}
+
+// ===== Favicon blinking helpers =====
+function collectFavicons(): HTMLLinkElement[] {
+  const list: HTMLLinkElement[] = [];
+  if (typeof document === 'undefined') return list;
+  document.querySelectorAll('link[rel~="icon"]').forEach((n) => list.push(n as HTMLLinkElement));
+  return list;
+}
+
+function createAlertFaviconDataUrl(): string {
+  const sz = 64;
+  const c = document.createElement('canvas');
+  c.width = sz; c.height = sz;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,sz,sz);
+  ctx.fillStyle = '#CC2936'; // rojo acento
+  ctx.beginPath();
+  ctx.arc(sz*0.75, sz*0.25, sz*0.18, 0, Math.PI*2);
+  ctx.fill();
+  // pequeño borde
+  ctx.strokeStyle = '#8f1b25';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  return c.toDataURL('image/png');
+}
+
+function setFaviconHref(href: string) {
+  if (typeof document === 'undefined') return;
+  const links = document.querySelectorAll('link[rel~="icon"]');
+  if (links.length === 0) {
+    const l = document.createElement('link');
+    l.rel = 'icon';
+    l.href = href;
+    document.head.appendChild(l);
+    return;
+  }
+  links.forEach((el) => { (el as HTMLLinkElement).href = href; });
+}
+
+function startBlinkFavicon(refs: { originals: React.MutableRefObject<HTMLLinkElement[] | null>; timer: React.MutableRefObject<number | null>; }) {
+  if (typeof document === 'undefined') return;
+  if (refs.timer.current != null) return;
+  if (!refs.originals.current) refs.originals.current = collectFavicons();
+  const originals = (refs.originals.current || []).map(l => l.href);
+  const alertUrl = createAlertFaviconDataUrl();
+  let shownAlt = false;
+  let ticks = 0;
+  const limit = 12;
+  const id = window.setInterval(() => {
+    try {
+      if (shownAlt) {
+        if (originals.length > 0) originals.forEach((href) => setFaviconHref(href));
+      } else {
+        setFaviconHref(alertUrl);
+      }
+      shownAlt = !shownAlt;
+      ticks++;
+      if (document.visibilityState === 'visible' && document.hasFocus()) {
+        stopBlinkFavicon(refs);
+      } else if (ticks >= limit) {
+        stopBlinkFavicon(refs);
+      }
+    } catch {
+      stopBlinkFavicon(refs);
+    }
+  }, 500);
+  refs.timer.current = id as unknown as number;
+}
+
+function stopBlinkFavicon(refs: { originals: React.MutableRefObject<HTMLLinkElement[] | null>; timer: React.MutableRefObject<number | null>; }) {
+  if (refs.timer.current != null) {
+    try { window.clearInterval(refs.timer.current as unknown as number); } catch {}
+    refs.timer.current = null;
+  }
+  try {
+    const originals = refs.originals.current || [];
+    if (originals.length > 0) originals.forEach((l) => setFaviconHref(l.href));
   } catch {}
 }
