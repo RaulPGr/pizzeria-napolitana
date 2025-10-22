@@ -65,6 +65,7 @@ export default function OrdersClient() {
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
   const [highlights, setHighlights] = useState<Record<string, boolean>>({});
   const [seen, setSeen] = useState<Record<string, boolean>>({});
+  const [lastStamp, setLastStamp] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const seenIdsRef = (globalThis as any).__pl_seen_orders || new Set<string>();
   ;(globalThis as any).__pl_seen_orders = seenIdsRef;
@@ -115,11 +116,22 @@ export default function OrdersClient() {
       if (json.ok && json.data) {
         // Detectar pedidos nuevos por ID (fallback si Realtime falla)
         const incoming = json.data;
+        // Calcular nuevo timestamp máximo
+        const newMax = incoming.reduce((acc: string | null, o: any) => {
+          const t = o?.created_at ? String(o.created_at) : null;
+          if (!t) return acc;
+          return !acc || t > acc ? t : acc;
+        }, null as string | null);
         if (!initialized) {
           incoming.forEach(o => seenIdsRef.add(o.id));
           setInitialized(true);
+          if (newMax) setLastStamp(newMax);
         } else {
-          const newOnes = incoming.filter(o => !seenIdsRef.has(o.id));
+          let newOnes = incoming.filter(o => !seenIdsRef.has(o.id));
+          // Si no detectamos por ID (p.ej. por reseteos), detectamos por fecha de creación
+          if (newOnes.length === 0 && lastStamp && newMax && newMax > lastStamp) {
+            newOnes = incoming.filter((o) => String(o.created_at) > lastStamp);
+          }
           if (newOnes.length > 0) {
             try { window.dispatchEvent(new CustomEvent('pl:new-order')); } catch {}
             // Marcar los nuevos para resaltar visualmente
@@ -135,6 +147,7 @@ export default function OrdersClient() {
               const fresh = new Set(incoming.map(o => o.id));
               (globalThis as any).__pl_seen_orders = fresh;
             }
+            if (newMax) setLastStamp(newMax);
           }
         }
         setOrders(incoming);
