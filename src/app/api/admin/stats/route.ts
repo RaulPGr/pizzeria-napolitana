@@ -78,12 +78,14 @@ export async function GET(req: NextRequest) {
     // 2) items for those orders
     let items: any[] = [];
     if (orderIds.length > 0) {
-      const { data: it, error: eItems } = await supabaseAdmin
+      let itQuery = supabaseAdmin
         .from('order_items')
-        .select('order_id, product_id, name, quantity, line_total_cents')
-        .eq(bid ? 'business_id' : 'order_id', bid ? (bid as any) : (orders[0]?.id || '')); -- si hay bid, filtramos por negocio
+        .select('order_id, product_id, name, quantity, line_total_cents');
+      if (bid) itQuery = itQuery.eq('business_id', bid);
+      itQuery = itQuery.in('order_id', orderIds);
+      const { data: it, error: eItems } = await itQuery;
       if (eItems) throw eItems;
-      items = (it || []).filter((x) => orderIds.includes(x.order_id));
+      items = it || [];
     }
 
     // 3) products + categories mapping
