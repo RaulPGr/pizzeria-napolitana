@@ -153,6 +153,14 @@ export async function GET(req: Request) {
     .order('name', { ascending: true });
   products = data as any[] | null;
   error = err;
+  // Salvaguarda adicional: filtrar por negocio en memoria si hay bid
+  try {
+    const slugZ = await getTenantSlug();
+    const bidZ = await getBusinessIdBySlug(slugZ);
+    if (bidZ && Array.isArray(products)) {
+      products = products.filter((p: any) => String(p?.business_id || '') === String(bidZ));
+    }
+  } catch {}
 
   let categories: any[] | null = null; let catErr: any = null;
   try {
