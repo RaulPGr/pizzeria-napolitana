@@ -325,10 +325,16 @@ export default function OrdersClient() {
             <div className="font-medium">
               #{(o.code ?? o.id).slice(0, 7)}
               {(highlights[o.id] || (!seen[o.id] && (Date.now() - new Date(o.created_at).getTime()) < NEW_WINDOW_MS))
-                ? (<span className="ml-2 inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">NUEVO</span>)
-                : (seen[o.id]
-                    ? (<span className="ml-2 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">VISTO</span>)
-                    : null)}
+                ? (
+                  <span className="ml-2 inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow">NUEVO</span>
+                ) : (
+                  seen[o.id]
+                    ? (
+                      // Forzamos verde real independientemente del tema (evita remapeos globales de emerald)
+                      <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow bg-green-600">VISTO</span>
+                    )
+                    : null
+                )}
             </div>
             <div className="flex items-center gap-2">
               {o.pickup_at && (
