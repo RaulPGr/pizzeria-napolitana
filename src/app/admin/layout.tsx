@@ -17,7 +17,9 @@ async function isAdmin() {
     const j = await res.json();
     const email = String(j?.email || "").toLowerCase();
     const admins = adminEmails();
-    return admins.length === 0 ? !!email : admins.includes(email);
+    const isSuper = admins.length === 0 ? !!email : admins.includes(email);
+    const isMember = !!j?.isMember;
+    return isSuper || isMember;
   } catch {
     return false;
   }

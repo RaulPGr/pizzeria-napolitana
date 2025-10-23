@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +34,31 @@ export async function GET() {
     );
   }
 
+  // Is the user a member of the current tenant?
+  let isMember = false;
+  try {
+    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    if (slug) {
+      const { data: biz } = await supabaseAdmin
+        .from('businesses')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+      const bid = (biz as any)?.id as string | undefined;
+      if (bid) {
+        const { data: mm } = await supabaseAdmin
+          .from('business_members')
+          .select('user_id')
+          .eq('business_id', bid)
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+        isMember = !!mm;
+      }
+    }
+  } catch {}
+
   return NextResponse.json(
-    { ok: true, email: data.user.email, error: null },
+    { ok: true, email: data.user.email, isMember, error: null },
     { headers: { 'Cache-Control': 'no-store' } }
   );
 }
