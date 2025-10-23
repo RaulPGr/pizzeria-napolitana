@@ -79,7 +79,7 @@ async function getBusinessIdBySlug(slug: string): Promise<string | null> {
   }
 }
 
-async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response }> {
+async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: Response }> {
   try {
     const cookieStore = await cookies();
     const supa = createServerClient(
@@ -99,11 +99,26 @@ async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response 
     );
     const { data } = await supa.auth.getUser();
     const email = data.user?.email?.toLowerCase() || '';
+    const uid = data.user?.id || '';
     const admins = adminEmails();
-    const allowed = admins.length === 0 ? !!email : admins.includes(email);
+    let allowed = admins.length === 0 ? !!email : admins.includes(email);
     if (!allowed) {
-      return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
+      // Si no es superadmin, permitir si es miembro del negocio del subdominio
+      try {
+        const slug = await getTenantSlug();
+        const bid = await getBusinessIdBySlug(slug);
+        if (bid && uid) {
+          const { data: mm } = await supabaseAdmin
+            .from('business_members')
+            .select('user_id')
+            .eq('business_id', bid)
+            .eq('user_id', uid)
+            .maybeSingle();
+          allowed = !!mm;
+        }
+      } catch {}
     }
+    if (!allowed) return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
     return { ok: true };
   } catch {
     return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
@@ -187,7 +202,7 @@ export async function GET(req: Request) {
 // ---------- POST: crear ----------
 export async function POST(req: Request) {
   const contentType = req.headers.get('content-type') || '';
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
 
   // Creamos el producto (JSON). Si luego quieres subir imagen, usa PATCH multipart con id.
@@ -232,7 +247,7 @@ export async function POST(req: Request) {
 // ---------- PATCH: actualizar o subir imagen ----------
 export async function PATCH(req: Request) {
   const contentType = req.headers.get('content-type') || '';
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
 
   // Subida de imagen (multipart/form-data)
@@ -311,7 +326,7 @@ export async function PATCH(req: Request) {
 
 // ---------- DELETE: borrar ?id= ----------
 export async function DELETE(req: Request) {
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
   const { searchParams } = new URL(req.url);
   const id = Number(searchParams.get('id'));

@@ -14,7 +14,7 @@ async function getTenantSlug(): Promise<string> {
   }
 }
 
-async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response }> {
+async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: Response }> {
   try {
     const cookieStore = await cookies();
     const supa = createServerClient(
@@ -28,8 +28,31 @@ async function assertAdmin(): Promise<{ ok: true } | { ok: false; res: Response 
     );
     const { data } = await supa.auth.getUser();
     const email = data.user?.email?.toLowerCase() || '';
+    const uid = data.user?.id || '';
     const admins = adminEmails();
-    const allowed = admins.length === 0 ? !!email : admins.includes(email);
+    let allowed = admins.length === 0 ? !!email : admins.includes(email);
+    if (!allowed) {
+      try {
+        const slug = cookieStore.get('x-tenant-slug')?.value || '';
+        if (slug && uid) {
+          const { data: biz } = await supabaseAdmin
+            .from('businesses')
+            .select('id')
+            .eq('slug', slug)
+            .maybeSingle();
+          const bid = (biz as any)?.id as string | undefined;
+          if (bid) {
+            const { data: mm } = await supabaseAdmin
+              .from('business_members')
+              .select('user_id')
+              .eq('business_id', bid)
+              .eq('user_id', uid)
+              .maybeSingle();
+            allowed = !!mm;
+          }
+        }
+      } catch {}
+    }
     if (!allowed) return { ok: false, res: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
     return { ok: true };
   } catch {
@@ -49,7 +72,7 @@ async function getBusinessIdBySlug(slug: string): Promise<string | null> {
 }
 
 export async function GET() {
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
@@ -65,7 +88,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
@@ -85,7 +108,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
@@ -108,7 +131,7 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const auth = await assertAdmin();
+  const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
@@ -132,4 +155,3 @@ export async function DELETE(req: Request) {
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
-
