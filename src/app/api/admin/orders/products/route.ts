@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { adminEmails } from '@/utils/plan';
 
 export async function GET() {
@@ -43,28 +44,47 @@ export async function GET() {
     }
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
+    // Determinar el negocio a partir del subdominio (cookie x-tenant-slug)
+    const cookieStore = await cookies();
+    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    let bid: string | null = null;
+    if (slug) {
+      const { data: biz } = await supabaseAdmin
+        .from('businesses')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+      bid = (biz as any)?.id ?? null;
+    }
+
     // Productos + nombre de categoría
-    const { data: products, error } = await admin
+    let prodQuery = admin
       .from(table)
       .select(
         'id, name, description, price, image_url, available, category_id, categories(name)'
       )
       .order('sort_order', { ascending: true })
       .order('id', { ascending: true });
+    if (bid) prodQuery = prodQuery.eq('business_id', bid);
+    const { data: products, error } = await prodQuery;
     if (error) throw error;
 
     // Categorías para el <select/>
-    const { data: categories, error: catErr } = await admin
+    let catQuery = admin
       .from('categories')
       .select('id, name')
       .order('sort_order', { ascending: true })
       .order('id', { ascending: true });
+    if (bid) catQuery = catQuery.eq('business_id', bid);
+    const { data: categories, error: catErr } = await catQuery;
     if (catErr) throw catErr;
 
     // Días por producto (para edición en modo menú diario)
+    const prodIds = (products || []).map((p: any) => p.id);
     const { data: weekdaysRows, error: wdErr } = await admin
       .from('product_weekdays')
-      .select('product_id, day');
+      .select('product_id, day')
+      .in('product_id', prodIds.length > 0 ? prodIds : [-1]);
     if (wdErr) throw wdErr;
     const weekdays: Record<number, number[]> = {};
     (weekdaysRows || []).forEach((r: any) => {
