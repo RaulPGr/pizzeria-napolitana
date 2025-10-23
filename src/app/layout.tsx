@@ -5,6 +5,7 @@ import { CartProvider } from "@/context/CartContext";
 import Navbar from "@/components/Navbar"; // Se mantiene tu Navbar
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import AuthHashRedirect from '@/components/AuthHashRedirect';
 
 export const metadata: Metadata = {
   title: "Comida para llevar",
@@ -94,6 +95,10 @@ export default async function RootLayout({
         )}
       </head>
       <body className="bg-brand-chalk">
+        {/* Redirige tokens/hash de Supabase a /auth/reset si llegan a la raíz u otras rutas */}
+        {/* Client-only, no afecta SSR ni la lógica existente */}
+        {/* Inserción temprana para que actúe antes de cualquier interacción */}
+        <AuthHashRedirect />
         {themeAssets.css && <style suppressHydrationWarning>{themeAssets.css}</style>}
         <CartProvider>
           {/* Header fijo en todas las páginas */}
