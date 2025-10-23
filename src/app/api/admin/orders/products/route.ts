@@ -22,27 +22,29 @@ export async function GET() {
       );
     }
 
-    // Guard: requiere sesión de admin
+        // Guard: superadmin OR business member
+    const cookieStore = await cookies();
+    let isSuper=false, isMember=false; let userId: string | null = null;
     try {
-      const cookieStore = await cookies();
-      const supa = createServerClient(url, anon!, {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value; },
-          set(name: string, value: string, options: any) { cookieStore.set({ name, value, ...options }); },
-          remove(name: string, options: any) { cookieStore.set({ name, value: '', ...options }); },
-        },
-      });
+      const supa = createServerClient(url, anon!, { cookies: { get:(n:string)=>cookieStore.get(n)?.value, set:(n:string,v:string,o:any)=>{ try{cookieStore.set({ name:n, value:v, ...o });}catch{} }, remove:(n:string,o:any)=>{ try{ cookieStore.set({ name:n, value:'', ...o, maxAge:0 }); }catch{} } } });
       const { data } = await supa.auth.getUser();
+      userId = data.user?.id || null;
       const email = data.user?.email?.toLowerCase() || '';
       const admins = adminEmails();
-      const ok = admins.length === 0 ? !!email : admins.includes(email);
-      if (!ok) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      isSuper = admins.length === 0 ? !!email : admins.includes(email);
+    } catch {}
+    try {
+      const slug = cookieStore.get('x-tenant-slug')?.value || '';
+      if (slug && userId) {
+        const { data: biz } = await supabaseAdmin.from('businesses').select('id').eq('slug', slug).maybeSingle();
+        const bid = (biz as any)?.id as string | undefined;
+        if (bid) {
+          const { data: mm } = await supabaseAdmin.from('business_members').select('user_id').eq('business_id', bid).eq('user_id', userId).maybeSingle();
+          isMember = !!mm;
+        }
       }
-    } catch {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+    } catch {}
+    if (!isSuper && !isMember) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
     // Determinar el negocio a partir del subdominio (cookie x-tenant-slug)
     const cookieStore = await cookies();
@@ -102,3 +104,4 @@ export async function GET() {
     );
   }
 }
+
