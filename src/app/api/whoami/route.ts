@@ -16,10 +16,10 @@ export async function GET() {
       cookies: {
         get: (name: string) => cookieStore.get(name)?.value,
         set: (name: string, value: string, options: any) => {
-          try { cookieStore.set(name, value, options); } catch {}
+          try { cookieStore.set({ name, value, ...options }); } catch {}
         },
         remove: (name: string, options: any) => {
-          try { cookieStore.set(name, '', { ...options, maxAge: 0 }); } catch {}
+          try { cookieStore.set({ name, value: '', ...options, maxAge: 0 }); } catch {}
         },
       },
     }
