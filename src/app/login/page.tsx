@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -73,6 +74,30 @@ export default function LoginPage() {
         >
           Entrar
         </button>
+
+        <div className="text-center text-sm">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setErr(null);
+                if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+                  setErr("Introduce un email válido para enviar el enlace");
+                  return;
+                }
+                const redirectTo = `${window.location.origin}/auth/reset`;
+                const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+                if (error) throw error;
+                setErr("Te hemos enviado un email para cambiar la contraseña");
+              } catch (e: any) {
+                setErr(e?.message || "No se pudo enviar el email");
+              }
+            }}
+            className="mt-2 text-emerald-700 hover:underline"
+          >
+            Olvidé mi contraseña
+          </button>
+        </div>
       </form>
     </div>
   );
