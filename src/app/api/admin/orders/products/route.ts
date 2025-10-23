@@ -47,8 +47,8 @@ export async function GET() {
     if (!isSuper && !isMember) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
     // Determinar el negocio a partir del subdominio (cookie x-tenant-slug)
-    const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    const cookieStore2 = await cookies();
+    const slug = cookieStore2.get('x-tenant-slug')?.value || '';
     let bid: string | null = null;
     if (slug) {
       const { data: biz } = await supabaseAdmin
