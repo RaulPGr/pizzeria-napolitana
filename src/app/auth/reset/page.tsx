@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          {message && status !== 'auth' && (
+          {message && (
             <div className="rounded border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 text-sm">{message}</div>
           )}
         </div>
@@ -110,4 +110,3 @@ export default function ResetPasswordPage() {
     </main>
   );
 }
-
