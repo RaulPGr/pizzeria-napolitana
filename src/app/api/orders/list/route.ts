@@ -1,6 +1,24 @@
 // src/app/api/orders/list/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { cookies } from 'next/headers';
+
+async function getTenantSlug(): Promise<string> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get('x-tenant-slug')?.value || '';
+  } catch { return ''; }
+}
+
+async function getBusinessIdBySlug(slug: string): Promise<string | null> {
+  if (!slug) return null;
+  const { data } = await supabaseAdmin
+    .from('businesses')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
+  return (data as any)?.id ?? null;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -37,6 +55,13 @@ export async function GET(req: NextRequest) {
       `
       )
       .order('created_at', { ascending: false });
+
+    // Limitar por negocio del subdominio
+    try {
+      const slug = await getTenantSlug();
+      const bid = await getBusinessIdBySlug(slug);
+      if (bid) query = query.eq('business_id', bid);
+    } catch {}
 
     if (q) {
       // nombre, teléfono o código
