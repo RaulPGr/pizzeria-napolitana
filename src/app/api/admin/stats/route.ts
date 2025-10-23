@@ -50,13 +50,26 @@ export async function GET(req: NextRequest) {
     const from = searchParams.get('from');
     const to = searchParams.get('to');
 
-    // 1) base orders in range
+    // 1) base orders in range (limitado por negocio del subdominio)
+    const cookieStore = await cookies();
+    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    let bid: string | null = null;
+    if (slug) {
+      const { data: biz } = await supabaseAdmin
+        .from('businesses')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+      bid = (biz as any)?.id ?? null;
+    }
+
     let q = supabaseAdmin
       .from('orders')
       .select('id, status, total_cents, created_at, customer_name, customer_phone')
       .order('created_at', { ascending: true });
     if (from) q = q.gte('created_at', new Date(from).toISOString());
     if (to) q = q.lte('created_at', new Date(to).toISOString());
+    if (bid) q = q.eq('business_id', bid);
     const { data: orders, error: eOrders } = await q;
     if (eOrders) throw eOrders;
 
@@ -67,18 +80,18 @@ export async function GET(req: NextRequest) {
     if (orderIds.length > 0) {
       const { data: it, error: eItems } = await supabaseAdmin
         .from('order_items')
-        .select('order_id, product_id, name, quantity, line_total_cents');
+        .select('order_id, product_id, name, quantity, line_total_cents')
+        .eq(bid ? 'business_id' : 'order_id', bid ? (bid as any) : (orders[0]?.id || '')); -- si hay bid, filtramos por negocio
       if (eItems) throw eItems;
       items = (it || []).filter((x) => orderIds.includes(x.order_id));
     }
 
     // 3) products + categories mapping
-    const { data: products } = await supabaseAdmin
-      .from('products')
-      .select('id, name, category_id');
-    const { data: categories } = await supabaseAdmin
-      .from('categories')
-      .select('id, name');
+    let prodQ = supabaseAdmin.from('products').select('id, name, category_id');
+    let catQ = supabaseAdmin.from('categories').select('id, name');
+    if (bid) { prodQ = prodQ.eq('business_id', bid); catQ = catQ.eq('business_id', bid); }
+    const { data: products } = await prodQ;
+    const { data: categories } = await catQ;
     const catMap = new Map((categories || []).map((c: any) => [c.id, c.name] as const));
 
     // -------------- aggregates --------------
