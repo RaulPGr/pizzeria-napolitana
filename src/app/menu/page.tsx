@@ -108,13 +108,24 @@ export default async function MenuPage({ searchParams }: PageProps) {
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
-        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} />
+        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} selectedCat={selectedCat} />
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <FilterPill href="/menu" active={!selectedCat}>Todos</FilterPill>
+        {(() => {
+          const validDay = typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7;
+          const dayParam = validDay ? `?day=${encodeURIComponent(String(selectedDay))}` : '';
+          const href = `/menu${dayParam}`;
+          return (
+            <FilterPill href={href} active={!selectedCat}>Todos</FilterPill>
+          );
+        })()}
         {orderedSections.map((s) => {
-          const href = s.id === 'nocat' ? '/menu?cat=nocat' : `/menu?cat=${encodeURIComponent(String(s.id))}`;
+          const validDay = typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7;
+          const dayParam = validDay ? `day=${encodeURIComponent(String(selectedDay))}` : undefined;
+          const catParam = s.id === 'nocat' ? 'cat=nocat' : `cat=${encodeURIComponent(String(s.id))}`;
+          const qp = [dayParam, catParam].filter(Boolean).join('&');
+          const href = `/menu?${qp}`;
           const active = selectedCat === (s.id === 'nocat' ? 'nocat' : String(s.id));
           return (
             <FilterPill key={String(s.id)} href={href} active={active}>
@@ -240,7 +251,7 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
   );
 }
 
-function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays: boolean }) {
+function DayTabs({ selectedDay, hasAllDays, selectedCat }: { selectedDay?: number; hasAllDays: boolean; selectedCat?: string; }) {
   const now = new Date();
   const jsDay = now.getDay();
   const today = ((jsDay + 6) % 7) + 1;
@@ -271,7 +282,7 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
         {days.map(({ d, label }) => (
           <Link
             key={d}
-            href={`/menu?day=${d}`}
+            href={`/menu?day=${d}${selectedCat ? `&cat=${encodeURIComponent(selectedCat)}` : ''}`}
             className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}
           >
             {label}
