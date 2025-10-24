@@ -12,15 +12,23 @@ function adminClient() {
   return createClient(url, service, { auth: { persistSession: false } });
 }
 
-export async function GET() {
+function normalizeSlug(v: string | null | undefined): string {
+  const s = (v || '').trim().toLowerCase();
+  return s && /^[a-z0-9-_.]{1,120}$/.test(s) ? s : '';
+}
+
+export async function GET(req: Request) {
   try {
     const cookieStore = await cookies();
-    let slug = cookieStore.get('x-tenant-slug')?.value || '';
+    let slug = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
     if (!slug) {
       const hdrs = await headers();
       const host = (hdrs.get('host') || '').split(':')[0];
       const parts = host.split('.');
-      if (parts.length >= 3) slug = (parts[0] || '').toLowerCase();
+      if (parts.length >= 3) slug = normalizeSlug(parts[0]);
+    }
+    if (!slug && req) {
+      try { const u = new URL(req.url); slug = normalizeSlug(u.searchParams.get('tenant')) || slug; } catch {}
     }
     if (!slug) return NextResponse.json({ ok: true, data: null });
     const supa = adminClient();

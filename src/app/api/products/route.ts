@@ -26,15 +26,26 @@ function sanitizeFileName(name: string) {
   }
 }
 
-async function supabaseFromRequest() {
+function normalizeSlug(v: string | null | undefined): string {
+  const s = (v || '').trim().toLowerCase();
+  return s && /^[a-z0-9-_.]{1,120}$/.test(s) ? s : '';
+}
+
+async function supabaseFromRequest(req?: Request) {
   const cookieStore = await cookies();
   const hdrs = await headers();
-  let tenant = cookieStore.get('x-tenant-slug')?.value || '';
+  let tenant = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
   if (!tenant) {
     // Fallback: derivar slug del subdominio del Host (negocio.dominio.tld)
     const host = (hdrs.get('host') || '').split(':')[0];
     const parts = host.split('.');
-    if (parts.length >= 3) tenant = (parts[0] || '').toLowerCase();
+    if (parts.length >= 3) tenant = normalizeSlug(parts[0]);
+  }
+  if (!tenant && req) {
+    try {
+      const url = new URL(req.url);
+      tenant = normalizeSlug(url.searchParams.get('tenant')) || tenant;
+    } catch {}
   }
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,15 +61,18 @@ async function supabaseFromRequest() {
   );
 }
 
-async function getTenantSlug(): Promise<string> {
+async function getTenantSlug(req?: Request): Promise<string> {
   try {
     const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
-    if (slug) return slug;
+    const inCookie = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
+    if (inCookie) return inCookie;
     const hdrs = await headers();
     const host = (hdrs.get('host') || '').split(':')[0];
     const parts = host.split('.');
-    if (parts.length >= 3) return (parts[0] || '').toLowerCase();
+    if (parts.length >= 3) return normalizeSlug(parts[0]);
+    if (req) {
+      try { const u = new URL(req.url); const qp = normalizeSlug(u.searchParams.get('tenant')); if (qp) return qp; } catch {}
+    }
     return '';
   } catch {
     return '';
@@ -128,12 +142,12 @@ async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: R
 
 // ---------- GET: productos + categorías ----------
 export async function GET(req: Request) {
-  const supabase = await supabaseFromRequest();
+  const supabase = await supabaseFromRequest(req);
 
   // Detect business menu_mode via admin (RLS on businesses is member-only)
   let menu_mode: 'fixed' | 'daily' = 'fixed';
   try {
-    const slug = await getTenantSlug();
+    const slug = await getTenantSlug(req);
     if (slug) {
       const { data: biz, error: berr } = await supabaseAdmin
         .from('businesses')
@@ -171,7 +185,7 @@ export async function GET(req: Request) {
   error = err;
   // Salvaguarda adicional: filtrar por negocio en memoria si hay bid
   try {
-    const slugZ = await getTenantSlug();
+    const slugZ = await getTenantSlug(req);
     const bidZ = await getBusinessIdBySlug(slugZ);
     if (bidZ && Array.isArray(products)) {
       products = products.filter((p: any) => String(p?.business_id || '') === String(bidZ));
@@ -180,7 +194,7 @@ export async function GET(req: Request) {
 
   let categories: any[] | null = null; let catErr: any = null;
   try {
-    const slugX = await getTenantSlug();
+    const slugX = await getTenantSlug(req);
     const bidX = await getBusinessIdBySlug(slugX);
     let q = supabase.from('categories').select('*')
       .order('sort_order', { ascending: true })
