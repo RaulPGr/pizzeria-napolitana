@@ -1,6 +1,6 @@
 // src/app/api/settings/schedule/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 function mergeSchedules(ordering: any | null, opening: any | null) {
@@ -22,7 +22,13 @@ function mergeSchedules(ordering: any | null, opening: any | null) {
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    let slug = cookieStore.get('x-tenant-slug')?.value || '';
+    if (!slug) {
+      const hdrs = await headers();
+      const host = (hdrs.get('host') || '').split(':')[0];
+      const parts = host.split('.');
+      if (parts.length >= 3) slug = (parts[0] || '').toLowerCase();
+    }
     if (!slug) return NextResponse.json({ ok: true, data: null });
 
     const { data, error } = await supabaseAdmin

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -15,10 +15,14 @@ function adminClient() {
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    let slug = cookieStore.get('x-tenant-slug')?.value || '';
     if (!slug) {
-      return NextResponse.json({ ok: true, data: null });
+      const hdrs = await headers();
+      const host = (hdrs.get('host') || '').split(':')[0];
+      const parts = host.split('.');
+      if (parts.length >= 3) slug = (parts[0] || '').toLowerCase();
     }
+    if (!slug) return NextResponse.json({ ok: true, data: null });
     const supa = adminClient();
     const { data: biz, error } = await supa
       .from('businesses')

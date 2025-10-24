@@ -1,6 +1,6 @@
 // src/app/api/products/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { adminEmails } from '@/utils/plan';
@@ -26,30 +26,25 @@ function sanitizeFileName(name: string) {
   }
 }
 
-async function supabaseFromCookies() {
+async function supabaseFromRequest() {
   const cookieStore = await cookies();
-  const tenant = cookieStore.get('x-tenant-slug')?.value || '';
+  const hdrs = await headers();
+  let tenant = cookieStore.get('x-tenant-slug')?.value || '';
+  if (!tenant) {
+    // Fallback: derivar slug del subdominio del Host (negocio.dominio.tld)
+    const host = (hdrs.get('host') || '').split(':')[0];
+    const parts = host.split('.');
+    if (parts.length >= 3) tenant = (parts[0] || '').toLowerCase();
+  }
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: {
-        headers: tenant ? { 'x-tenant-slug': tenant } : {},
-      },
+      global: { headers: tenant ? { 'x-tenant-slug': tenant } : {} },
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set({ name, value, ...options });
-          } catch {}
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set({ name, value: '', ...options, maxAge: 0 });
-          } catch {}
-        },
+        get(name: string) { return cookieStore.get(name)?.value; },
+        set(name: string, value: string, options: any) { try { cookieStore.set({ name, value, ...options }); } catch {} },
+        remove(name: string, options: any) { try { cookieStore.set({ name, value: '', ...options, maxAge: 0 }); } catch {} },
       },
     }
   );
@@ -58,7 +53,13 @@ async function supabaseFromCookies() {
 async function getTenantSlug(): Promise<string> {
   try {
     const cookieStore = await cookies();
-    return cookieStore.get('x-tenant-slug')?.value || '';
+    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    if (slug) return slug;
+    const hdrs = await headers();
+    const host = (hdrs.get('host') || '').split(':')[0];
+    const parts = host.split('.');
+    if (parts.length >= 3) return (parts[0] || '').toLowerCase();
+    return '';
   } catch {
     return '';
   }
@@ -127,7 +128,7 @@ async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: R
 
 // ---------- GET: productos + categorías ----------
 export async function GET(req: Request) {
-  const supabase = await supabaseFromCookies();
+  const supabase = await supabaseFromRequest();
 
   // Detect business menu_mode via admin (RLS on businesses is member-only)
   let menu_mode: 'fixed' | 'daily' = 'fixed';
