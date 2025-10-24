@@ -194,12 +194,12 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
                 const isAvailableOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true; // Menú fijo, siempre disponible.
-                  if (pDays.length === 0) return false; // Menú diario sin días asignados, no disponible.
-                  if (pDays.length === 7) return true; // Disponible los 7 días.
-                  // Si estamos en la pestaña "Todos los días" (day=0), no está disponible si no es 7/7.
-                  if (selectedDay === 0) return false;
-                  // Si estamos en un día concreto, comprobamos si está en la lista.
-                  if (selectedDay >= 1 && selectedDay <= 7) return pDays.includes(selectedDay);
+                  if (selectedDay === 0) {
+                    // En la pestaña "Todos los días", solo están disponibles los productos 7/7.
+                    return pDays.length === 7;
+                  }
+                  // En un día concreto, está disponible si está en su lista de días O si es un producto 7/7.
+                  if (selectedDay >= 1 && selectedDay <= 7) return pDays.includes(selectedDay) || pDays.length === 7;
                   return false; // Caso por defecto.
                 })();
 
