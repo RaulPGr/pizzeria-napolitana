@@ -109,8 +109,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
         const days: number[] = Array.isArray(p.product_weekdays)
           ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
           : [];
-        // Incluir también los productos sin configuración de días (fallback a "todos los días")
-        return days.length === 7 || days.includes(d) || days.length === 0;
+        // Solo productos configurados para el día seleccionado o 7/7
+        return days.length === 7 || days.includes(d);
       });
     }
     return list;
@@ -208,7 +208,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                   ? Number(selectedDay)
                   : today;
                 const availableToday = menuMode === 'daily'
-                  ? (hasDays ? (allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail))) : true)
+                  ? (hasDays ? (allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail))) : false)
                   : true;
                 const disabledForAdd = menuMode === 'daily' ? !availableToday : false;
                 const out = p.available === false || disabledForAdd;
