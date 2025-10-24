@@ -7,6 +7,14 @@ import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 import { headers } from 'next/headers';
 
+function toIsoDay(value: any): number | null {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  if (n >= 1 && n <= 7) return n; // ISO 1..7
+  if (n >= 0 && n <= 6) return ((n + 6) % 7) + 1; // JS 0..6 -> ISO 1..7
+  return null;
+}
+
 function formatPrice(n: number) {
   try {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
@@ -100,7 +108,9 @@ export default async function MenuPage({ searchParams }: PageProps) {
     if (selectedDay === 0) {
       return list.filter((p: any) => {
         const days: number[] = Array.isArray(p.product_weekdays)
-          ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
+          ? p.product_weekdays
+              .map((x: any) => toIsoDay(x?.day))
+              .filter((n: any) => typeof n === 'number') as number[]
           : [];
         return days.length === 7;
       });
@@ -193,7 +203,9 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const jsDay = new Date().getDay();
                 const today = ((jsDay + 6) % 7) + 1; // ISO 1..7
                 const pDays: number[] = Array.isArray(p.product_weekdays)
-                  ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
+                  ? p.product_weekdays
+                      .map((x: any) => toIsoDay(x?.day))
+                      .filter((n: any) => typeof n === 'number') as number[]
                   : [];
                 const hasDays = pDays.length > 0;
                 const allDays = pDays.length === 7;
