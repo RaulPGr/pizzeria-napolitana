@@ -109,7 +109,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
         const days: number[] = Array.isArray(p.product_weekdays)
           ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
           : [];
-        return days.length === 7 || days.includes(d);
+        // Incluir también los productos sin configuración de días (fallback a "todos los días")
+        return days.length === 7 || days.includes(d) || days.length === 0;
       });
     }
     return list;
@@ -201,11 +202,14 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const pDays: number[] = Array.isArray(p.product_weekdays)
                   ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
                   : [];
+                const hasDays = pDays.length > 0;
                 const allDays = pDays.length === 7;
                 const dayForAvail = (typeof selectedDay === 'number' && selectedDay >= 1 && selectedDay <= 7)
                   ? Number(selectedDay)
                   : today;
-                const availableToday = allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail));
+                const availableToday = menuMode === 'daily'
+                  ? (hasDays ? (allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail))) : true)
+                  : true;
                 const disabledForAdd = menuMode === 'daily' ? !availableToday : false;
                 const out = p.available === false || disabledForAdd;
                 const disabledLabel = p.available === false ? 'Agotado' : (disabledForAdd ? 'No disponible hoy' : undefined);
