@@ -214,9 +214,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto grid gap-4 p-4 md:grid-cols-3">
+      <section className="max-w-6xl mx-auto grid gap-4 p-4 md:grid-cols-2">
         {/* Horarios */}
-        <article className="rounded-2xl border border-brand-crust p-6">
+        <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-3">Horarios</h2>
           <ul className="text-sm space-y-1">
             {(Object.keys(HORARIOS_USED) as Dia[]).map((d) => (
@@ -226,7 +226,7 @@ export default function HomePage() {
         </article>
 
         {/* Contacto + Redes */}
-        <article className="rounded-2xl border border-brand-crust p-6">
+        <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-3">Contacto</h2>
           <ul className="text-sm space-y-1">
             <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
@@ -247,6 +247,7 @@ export default function HomePage() {
         </article>
 
         {/* Métodos de pago */}
+        {false && (
         <article className="rounded-2xl border border-brand-crust p-6">
           <h2 className="text-xl font-semibold mb-3">Métodos de pago</h2>
           {Array.isArray(cfg?.payments) && cfg.payments.length > 0 ? (
@@ -256,19 +257,20 @@ export default function HomePage() {
           )}
           <div className="mt-4 rounded-xl bg-gray-50 p-3 text-xs text-gray-600">* Encargos con 30 minutos de antelación. Alérgenos bajo consulta.</div>
         </article>
+        )}
       </section>
 
       {/* Mapa */}
       <section className="max-w-6xl mx-auto px-4 pb-10">
         <h2 className="text-xl font-semibold mb-3">Dónde estamos</h2>
-        <div className="rounded-2xl overflow-hidden border border-brand-crust">
+        <div className="rounded-2xl overflow-hidden border border-brand-crust bg-white shadow-sm">
           <iframe title={`Mapa de ${INFO.nombre}`} src={mapaSrc} className="w-full h-[360px]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         </div>
       </section>
 
       {/* Sobre nosotros */}
       <section className="max-w-6xl mx-auto px-4 pb-14">
-        <div className="rounded-2xl border border-brand-crust p-6">
+        <div className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-3">Sobre nosotros</h2>
           <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
 
