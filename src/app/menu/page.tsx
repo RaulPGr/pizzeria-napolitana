@@ -27,8 +27,6 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedDay = Number(Array.isArray(rawDay) ? (rawDay[0] ?? '') : (rawDay ?? ''));
   const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
   const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
-  const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
-  const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
 
   // Si no se especifica ?day, redirigir al día actual (1..7 ISO)
   // Preservamos ?cat si viene en la URL. No tocamos cuando day=0 ("Todos los días").
