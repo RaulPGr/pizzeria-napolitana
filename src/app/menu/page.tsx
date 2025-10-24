@@ -27,6 +27,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedDay = Number(Array.isArray(rawDay) ? (rawDay[0] ?? '') : (rawDay ?? ''));
   const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
   const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
+  const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
+  const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
 
   // Si no se especifica ?day, redirigir al día actual (1..7 ISO)
   // Preservamos ?cat si viene en la URL. No tocamos cuando day=0 ("Todos los días").
@@ -41,14 +43,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
   }
 
   const h = await headers();
-  const cookie = h.get('cookie') ?? '';
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host = h.get('host');
   const baseUrl = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
   const apiUrl = new URL('/api/products', baseUrl);
   if (selectedDay >= 1 && selectedDay <= 7) apiUrl.searchParams.set('day', String(selectedDay));
   if (tenant) apiUrl.searchParams.set('tenant', tenant);
-  const resp = await fetch(String(apiUrl), { cache: 'no-store', headers: { cookie } });
+  const resp = await fetch(String(apiUrl), { cache: 'no-store' });
   const payload = await resp.json();
   const products = (payload?.products || []) as any[];
   const categories = (payload?.categories || []) as any[];
@@ -60,7 +61,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   try {
     const schedUrl = new URL('/api/settings/schedule', baseUrl);
     if (tenant) schedUrl.searchParams.set('tenant', tenant);
-    const sRes = await fetch(String(schedUrl), { cache: 'no-store', headers: { cookie } });
+    const sRes = await fetch(String(schedUrl), { cache: 'no-store' });
     const sj = await sRes.json();
     const schedule = sj?.ok ? (sj?.data || null) : null;
     if (schedule) {
@@ -140,14 +141,16 @@ export default async function MenuPage({ searchParams }: PageProps) {
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
-        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} />
+        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} tenant={tenant || undefined} />
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {(() => {
           const validDay = typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7;
-          const dayParam = validDay ? `?day=${encodeURIComponent(String(selectedDay))}` : '';
-          const href = `/menu${dayParam}`;
+          const params: string[] = [];
+          if (validDay) params.push(`day=${encodeURIComponent(String(selectedDay))}`);
+          if (tenant) params.push(`tenant=${encodeURIComponent(tenant)}`);
+          const href = `/menu${params.length ? `?${params.join('&')}` : ''}`;
           return (
             <FilterPill href={href} active={!selectedCat}>Todos</FilterPill>
           );
@@ -156,7 +159,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
           const validDay = typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7;
           const dayParam = validDay ? `day=${encodeURIComponent(String(selectedDay))}` : undefined;
           const catParam = s.id === 'nocat' ? 'cat=nocat' : `cat=${encodeURIComponent(String(s.id))}`;
-          const qp = [dayParam, catParam].filter(Boolean).join('&');
+          const tenantParam = tenant ? `tenant=${encodeURIComponent(tenant)}` : undefined;
+          const qp = [dayParam, tenantParam, catParam].filter(Boolean).join('&');
           const href = `/menu?${qp}`;
           const active = selectedCat === (s.id === 'nocat' ? 'nocat' : String(s.id));
           return (
@@ -283,7 +287,7 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
   );
 }
 
-function DayTabs({ selectedDay, hasAllDays, openDaysISO }: { selectedDay?: number; hasAllDays: boolean; openDaysISO?: number[] }) {
+function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay?: number; hasAllDays: boolean; openDaysISO?: number[]; tenant?: string }) {
   const now = new Date();
   const jsDay = now.getDay();
   const today = ((jsDay + 6) % 7) + 1;
@@ -318,7 +322,7 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO }: { selectedDay?: numbe
         {days.map(({ d, label }) => (
           <Link
             key={d}
-            href={`/menu?day=${d}`}
+            href={`/menu?day=${d}${tenant ? `&tenant=${encodeURIComponent(tenant)}` : ''}`}
             className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}
           >
             {label}
