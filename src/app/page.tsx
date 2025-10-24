@@ -228,7 +228,7 @@ export default function HomePage() {
         {/* Contacto + Redes */}
         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
-          <ul className="text-sm space-y-1">
+          <ul className="text-sm space-y-1 contact-list">
             <li>TelÃ©fono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
             <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
             <li>DirecciÃ³n: <span className="block">{INFO.direccion}</span></li>
@@ -296,6 +296,9 @@ export default function HomePage() {
     </main>
   );
 }
+
+
+
 
 
 
