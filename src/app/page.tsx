@@ -1,61 +1,18 @@
-﻿// /src/app/page.tsx
+// /src/app/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 
-/*
-================================================================================
-GuÃ­a rÃ¡pida para personalizar la Home (modo contenido fijo)
---------------------------------------------------------------------------------
-Edita SOLO las constantes de esta secciÃ³n para adaptar la web a cada negocio:
-
-1) INFO_DEFAULT
-   - nombre, slogan: TÃ­tulos del hero y cabecera
-   - telefono, email, whatsapp: Contacto. El botÃ³n de WhatsApp usa wa.me
-   - direccion: Se muestra en la tarjeta de contacto
-   - logoUrl: Ruta a logo (colÃ³calo en /public/images)
-   - fachadaUrl: Imagen de cabecera/hero (en /public/images)
-   - menuPath: Ruta al menÃº (/menu por defecto)
-
-2) COORDS_DEFAULT
-   - lat, lng, zoom: Coordenadas para el iframe de Google Maps
-   - Para obtenerlas: abrir Google Maps â†’ clic en el punto â†’ copiar lat/lon
-
-3) HORARIOS_DEFAULT
-   - Usa un array de tramos por dÃ­a: { abre: 'HH:MM', cierra: 'HH:MM' }
-   - Puedes poner varios tramos por dÃ­a (por ejemplo, mediodÃ­a y noche)
-   - Deja [] para cerrado
-
-4) MÃ©todos de pago (UI)
-   - Actualmente se muestran dos mÃ©todos fijos (Efectivo/Tarjeta)
-   - Cambia el render en la secciÃ³n "MÃ©todos de pago" si necesitas otros
-
-5) Texto "Sobre nosotros"
-   - Edita el contenido dentro de la secciÃ³n final
-
-SEO Local (JSONâ€‘LD)
- - Se genera a partir de INFO_DEFAULT/HORARIOS_DEFAULT/COORDS_DEFAULT.
- - Si cambias estos valores, el JSONâ€‘LD se actualiza automÃ¡ticamente.
-
-Convenciones
- - Este archivo estÃ¡ en UTFâ€‘8. MantÃ©n los acentos directamente.
- - No uses datos sensibles; este es contenido pÃºblico del negocio.
-
-Si en el futuro quieres volver a un modo configurable desde el panel,
-puedo reactivar la API y el formulario sin perder esta versiÃ³n.
-================================================================================
-*/
-
-// Defaults (fallbacks si no hay configuraciÃ³n)
+// Defaults (fallbacks si no hay configuración)
 const INFO_DEFAULT = {
   nombre: "Pizzeria napolitana",
-  slogan: "La tradiciÃ³n de NÃ¡poles en cada porciÃ³n.",
+  slogan: "La tradición de Nápoles en cada porción.",
   telefono: "+34 600 000 000",
   email: "info@mirestaurante.com",
   whatsapp: "+34600000000",
-  direccion: "Calle Mayor 123, 30001 Murcia, EspaÃ±a",
+  direccion: "Calle Mayor 123, 30001 Murcia, España",
   logoUrl: "/images/fachada.png",
   fachadaUrl: "/images/fachada.png",
   menuPath: "/menu",
@@ -67,32 +24,20 @@ type Dia = "lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | 
 type Horarios = Record<Dia, Tramo[]>;
 const HORARIOS_DEFAULT: Horarios = {
   lunes: [],
-  martes: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "23:30" }
-          ],
-  miercoles: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "23:30" }
-          ],
-  jueves: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "23:30" }
-          ],
-  viernes: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "23:30" }
-          ],
-  sabado: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "23:30" }
-          ],
-  domingo: [{ abre: "12:30", cierra: "16:00" },
-            { abre: "19:00", cierra: "23:30" }
-          ],
+  martes: [ { abre: "12:30", cierra: "16:00" }, { abre: "19:00", cierra: "23:30" } ],
+  miercoles: [ { abre: "12:30", cierra: "16:00" }, { abre: "19:00", cierra: "23:30" } ],
+  jueves: [ { abre: "12:30", cierra: "16:00" }, { abre: "19:00", cierra: "23:30" } ],
+  viernes: [ { abre: "12:30", cierra: "16:00" }, { abre: "19:00", cierra: "23:30" } ],
+  sabado: [ { abre: "12:30", cierra: "16:00" }, { abre: "19:00", cierra: "23:30" } ],
+  domingo: [ { abre: "12:30", cierra: "16:00" }, { abre: "19:00", cierra: "23:30" } ],
 };
 const DAY_LABEL: Record<Dia, string> = {
   lunes: "Lunes",
   martes: "Martes",
-  miercoles: "MiÃ©rcoles",
+  miercoles: "Miércoles",
   jueves: "Jueves",
   viernes: "Viernes",
-  sabado: "SÃ¡bado",
+  sabado: "Sábado",
   domingo: "Domingo",
 };
 
@@ -119,7 +64,7 @@ function formatearTramos(tramos: Tramo[]) {
     .map((t) => {
       const a = (t as any).abre ?? (t as any).open;
       const c = (t as any).cierra ?? (t as any).close;
-      return a && c ? `${a}â€“${c}` : null;
+      return a && c ? `${a}-${c}` : null;
     })
     .filter(Boolean)
     .join(" / ");
@@ -142,7 +87,7 @@ function jsonLd(info: typeof INFO_DEFAULT, horarios: Horarios, coords: typeof CO
 export default function HomePage() {
   const router = useRouter();
 
-  // Cargar configuraciÃ³n dinÃ¡mica
+  // Cargar configuración dinámica
   const [cfg, setCfg] = useState<any>(null);
   useEffect(() => {
     (async () => {
@@ -168,7 +113,9 @@ export default function HomePage() {
   const HORARIOS_USED: Horarios = useMemo(() => {
     const h = cfg?.hours as any;
     if (!h) return HORARIOS_DEFAULT;
-    const norm = (arr: any[]) => (arr || []).map((r) => ({ abre: r.abre ?? r.open, cierra: r.cierra ?? r.close })).filter((r) => r.abre && r.cierra);
+    const norm = (arr: any[]) => (arr || [])
+      .map((r) => ({ abre: r.abre ?? r.open, cierra: r.cierra ?? r.close }))
+      .filter((r) => r.abre && r.cierra);
     return {
       lunes: norm(h.monday),
       martes: norm(h.tuesday),
@@ -197,7 +144,8 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
-            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menÃº ahora</button>
+            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menú ahora</button>
+          </div>
         </div>
       </header>
 
@@ -208,7 +156,8 @@ export default function HomePage() {
           <div className="text-center space-y-2">
             <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
             <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
-            <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menÃº ahora</button>
+            <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menú ahora</button>
+          </div>
         </div>
       </section>
 
@@ -227,13 +176,13 @@ export default function HomePage() {
         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
           <ul className="text-sm space-y-1 contact-list">
-            <li>TelÃ©fono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
+            <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
             <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
-            <li>DirecciÃ³n: <span className="block">{INFO.direccion}</span></li>
+            <li>Dirección: <span className="block">{INFO.direccion}</span></li>
           </ul>
           {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
             <div className="mt-4">
-              <h3 className="font-medium mb-2">SÃ­guenos</h3>
+              <h3 className="font-medium mb-2">Síguenos</h3>
               <div className="flex flex-wrap gap-2">
                 {cfg?.social?.instagram && <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Instagram</a>}
                 {cfg?.social?.facebook && <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Facebook</a>}
@@ -243,24 +192,11 @@ export default function HomePage() {
             </div>
           ) : null}
         </article>
-
-        {/* MÃ©todos de pago */}
-        {false && (
-        <article className="rounded-2xl border border-brand-crust p-6">
-          <h2 className="text-xl font-semibold mb-4 text-center">MÃ©todos de pago</h2>
-          {Array.isArray(cfg?.payments) && cfg.payments.length > 0 ? (
-            <ul className="text-sm grid grid-cols-2 gap-2">{cfg.payments.map((p: string, i: number) => (<li key={i}>â€¢ {p}</li>))}</ul>
-          ) : (
-            <ul className="text-sm grid grid-cols-2 gap-2"><li>â€¢ Efectivo</li><li>â€¢ Tarjeta</li></ul>
-          )}
-          <div className="mt-4 rounded-xl bg-gray-50 p-3 text-xs text-gray-600">* Encargos con 30 minutos de antelaciÃ³n. AlÃ©rgenos bajo consulta.</div>
-        </article>
-        )}
       </section>
 
       {/* Mapa */}
       <section className="max-w-6xl mx-auto px-4 pb-10 mt-8">
-        <h2 className="text-xl font-semibold mb-4 text-center">DÃ³nde estamos</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">Dónde estamos</h2>
         <div className="rounded-2xl overflow-hidden border border-brand-crust bg-white shadow-sm">
           <iframe title={`Mapa de ${INFO.nombre}`} src={mapaSrc} className="w-full h-[360px]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         </div>
@@ -270,20 +206,20 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-4 pb-14 mt-8">
         <div className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Sobre nosotros</h2>
-          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradiciÃ³n.
+          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
 
-<p>Preparamos cada dÃ­a nuestras autÃ©nticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
+<p>Preparamos cada día nuestras auténticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
 
-<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rÃ¡pida. Perfecta para llevar (takeaway).
+<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rápida. Perfecta para llevar (takeaway).
 
-Â¡Ti aspettiamo! (Â¡Te esperamos!)</>)}</p>
+¡Ti aspettiamo! (¡Te esperamos!)</>)}</p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-brand-crust">
         <div className="max-w-6xl mx-auto px-4 py-8 text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>Â© {new Date().getFullYear()} {INFO.nombre}. Todos los derechos reservados.</span>
+          <span>© {new Date().getFullYear()} {INFO.nombre}. Todos los derechos reservados.</span>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:underline">Aviso Legal</a>
             <a href="#" className="hover:underline">Privacidad</a>
@@ -294,13 +230,4 @@ export default function HomePage() {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
 
