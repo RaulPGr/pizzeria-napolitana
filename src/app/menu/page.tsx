@@ -96,6 +96,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const filteredProducts = (() => {
     if (menuMode !== 'daily') return (products || []);
     const list = (products || []);
+    // En "Todos los días" mostramos solo 7/7
     if (selectedDay === 0) {
       return list.filter((p: any) => {
         const days: number[] = Array.isArray(p.product_weekdays)
@@ -104,15 +105,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         return days.length === 7;
       });
     }
-    const d = (typeof selectedDay === "number" && !Number.isNaN(selectedDay) && selectedDay >= 1 && selectedDay <= 7) ? Number(selectedDay) : todayDefault; if (d >= 1 && d <= 7) {
-      return list.filter((p: any) => {
-        const days: number[] = Array.isArray(p.product_weekdays)
-          ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
-          : [];
-        // Solo productos configurados para el día seleccionado o 7/7
-        return days.length === 7 || days.includes(d);
-      });
-    }
+    // En un día concreto mostramos todos los productos y luego marcamos disponibilidad en cada tarjeta
     return list;
   })();
 
