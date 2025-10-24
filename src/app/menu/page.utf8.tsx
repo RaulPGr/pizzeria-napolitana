@@ -52,34 +52,6 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const menuMode = (payload?.menu_mode as 'fixed' | 'daily') || 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Cargar horario de pedidos para saber qué días mostrar en las pestañas
-  let openDaysISO: number[] | null = null;
-  try {
-    const schedUrl = new URL('/api/settings/schedule', baseUrl);
-    const sRes = await fetch(String(schedUrl), { cache: 'no-store', headers: { cookie } });
-    const sj = await sRes.json();
-    const schedule = sj?.ok ? (sj?.data || null) : null;
-    if (schedule) {
-      const keyToIso: Record<string, number> = {
-        monday: 1,
-        tuesday: 2,
-        wednesday: 3,
-        thursday: 4,
-        friday: 5,
-        saturday: 6,
-        sunday: 7,
-      };
-      const days: number[] = [];
-      for (const [k, v] of Object.entries(schedule)) {
-        const iso = (keyToIso as any)[k];
-        if (!iso) continue;
-        const list = Array.isArray(v) ? v : [];
-        if (list.length > 0) days.push(iso);
-      }
-      openDaysISO = days.sort((a, b) => a - b);
-    }
-  } catch {}
-
   // Mostrar pestaña "Todos los días" solo si hay productos 7/7
   const hasAllDays = menuMode === 'daily' && (products || []).some((p: any) => {
     const days: number[] = Array.isArray(p.product_weekdays)
@@ -136,7 +108,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
-        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} />
+        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} />
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -279,12 +251,12 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
   );
 }
 
-function DayTabs({ selectedDay, hasAllDays, openDaysISO }: { selectedDay?: number; hasAllDays: boolean; openDaysISO?: number[] }) {
+function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays: boolean }) {
   const now = new Date();
   const jsDay = now.getDay();
   const today = ((jsDay + 6) % 7) + 1;
   const valid = typeof selectedDay === "number" && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7; const current = valid ? (selectedDay as number) : today;
-  const baseDays = hasAllDays
+  const days = hasAllDays
     ? [
         { d: 0, label: 'Todos los días' },
         { d: 1, label: 'Lunes' },
@@ -304,10 +276,6 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO }: { selectedDay?: numbe
         { d: 6, label: 'Sábado' },
         { d: 7, label: 'Domingo' },
       ];
-  const days = (() => {
-    if (!openDaysISO || openDaysISO.length === 0) return baseDays;
-    return baseDays.filter(({ d }) => d === 0 || openDaysISO.includes(d as number));
-  })();
   return (
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
