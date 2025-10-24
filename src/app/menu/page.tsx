@@ -109,7 +109,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
         const days: number[] = Array.isArray(p.product_weekdays)
           ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
           : [];
-        return days.length === 7 || days.includes(d);
+        // Incluir productos sin configuración de días (days.length === 0)
+        return days.length === 7 || days.includes(d) || days.length === 0;
       });
     }
     return list;
