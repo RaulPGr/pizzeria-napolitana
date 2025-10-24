@@ -208,7 +208,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                   ? Number(selectedDay)
                   : today;
                 const availableToday = menuMode === 'daily'
-                  ? (hasDays ? (allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail))) : true)
+                  ? (hasDays ? (allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail))) : false)
                   : true;
                 const disabledForAdd = menuMode === 'daily' ? !availableToday : false;
                 const out = p.available === false || disabledForAdd;
