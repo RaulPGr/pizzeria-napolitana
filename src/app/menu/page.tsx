@@ -100,32 +100,9 @@ export default async function MenuPage({ searchParams }: PageProps) {
   });
 
   // Filtrado por día en modo diario (day=0 -> solo 7/7)
-  const todayDefault = ((new Date().getDay() + 6) % 7) + 1;
-  const filteredProducts = (() => {
-    if (menuMode !== 'daily') return (products || []);
-    const list = (products || []);
-    // En "Todos los días" mostramos solo 7/7
-    if (selectedDay === 0) {
-      return list.filter((p: any) => {
-        const days: number[] = Array.isArray(p.product_weekdays)
-          ? p.product_weekdays
-              .map((x: any) => toIsoDay(x?.day))
-              .filter((n: any) => typeof n === 'number') as number[]
-          : [];
-        return days.length === 7;
-      });
-    }
-    // En un día concreto: solo productos asignados a ese día o 7/7
-    const dIso = toIsoDay(selectedDay) ?? (((new Date().getDay() + 6) % 7) + 1);
-    return list.filter((p: any) => {
-      const days: number[] = Array.isArray(p.product_weekdays)
-        ? p.product_weekdays
-            .map((x: any) => toIsoDay(x?.day))
-            .filter((n: any) => typeof n === 'number') as number[]
-        : [];
-      return days.length === 7 || days.includes(dIso as number);
-    });
-  })();
+  // No filtramos los productos aquí. Los pasamos todos y decidimos la disponibilidad
+  // de cada uno en el momento de renderizarlo.
+  const filteredProducts = products || [];
 
   // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
@@ -208,22 +185,26 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
-                const jsDay = new Date().getDay();
-                const today = ((jsDay + 6) % 7) + 1; // ISO 1..7
+                // LÓGICA DE DISPONIBILIDAD
                 const pDays: number[] = Array.isArray(p.product_weekdays)
                   ? p.product_weekdays
                       .map((x: any) => toIsoDay(x?.day))
                       .filter((n: any) => typeof n === 'number') as number[]
                   : [];
-                const hasDays = pDays.length > 0;
-                const allDays = pDays.length === 7;
-                const dayForAvail = (typeof selectedDay === 'number' && selectedDay >= 1 && selectedDay <= 7)
-                  ? Number(selectedDay)
-                  : today;
-                const availableToday = true; // ya filtramos por disponibilidad diaria arriba
-                const disabledForAdd = menuMode === 'daily' ? false : false;
-                const out = p.available === false || disabledForAdd;
-                const disabledLabel = p.available === false ? 'Agotado' : (disabledForAdd ? 'No disponible hoy' : undefined);
+
+                const isAvailableOnSelectedDay = (() => {
+                  if (menuMode !== 'daily') return true; // Menú fijo, siempre disponible.
+                  if (pDays.length === 0) return false; // Menú diario sin días asignados, no disponible.
+                  if (pDays.length === 7) return true; // Disponible los 7 días.
+                  // Si estamos en la pestaña "Todos los días" (day=0), no está disponible si no es 7/7.
+                  if (selectedDay === 0) return false;
+                  // Si estamos en un día concreto, comprobamos si está en la lista.
+                  if (selectedDay >= 1 && selectedDay <= 7) return pDays.includes(selectedDay);
+                  return false; // Caso por defecto.
+                })();
+
+                const out = p.available === false || !isAvailableOnSelectedDay;
+                const disabledLabel = p.available === false ? 'Agotado' : (!isAvailableOnSelectedDay ? 'No disponible este día' : undefined);
 
                 return (
                   <li
@@ -236,18 +217,15 @@ export default async function MenuPage({ searchParams }: PageProps) {
                       </span>
                     )}
 
-                    {!availableToday && menuMode === 'daily' && (
+                    {p.available !== false && !isAvailableOnSelectedDay && menuMode === 'daily' && (
                       <span className="absolute left-2 top-2 rounded border border-amber-700 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 shadow">
-                        Disponible: {(() => {
+                        Solo: {(() => {
                           const names = ['','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
                           const sorted = [...pDays].sort((a,b)=>a-b);
-                          return sorted.map((d)=>names[d]).join(', ');
+                          if (sorted.length > 3) return sorted.map(d => names[d].substring(0, 1)).join(', ');
+                          return sorted.map(d => names[d]).join(', ');
                         })()}
                       </span>
-                    )}
-
-                    {menuMode === 'daily' && p.available !== false && pDays.length === 0 && (
-                      <span className="absolute left-2 top-2 rounded border border-slate-400 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700 shadow">No disponible hoy</span>
                     )}
 
                     <CartQtyActions productId={p.id} allowAdd={!out} />
@@ -348,8 +326,3 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
-
-
-
-
-
