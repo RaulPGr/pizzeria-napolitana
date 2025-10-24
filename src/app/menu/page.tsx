@@ -115,8 +115,16 @@ export default async function MenuPage({ searchParams }: PageProps) {
         return days.length === 7;
       });
     }
-    // En un día concreto mostramos todos los productos y luego marcamos disponibilidad en cada tarjeta
-    return list;
+    // En un día concreto: solo productos asignados a ese día o 7/7
+    const dIso = toIsoDay(selectedDay) ?? (((new Date().getDay() + 6) % 7) + 1);
+    return list.filter((p: any) => {
+      const days: number[] = Array.isArray(p.product_weekdays)
+        ? p.product_weekdays
+            .map((x: any) => toIsoDay(x?.day))
+            .filter((n: any) => typeof n === 'number') as number[]
+        : [];
+      return days.length === 7 || days.includes(dIso as number);
+    });
   })();
 
   // Agrupar por categoría
@@ -212,10 +220,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const dayForAvail = (typeof selectedDay === 'number' && selectedDay >= 1 && selectedDay <= 7)
                   ? Number(selectedDay)
                   : today;
-                const availableToday = menuMode === 'daily'
-                  ? (hasDays ? (allDays || (selectedDay === 0 ? allDays : pDays.includes(dayForAvail))) : false)
-                  : true;
-                const disabledForAdd = menuMode === 'daily' ? !availableToday : false;
+                const availableToday = true; // ya filtramos por disponibilidad diaria arriba
+                const disabledForAdd = menuMode === 'daily' ? false : false;
                 const out = p.available === false || disabledForAdd;
                 const disabledLabel = p.available === false ? 'Agotado' : (disabledForAdd ? 'No disponible hoy' : undefined);
 
