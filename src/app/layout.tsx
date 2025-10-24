@@ -84,6 +84,7 @@ export default async function RootLayout({
   return (
     <html lang="es">
       <head>
+        <meta charSet="utf-8" />
         {themeAssets.fontHrefs.length > 0 && (
           <>
             <link rel="preconnect" href="https://fonts.googleapis.com" />
