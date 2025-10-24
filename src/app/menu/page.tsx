@@ -25,6 +25,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedCat = (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase();
   const rawDay = sp?.day;
   const selectedDay = Number(Array.isArray(rawDay) ? (rawDay[0] ?? '') : (rawDay ?? ''));
+  const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
+  const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
 
   // Si no se especifica ?day, redirigir al día actual (1..7 ISO)
   // Preservamos ?cat si viene en la URL. No tocamos cuando day=0 ("Todos los días").
@@ -45,6 +47,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const baseUrl = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
   const apiUrl = new URL('/api/products', baseUrl);
   if (selectedDay >= 1 && selectedDay <= 7) apiUrl.searchParams.set('day', String(selectedDay));
+  if (tenant) apiUrl.searchParams.set('tenant', tenant);
   const resp = await fetch(String(apiUrl), { cache: 'no-store', headers: { cookie } });
   const payload = await resp.json();
   const products = (payload?.products || []) as any[];
@@ -56,6 +59,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   let openDaysISO: number[] | null = null;
   try {
     const schedUrl = new URL('/api/settings/schedule', baseUrl);
+    if (tenant) schedUrl.searchParams.set('tenant', tenant);
     const sRes = await fetch(String(schedUrl), { cache: 'no-store', headers: { cookie } });
     const sj = await sRes.json();
     const schedule = sj?.ok ? (sj?.data || null) : null;
@@ -324,6 +328,7 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO }: { selectedDay?: numbe
     </div>
   );
 }
+
 
 
 
