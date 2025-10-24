@@ -108,7 +108,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
-        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} selectedCat={selectedCat} />
+        <DayTabs selectedDay={selectedDay} hasAllDays={hasAllDays} />
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -251,7 +251,7 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
   );
 }
 
-function DayTabs({ selectedDay, hasAllDays, selectedCat }: { selectedDay?: number; hasAllDays: boolean; selectedCat?: string; }) {
+function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays: boolean }) {
   const now = new Date();
   const jsDay = now.getDay();
   const today = ((jsDay + 6) % 7) + 1;
@@ -282,7 +282,7 @@ function DayTabs({ selectedDay, hasAllDays, selectedCat }: { selectedDay?: numbe
         {days.map(({ d, label }) => (
           <Link
             key={d}
-            href={`/menu?day=${d}${selectedCat ? `&cat=${encodeURIComponent(selectedCat)}` : ''}`}
+            href={`/menu?day=${d}`}
             className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}
           >
             {label}
