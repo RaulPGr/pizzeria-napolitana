@@ -75,7 +75,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   // Agrupar por categoría
   const groups = new Map<number|'nocat', any[]>();
-  filteredProducts.forEach((p:any)=>{ const key=(p.category_id ?? 'nocat') as number|'nocat'; if(!groups.has(key)) groups.set(key,[]); groups.get(key)!.push(p); });
+  filteredProducts.forEach((p:any)=>{
+    const cidRaw = p?.category_id;
+    const cidNum = Number(cidRaw);
+    const key: number | 'nocat' = (cidRaw == null || !Number.isFinite(cidNum)) ? 'nocat' : cidNum;
+    if(!groups.has(key)) groups.set(key,[]);
+    groups.get(key)!.push(p);
+  });
   const orderedSections: Array<{ id:number|'nocat'; name:string; sort_order?:number }> = [ ...(categories||[]), ...(groups.has('nocat')?[{ id:'nocat' as const, name:'Otros', sort_order:9999 }]:[]) ];
   const visibleSections = orderedSections.filter(s=>{ if(!selectedCat) return true; if(selectedCat==='nocat') return s.id==='nocat'; return String(s.id)===selectedCat; });
 
