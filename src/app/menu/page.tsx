@@ -68,6 +68,15 @@ export default async function MenuPage({ searchParams }: PageProps) {
     groups.get(key)!.push(p);
   }
 
+  // Fallback: si no hay grupos con productos pero sí hay productos, mostrarlos en 'Todos'
+  const hasAnyGroup = Array.from(groups.values()).some((a)=>Array.isArray(a) && a.length>0);
+  if (!hasAnyGroup && (products && products.length>0)) {
+    groups.clear();
+    groups.set('nocat', products.slice());
+  }
+
+  }
+
   const orderedSections: Array<{ id: number | 'nocat'; name: string; sort_order?: number }>
     = [ ...(categories || []), ...(groups.has('nocat') ? [{ id: 'nocat' as const, name: 'Otros', sort_order: 9999 }] : []) ];
 
@@ -205,4 +214,5 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
+
 
