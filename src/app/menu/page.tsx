@@ -186,7 +186,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
                 const isAvailableOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true;
-                  if (selectedDaySafe === 0) return pDays.length === 7;
+                  if (pDays.length === 0) return true; // sin configuración explícita => visible
+                  if (selectedDaySafe === 0) return pDays.length === 7; // pestaña "Todos los días"
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
                   return true;
                 })();
@@ -282,4 +283,3 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
-
