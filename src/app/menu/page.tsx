@@ -103,10 +103,20 @@ export default async function MenuPage({ searchParams }: PageProps) {
             {!selectedCat && (<h2 className="mb-3 text-xl font-semibold">{section.name}</h2>)}
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p:any)=>{
-                const pDays:number[] = Array.isArray(p.product_weekdays) ? p.product_weekdays.map((x:any)=>Number((x&&typeof x==='object')?(x as any).day:x)).filter((n:any)=>Number.isFinite(n)&&n>=1&&n<=7) : [];
+                const pDays:number[] = Array.isArray(p.product_weekdays)
+                  ? p.product_weekdays.map((x:any)=>Number((x&&typeof x==='object')?(x as any).day:x)).filter((n:any)=>Number.isFinite(n)&&n>=1&&n<=7)
+                  : [];
 
                 // Mostrar solo si el producto pertenece al día seleccionado (o 7/7). En "Todos" (0) solo 7/7.
-                const showOnSelectedDay = (()=>{ if(menuMode!=='daily') return true; if(selectedDaySafe===0) return pDays.length===7; if(selectedDaySafe>=1&&selectedDaySafe<=7) return pDays.includes(selectedDaySafe)||pDays.length===7; return true; })();
+                const showOnSelectedDay = (()=>{
+                  if (menuMode !== 'daily') return true;
+                  if (selectedDaySafe === 0) return pDays.length === 7;
+                  if (selectedDaySafe >= 1 && selectedDaySafe <= 7) {
+                    // Regla simple y robusta: visible si el día seleccionado está en la lista o si es 7/7
+                    return pDays.includes(selectedDaySafe) || pDays.length === 7;
+                  }
+                  return true;
+                })();
                 if(!showOnSelectedDay) return null;
 
                 // Botón activo solo si HOY corresponde
@@ -158,4 +168,3 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
-
