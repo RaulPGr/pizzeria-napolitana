@@ -7,13 +7,13 @@ import { headers } from 'next/headers';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 
-type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
 function jsToIso(jsDay: number) { return ((jsDay + 6) % 7) + 1; } // 0..6 -> 1..7
 
 function formatPrice(n: number) {
   try { return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n); }
-  catch { return n.toFixed(2) + ' €'; }
+  catch { return n.toFixed(2) + ' EUR'; }
 }
 
 function normalizeDays(arr: any): number[] {
@@ -24,7 +24,7 @@ function normalizeDays(arr: any): number[] {
 }
 
 export default async function MenuPage({ searchParams }: PageProps) {
-  const sp = await searchParams;
+  const sp = searchParams || {};
   const rawDay = sp?.day; // string | string[] | undefined
   const rawCat = sp?.cat;
   const selectedCat = (Array.isArray(rawCat) ? rawCat[0] : rawCat) || '';
@@ -56,7 +56,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const menuMode: 'fixed' | 'daily' = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Mostrar pestaña "Todos los dias" si hay productos 7/7
+  // Mostrar pestaña "Todos los días" si hay productos 7/7
   const hasAllDays = menuMode === 'daily' && products.some((p) => normalizeDays(p.product_weekdays).length === 7);
 
   // Agrupar por categoria (robusto a string/number/null)
@@ -68,13 +68,11 @@ export default async function MenuPage({ searchParams }: PageProps) {
     groups.get(key)!.push(p);
   }
 
-  // Fallback: si no hay grupos con productos pero s� hay productos, mostrarlos en 'Todos'
+  // Fallback: si no hay grupos con productos pero sí hay productos, mostrarlos en 'Otros'
   const hasAnyGroup = Array.from(groups.values()).some((a)=>Array.isArray(a) && a.length>0);
   if (!hasAnyGroup && (products && products.length>0)) {
     groups.clear();
     groups.set('nocat', products.slice());
-  }
-
   }
 
   const orderedSections: Array<{ id: number | 'nocat'; name: string; sort_order?: number }>
@@ -132,23 +130,25 @@ export default async function MenuPage({ searchParams }: PageProps) {
               {list.map((p: any) => {
                 const pDays = normalizeDays(p.product_weekdays);
 
-                // Visibilidad de la tarjeta según dia seleccionado
+                // Visibilidad de la tarjeta según día seleccionado
                 const showOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true;
-                  if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los dias": solo 7/7
+                  if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los días": solo 7/7
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
                   return true;
                 })();
                 if (!showOnSelectedDay) return null;
 
-                // Boton activo solo si HOY corresponde (o 7/7)
+                // Botón activo solo si HOY corresponde (o 7/7). En modo fijo, depende solo de 'available'.
                 const todayIso = jsToIso(new Date().getDay());
-                const canAddToday = p.available !== false && (pDays.includes(todayIso) || pDays.length === 7);
+                const canAddToday = (menuMode !== 'daily')
+                  ? (p.available !== false)
+                  : (p.available !== false && (pDays.includes(todayIso) || pDays.length === 7));
                 const out = !canAddToday;
                 const disabledLabel = p.available === false
                   ? 'Agotado'
-                  : (!canAddToday ? (() => {
-                      const names = ['', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+                  : (menuMode === 'daily' && !canAddToday ? (() => {
+                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                       const sorted = [...pDays].sort((a, b) => a - b);
                       if (sorted.length === 7) return undefined;
                       if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -201,7 +201,7 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
 function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays: boolean }) {
   const js = new Date().getDay(); const today = jsToIso(js);
   const current = (typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7) ? selectedDay : today;
-  const baseDays = hasAllDays ? [ { d:0, label:'Todos los dias' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miercoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sabado' }, { d:7, label:'Domingo' } ] : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miercoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sabado' }, { d:7, label:'Domingo' } ];
+  const baseDays = hasAllDays ? [ { d:0, label:'Todos los días' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ] : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ];
   return (
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
@@ -214,5 +214,4 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
-
 
