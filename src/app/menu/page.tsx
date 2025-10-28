@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx (clean UTF-8)
+﻿// src/app/menu/page.tsx (clean UTF-8)
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -100,26 +100,19 @@ export default async function MenuPage({ searchParams }: PageProps) {
   });
 
   // Filtrar por día seleccionado (solo modo diario)
-  const filteredProducts = (() => {
-    const arr = products || [];
-    if (menuMode !== 'daily') return arr;
-    const getDays = (p: any): number[] => Array.isArray(p?.product_weekdays)
+  const filteredProducts = products || [];
+  const filteredProducts = (products || []).filter((p: any) => {
+    if (menuMode !== 'daily') return true; // Si el menú es fijo, mostrar todo
+
+    // Normalizamos los días 1..7 de manera robusta
+    const pDays: number[] = Array.isArray(p.product_weekdays)
       ? p.product_weekdays
           .map((x: any) => Number((x && typeof x === 'object') ? (x as any).day : x))
           .filter((n: any) => Number.isFinite(n) && n >= 1 && n <= 7)
       : [];
-    if (selectedDaySafe === 0) {
-      // "Todos los días": solo productos 7/7
-      return arr.filter((p: any) => getDays(p).length === 7);
-    }
-    if (selectedDaySafe >= 1 && selectedDaySafe <= 7) {
-      return arr.filter((p: any) => {
-        const ds = getDays(p);
-        return ds.includes(selectedDaySafe) || ds.length === 7;
-      });
-    }
-    return arr;
-  })();
+
+    return selectedDaySafe === 0 ? pDays.length === 7 : pDays.includes(selectedDaySafe);
+  });
 
   // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
@@ -235,6 +228,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                       <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                     )}
                     {p.available !== false && !isAvailableOnSelectedDay && menuMode === 'daily' && (
+                    {p.available !== false && menuMode === 'daily' && pDays.length > 0 && pDays.length < 7 && (
                       <span className="absolute left-2 top-2 rounded border border-amber-700 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 shadow">
                         Solo: {(() => {
                           const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -317,3 +311,4 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
+
