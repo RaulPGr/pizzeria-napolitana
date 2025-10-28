@@ -99,8 +99,29 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return days.length === 7;
   });
 
-  // No filtramos: la disponibilidad se decide en la tarjeta
-  const filteredProducts = products || [];
+  // Filtrado por día (solo en modo diario)
+  const filteredProducts = (() => {
+    if (menuMode !== 'daily') return products || [];
+    const arr = products || [];
+    // Utilidad para extraer días 1..7 de cada producto de forma robusta
+    const getDays = (p: any): number[] => Array.isArray(p?.product_weekdays)
+      ? p.product_weekdays
+          .map((x: any) => Number((x && typeof x === 'object') ? (x as any).day : x))
+          .filter((n: any) => Number.isFinite(n) && n >= 1 && n <= 7)
+      : [];
+    if (selectedDaySafe === 0) {
+      // Pestaña "Todos los días": solo productos 7/7
+      return arr.filter((p: any) => getDays(p).length === 7);
+    }
+    if (selectedDaySafe >= 1 && selectedDaySafe <= 7) {
+      // Día concreto: productos configurados para ese día o 7/7
+      return arr.filter((p: any) => {
+        const ds = getDays(p);
+        return ds.includes(selectedDaySafe) || ds.length === 7;
+      });
+    }
+    return arr;
+  })();
 
   // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
@@ -186,8 +207,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
                 const isAvailableOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true;
-                  if (pDays.length === 0) return true; // sin configuración explícita => visible
-                  if (selectedDaySafe === 0) return pDays.length === 7; // pestaña "Todos los días"
+                  if (selectedDaySafe === 0) return pDays.length === 7;
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
                   return true;
                 })();
