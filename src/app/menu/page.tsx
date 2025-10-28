@@ -87,7 +87,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Men�</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} tenant={tenant || undefined} />
@@ -116,10 +116,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 // Mostrar solo si el producto pertenece al día seleccionado (o 7/7). En "Todos" (0) solo 7/7.
                 const showOnSelectedDay = (()=>{
                   if (menuMode !== 'daily') return true;
-                  if (selectedDaySafe === 0) return pDays.length === 7;
+                  if (selectedDaySafe === 0) return pDays.length === 7 || pDays.length === 0;
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) {
                     // Regla simple y robusta: visible si el día seleccionado está en la lista o si es 7/7
-                    return pDays.includes(selectedDaySafe) || pDays.length === 7;
+                    return pDays.includes(selectedDaySafe) || pDays.length === 7 || pDays.length === 0;
                   }
                   return true;
                 })();
@@ -174,3 +174,5 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
+
+
