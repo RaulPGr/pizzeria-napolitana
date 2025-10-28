@@ -1,4 +1,4 @@
-﻿// src/app/Menú/page.tsx
+// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -19,7 +19,7 @@ function formatPrice(n: number) {
   try {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
   } catch {
-    return n.toFixed(2) + ' â‚¬';
+    return n.toFixed(2) + ' EUR';
   }
 }
 
@@ -27,7 +27,7 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function MenúPage({ searchParams }: PageProps) {
+export default async function MenuPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const rawCat = sp?.cat;
   const selectedCat = (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase();
@@ -38,19 +38,18 @@ export default async function MenúPage({ searchParams }: PageProps) {
   const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
   const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
 
-  // Si no se especifica ?day, redirigir al dÃ­a actual (1..7 ISO)
-  // Preservamos ?cat si viene en la URL. No tocamos cuando day=0 ("Todos los dÃ­as").
+  // If no ?day, redirect to current day (ISO 1..7). Preserve ?cat.
   if (rawDay == null || (Array.isArray(rawDay) && rawDay[0] == null) || (typeof rawDay === 'string' && rawDay.trim() === '')) {
     const now = new Date();
-    const jsDay = now.getDay(); // 0..6 (Sun..Sat)
-    const todayIso = ((jsDay + 6) % 7) + 1; // 1..7 (Mon..Sun)
+    const jsDay = now.getDay(); // 0..6
+    const todayIso = ((jsDay + 6) % 7) + 1; // 1..7
     const params = new URLSearchParams();
     params.set('day', String(todayIso));
     if (selectedCat) params.set('cat', selectedCat === 'nocat' ? 'nocat' : selectedCat);
-    redirect(`/Menú?${params.toString()}`);
+    redirect(`/menu?${params.toString()}`);
   }
 
-  // Fallback seguro si day viene invÃ¡lido/NaN: usar hoy (ISO)
+  // Safe selected day
   const nowForDay = new Date();
   const jsDayForDay = nowForDay.getDay();
   const todayIsoForDay = ((jsDayForDay + 6) % 7) + 1;
@@ -69,10 +68,10 @@ export default async function MenúPage({ searchParams }: PageProps) {
   const payload = await resp.json();
   const products = (payload?.products || []) as any[];
   const categories = (payload?.categories || []) as any[];
-  const MenúMode = (payload?.Menú_mode as 'fixed' | 'daily') || 'fixed';
+  const menuMode = (payload?.menu_mode as 'fixed' | 'daily') || 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Cargar horario de pedidos para saber quÃ© dÃ­as mostrar en las pestaÃ±as
+  // Fetch schedule to limit visible day tabs
   let openDaysISO: number[] | null = null;
   try {
     const schedUrl = new URL('/api/settings/schedule', baseUrl);
@@ -81,15 +80,7 @@ export default async function MenúPage({ searchParams }: PageProps) {
     const sj = await sRes.json();
     const schedule = sj?.ok ? (sj?.data || null) : null;
     if (schedule) {
-      const keyToIso: Record<string, number> = {
-        monday: 1,
-        tuesday: 2,
-        wednesday: 3,
-        thursday: 4,
-        friday: 5,
-        saturday: 6,
-        sunday: 7,
-      };
+      const keyToIso: Record<string, number> = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 7 };
       const days: number[] = [];
       for (const [k, v] of Object.entries(schedule)) {
         const iso = (keyToIso as any)[k];
@@ -101,32 +92,30 @@ export default async function MenúPage({ searchParams }: PageProps) {
     }
   } catch {}
 
-  // Mostrar pestaÃ±a "Todos los dÃ­as" solo si hay productos 7/7
-  const hasAllDays = MenúMode === 'daily' && (products || []).some((p: any) => {
+  // Show "Todos los ds" tab only if there are 7/7 products
+  const hasAllDays = menuMode === 'daily' && (products || []).some((p: any) => {
     const days: number[] = Array.isArray(p.product_weekdays)
       ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
       : [];
     return days.length === 7;
   });
 
-  // Filtrado opcional por dÃ­a (por defecto mostramos solo los disponibles en el dÃ­a)
+  // Optional day filter in view (default: show only available for the day)
   const filteredProducts = (() => {
     const arr = products || [];
-    if (MenúMode !== 'daily') return arr;
-    if (selectedView === 'all') return arr; // modo compatibilidad: mostrar todo
+    if (menuMode !== 'daily') return arr;
+    if (selectedView === 'all') return arr;
     return arr.filter((p: any) => {
       const pDays: number[] = Array.isArray(p.product_weekdays)
-        ? p.product_weekdays
-            .map((x: any) => toIsoDay(x?.day))
-            .filter((n: any): n is number => typeof n === 'number')
+        ? p.product_weekdays.map((x: any) => toIsoDay(x?.day)).filter((n: any): n is number => typeof n === 'number')
         : [];
-      if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los dÃ­as"
+      if (selectedDaySafe === 0) return pDays.length === 7;
       if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
       return true;
     });
   })();
 
-  // Agrupar por categorÃ­a
+  // Group by category
   const groups = new Map<number | 'nocat', any[]>();
   filteredProducts.forEach((p: any) => {
     const key = (p.category_id ?? 'nocat') as number | 'nocat';
@@ -147,7 +136,7 @@ export default async function MenúPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Men\u00FA</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} tenant={tenant || undefined} />
@@ -159,7 +148,7 @@ export default async function MenúPage({ searchParams }: PageProps) {
           const params: string[] = [];
           if (validDay) params.push(`day=${encodeURIComponent(String(selectedDaySafe))}`);
           if (tenant) params.push(`tenant=${encodeURIComponent(tenant)}`);
-          const href = `/Menú${params.length ? `?${params.join('&')}` : ''}`;
+          const href = `/menu${params.length ? `?${params.join('&')}` : ''}`;
           return (
             <FilterPill href={href} active={!selectedCat}>Todos</FilterPill>
           );
@@ -170,7 +159,7 @@ export default async function MenúPage({ searchParams }: PageProps) {
           const catParam = s.id === 'nocat' ? 'cat=nocat' : `cat=${encodeURIComponent(String(s.id))}`;
           const tenantParam = tenant ? `tenant=${encodeURIComponent(tenant)}` : undefined;
           const qp = [dayParam, tenantParam, catParam].filter(Boolean).join('&');
-          const href = `/Menú?${qp}`;
+          const href = `/menu?${qp}`;
           const active = selectedCat === (s.id === 'nocat' ? 'nocat' : String(s.id));
           return (
             <FilterPill key={String(s.id)} href={href} active={active}>
@@ -182,100 +171,66 @@ export default async function MenúPage({ searchParams }: PageProps) {
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el Menúº</div>
+          <div className="font-medium">No se pudo cargar el Men\u00FA</div>
           <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
 
       {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categorÃ­a seleccionada.</p>
+        <p className="text-slate-600">No hay productos para la categor\u00EDa seleccionada.</p>
       )}
 
       {visibleSections.map((section) => {
-        const list =
-          section.id === 'nocat'
-            ? (groups.get('nocat') || [])
-            : (groups.get(section.id as number) || []);
-
+        const list = section.id === 'nocat' ? (groups.get('nocat') || []) : (groups.get(section.id as number) || []);
         if (!list || list.length === 0) return null;
-
         return (
           <section key={String(section.id)} className="mb-10">
             {!selectedCat && (
               <h2 className="mb-3 text-xl font-semibold">{section.name}</h2>
             )}
-
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
-                // LÃ“GICA DE DISPONIBILIDAD
                 const pDays: number[] = Array.isArray(p.product_weekdays)
-                  ? p.product_weekdays
-                      .map((x: any) => toIsoDay(x?.day))
-                      .filter((n: any) => typeof n === 'number') as number[]
+                  ? p.product_weekdays.map((x: any) => toIsoDay(x?.day)).filter((n: any): n is number => typeof n === 'number')
                   : [];
-
                 const isAvailableOnSelectedDay = (() => {
-                  if (MenúMode !== 'daily') return true;
+                  if (menuMode !== 'daily') return true;
                   if (selectedDaySafe === 0) return pDays.length === 7;
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
                   return true;
                 })();
-
                 const out = p.available === false || !isAvailableOnSelectedDay;
-                const disabledLabel = p.available === false ? 'Agotado' : (!isAvailableOnSelectedDay ? 'No disponible este dÃ­a' : undefined);
-
+                const disabledLabel = p.available === false ? 'Agotado' : (!isAvailableOnSelectedDay ? 'No disponible este d\u00EDa' : undefined);
                 return (
-                  <li
-                    key={p.id}
-                    className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}
-                  >
+                  <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
                     {p.available === false && (
-                      <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">
-                        Agotado
-                      </span>
+                      <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                     )}
-
-                    {p.available !== false && !isAvailableOnSelectedDay && MenúMode === 'daily' && (
+                    {p.available !== false && !isAvailableOnSelectedDay && menuMode === 'daily' && (
                       <span className="absolute left-2 top-2 rounded border border-amber-700 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 shadow">
                         Solo: {(() => {
-                          const names = ['','Lunes','Martes','MiÃ©rcoles','Jueves','Viernes','SÃ¡bado','Domingo'];
+                          const names = ['', 'Lunes', 'Martes', 'Mi\u00E9rcoles', 'Jueves', 'Viernes', 'S\u00E1bado', 'Domingo'];
                           const sorted = [...pDays].sort((a,b)=>a-b);
                           if (sorted.length > 3) return sorted.map(d => names[d].substring(0, 1)).join(', ');
                           return sorted.map(d => names[d]).join(', ');
                         })()}
                       </span>
                     )}
-
                     <CartQtyActions productId={p.id} allowAdd={!out} />
-
                     {p.image_url && (
-                      <img
-                        src={p.image_url}
-                        alt={p.name}
-                        className="h-40 w-full object-cover"
-                        loading="lazy"
-                      />
+                      <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
                     )}
-
                     <div className="p-3">
                       <div className="flex items-baseline justify-between gap-4">
                         <h3 className="text-base font-medium">{p.name}</h3>
-                        <span
-                          className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}
-                        >
+                        <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
                           {formatPrice(Number(p.price || 0))}
                         </span>
                       </div>
-
                       {p.description && (
                         <p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>
                       )}
-
-                      <AddToCartButton
-                        product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
-                        disabled={out}
-                        disabledLabel={disabledLabel}
-                      />
+                      <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
                     </div>
                   </li>
                 );
@@ -290,10 +245,7 @@ export default async function MenúPage({ searchParams }: PageProps) {
 
 function FilterPill({ href, active, children }: { href: string; active?: boolean; children: React.ReactNode; }) {
   return (
-    <Link
-      href={href}
-      className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', active ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}
-    >
+    <Link href={href} className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', active ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}>
       {children}
     </Link>
   );
@@ -303,26 +255,26 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
   const now = new Date();
   const jsDay = now.getDay();
   const today = ((jsDay + 6) % 7) + 1;
-  const valid = typeof selectedDay === "number" && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7;
+  const valid = typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7;
   const current = valid ? (selectedDay as number) : today;
   const baseDays = hasAllDays
     ? [
-        { d: 0, label: 'Todos los dÃ­as' },
+        { d: 0, label: 'Todos los d\u00EDas' },
         { d: 1, label: 'Lunes' },
         { d: 2, label: 'Martes' },
-        { d: 3, label: 'MiÃ©rcoles' },
+        { d: 3, label: 'Mi\u00E9rcoles' },
         { d: 4, label: 'Jueves' },
         { d: 5, label: 'Viernes' },
-        { d: 6, label: 'SÃ¡bado' },
+        { d: 6, label: 'S\u00E1bado' },
         { d: 7, label: 'Domingo' },
       ]
     : [
         { d: 1, label: 'Lunes' },
         { d: 2, label: 'Martes' },
-        { d: 3, label: 'MiÃ©rcoles' },
+        { d: 3, label: 'Mi\u00E9rcoles' },
         { d: 4, label: 'Jueves' },
         { d: 5, label: 'Viernes' },
-        { d: 6, label: 'SÃ¡bado' },
+        { d: 6, label: 'S\u00E1bado' },
         { d: 7, label: 'Domingo' },
       ];
   const days = (() => {
@@ -335,7 +287,7 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
         {days.map(({ d, label }) => (
           <Link
             key={d}
-            href={`/Menú?day=${d}${tenant ? `&tenant=${encodeURIComponent(tenant)}` : ''}`}
+            href={`/menu?day=${d}${tenant ? `&tenant=${encodeURIComponent(tenant)}` : ''}`}
             className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}
           >
             {label}
@@ -345,3 +297,4 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
+
