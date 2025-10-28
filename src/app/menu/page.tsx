@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx
+// src/app/menu/page.tsx (clean UTF-8)
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -19,13 +19,11 @@ function formatPrice(n: number) {
   try {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
   } catch {
-    return n.toFixed(2) + ' EUR';
+    return n.toFixed(2) + ' €';
   }
 }
 
-type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
+type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function MenuPage({ searchParams }: PageProps) {
   const sp = await searchParams;
@@ -33,15 +31,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedCat = (Array.isArray(rawCat) ? (rawCat[0] ?? '') : (rawCat ?? '')).toLowerCase();
   const rawDay = sp?.day;
   const selectedDay = Number(Array.isArray(rawDay) ? (rawDay[0] ?? '') : (rawDay ?? ''));
-  const rawView = (sp as any)?.view as string | string[] | undefined;
-  const selectedView = (Array.isArray(rawView) ? (rawView[0] ?? '') : (rawView ?? '')).toLowerCase();
   const rawTenant = (sp as any)?.tenant as string | string[] | undefined;
   const tenant = (Array.isArray(rawTenant) ? (rawTenant[0] ?? '') : (rawTenant ?? '')).toLowerCase();
 
-  // If no ?day, redirect to current day (ISO 1..7). Preserve ?cat.
+  // Si no se especifica ?day, redirigir al día actual (1..7 ISO)
   if (rawDay == null || (Array.isArray(rawDay) && rawDay[0] == null) || (typeof rawDay === 'string' && rawDay.trim() === '')) {
     const now = new Date();
-    const jsDay = now.getDay(); // 0..6
+    const jsDay = now.getDay();
     const todayIso = ((jsDay + 6) % 7) + 1; // 1..7
     const params = new URLSearchParams();
     params.set('day', String(todayIso));
@@ -49,7 +45,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     redirect(`/menu?${params.toString()}`);
   }
 
-  // Safe selected day
+  // Día seguro por si llega NaN/ vacío
   const nowForDay = new Date();
   const jsDayForDay = nowForDay.getDay();
   const todayIsoForDay = ((jsDayForDay + 6) % 7) + 1;
@@ -57,10 +53,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
     ? selectedDay
     : todayIsoForDay;
 
+  // Base URL para llamadas server-side
   const h = await headers();
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host = h.get('host');
   const baseUrl = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
+
+  // Productos + categorías
   const apiUrl = new URL('/api/products', baseUrl);
   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) apiUrl.searchParams.set('day', String(selectedDaySafe));
   if (tenant) apiUrl.searchParams.set('tenant', tenant);
@@ -71,7 +70,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const menuMode = (payload?.menu_mode as 'fixed' | 'daily') || 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Fetch schedule to limit visible day tabs
+  // Horario para limitar pestañas visibles
   let openDaysISO: number[] | null = null;
   try {
     const schedUrl = new URL('/api/settings/schedule', baseUrl);
@@ -92,7 +91,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     }
   } catch {}
 
-  // Show "Todos los ds" tab only if there are 7/7 products
+  // Mostrar pestaña "Todos los días" si hay algún producto 7/7
   const hasAllDays = menuMode === 'daily' && (products || []).some((p: any) => {
     const days: number[] = Array.isArray(p.product_weekdays)
       ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
@@ -100,10 +99,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return days.length === 7;
   });
 
-  // Mostrar todos los productos (no filtramos en servidor). La disponibilidad se decide por tarjeta.
+  // No filtramos: la disponibilidad se decide en la tarjeta
   const filteredProducts = products || [];
 
-  // Group by category
+  // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
   filteredProducts.forEach((p: any) => {
     const key = (p.category_id ?? 'nocat') as number | 'nocat';
@@ -122,14 +121,14 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return String(s.id) === selectedCat;
   });
 
-
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Men�</h1>
-      <h1 className="mb-6 text-3xl font-semibold">Men�</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
+      {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} tenant={tenant || undefined} />
       )}
+
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {(() => {
           const validDay = typeof selectedDaySafe === 'number' && !Number.isNaN(selectedDaySafe) && selectedDaySafe >= 0 && selectedDaySafe <= 7;
@@ -165,7 +164,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
       )}
 
       {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categor\u00EDa seleccionada.</p>
+        <p className="text-slate-600">No hay productos para la categoría seleccionada.</p>
       )}
 
       {visibleSections.map((section) => {
@@ -178,19 +177,23 @@ export default async function MenuPage({ searchParams }: PageProps) {
             )}
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
+                // Normalizamos los días 1..7 de manera robusta
                 const pDays: number[] = Array.isArray(p.product_weekdays)
                   ? p.product_weekdays
                       .map((x: any) => Number((x && typeof x === 'object') ? (x as any).day : x))
                       .filter((n: any) => Number.isFinite(n) && n >= 1 && n <= 7)
                   : [];
+
                 const isAvailableOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true;
                   if (selectedDaySafe === 0) return pDays.length === 7;
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
                   return true;
                 })();
+
                 const out = p.available === false || !isAvailableOnSelectedDay;
-                const disabledLabel = p.available === false ? 'Agotado' : (!isAvailableOnSelectedDay ? 'No disponible este d\u00EDa' : undefined);
+                const disabledLabel = p.available === false ? 'Agotado' : (!isAvailableOnSelectedDay ? 'No disponible este día' : undefined);
+
                 return (
                   <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
                     {p.available === false && (
@@ -199,7 +202,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                     {p.available !== false && !isAvailableOnSelectedDay && menuMode === 'daily' && (
                       <span className="absolute left-2 top-2 rounded border border-amber-700 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 shadow">
                         Solo: {(() => {
-                          const names = ['', 'Lunes', 'Martes', 'Mi\u00E9rcoles', 'Jueves', 'Viernes', 'S\u00E1bado', 'Domingo'];
+                          const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                           const sorted = [...pDays].sort((a,b)=>a-b);
                           if (sorted.length > 3) return sorted.map(d => names[d].substring(0, 1)).join(', ');
                           return sorted.map(d => names[d]).join(', ');
@@ -207,9 +210,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                       </span>
                     )}
                     <CartQtyActions productId={p.id} allowAdd={!out} />
-                    {p.image_url && (
-                      <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
-                    )}
+                    {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                     <div className="p-3">
                       <div className="flex items-baseline justify-between gap-4">
                         <h3 className="text-base font-medium">{p.name}</h3>
@@ -217,9 +218,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                           {formatPrice(Number(p.price || 0))}
                         </span>
                       </div>
-                      {p.description && (
-                        <p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>
-                      )}
+                      {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
                       <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
                     </div>
                   </li>
@@ -249,22 +248,22 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
   const current = valid ? (selectedDay as number) : today;
   const baseDays = hasAllDays
     ? [
-        { d: 0, label: 'Todos los d\u00EDas' },
+        { d: 0, label: 'Todos los días' },
         { d: 1, label: 'Lunes' },
         { d: 2, label: 'Martes' },
-        { d: 3, label: 'Mi\u00E9rcoles' },
+        { d: 3, label: 'Miércoles' },
         { d: 4, label: 'Jueves' },
         { d: 5, label: 'Viernes' },
-        { d: 6, label: 'S\u00E1bado' },
+        { d: 6, label: 'Sábado' },
         { d: 7, label: 'Domingo' },
       ]
     : [
         { d: 1, label: 'Lunes' },
         { d: 2, label: 'Martes' },
-        { d: 3, label: 'Mi\u00E9rcoles' },
+        { d: 3, label: 'Miércoles' },
         { d: 4, label: 'Jueves' },
         { d: 5, label: 'Viernes' },
-        { d: 6, label: 'S\u00E1bado' },
+        { d: 6, label: 'Sábado' },
         { d: 7, label: 'Domingo' },
       ];
   const days = (() => {
@@ -275,11 +274,7 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
         {days.map(({ d, label }) => (
-          <Link
-            key={d}
-            href={`/menu?day=${d}${tenant ? `&tenant=${encodeURIComponent(tenant)}` : ''}`}
-            className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}
-          >
+          <Link key={d} href={`/menu?day=${d}${tenant ? `&tenant=${encodeURIComponent(tenant)}` : ''}`} className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50', ].join(' ')}>
             {label}
           </Link>
         ))}
@@ -287,3 +282,4 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
+
