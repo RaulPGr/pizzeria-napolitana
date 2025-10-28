@@ -99,22 +99,20 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return days.length === 7;
   });
 
-  // Filtrado por día (solo en modo diario)
+  // Filtrar por día seleccionado (solo modo diario)
   const filteredProducts = (() => {
-    if (menuMode !== 'daily') return products || [];
     const arr = products || [];
-    // Utilidad para extraer días 1..7 de cada producto de forma robusta
+    if (menuMode !== 'daily') return arr;
     const getDays = (p: any): number[] => Array.isArray(p?.product_weekdays)
       ? p.product_weekdays
           .map((x: any) => Number((x && typeof x === 'object') ? (x as any).day : x))
           .filter((n: any) => Number.isFinite(n) && n >= 1 && n <= 7)
       : [];
     if (selectedDaySafe === 0) {
-      // Pestaña "Todos los días": solo productos 7/7
+      // "Todos los días": solo productos 7/7
       return arr.filter((p: any) => getDays(p).length === 7);
     }
     if (selectedDaySafe >= 1 && selectedDaySafe <= 7) {
-      // Día concreto: productos configurados para ese día o 7/7
       return arr.filter((p: any) => {
         const ds = getDays(p);
         return ds.includes(selectedDaySafe) || ds.length === 7;
@@ -205,15 +203,23 @@ export default async function MenuPage({ searchParams }: PageProps) {
                       .filter((n: any) => Number.isFinite(n) && n >= 1 && n <= 7)
                   : [];
 
-                const isAvailableOnSelectedDay = (() => {
-                  if (menuMode !== 'daily') return true;
-                  if (selectedDaySafe === 0) return pDays.length === 7;
-                  if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
-                  return true;
-                })();
+                // ¿Se puede añadir HOY? (independiente del día seleccionado)
+                const now = new Date();
+                const todayIso = ((now.getDay() + 6) % 7) + 1; // 1..7
+                const canAddToday = p.available !== false && (pDays.includes(todayIso) || pDays.length === 7);
 
-                const out = p.available === false || !isAvailableOnSelectedDay;
-                const disabledLabel = p.available === false ? 'Agotado' : (!isAvailableOnSelectedDay ? 'No disponible este día' : undefined);
+                const out = !canAddToday; // bloquea botón si hoy no es su día
+                const disabledLabel = p.available === false
+                  ? 'Agotado'
+                  : (!canAddToday
+                      ? (() => {
+                          const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                          const sorted = [...pDays].sort((a,b)=>a-b);
+                          if (sorted.length === 7) return undefined;
+                          if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
+                          return `Solo disponible: ${sorted.map(d=>names[d]).join(', ')}`;
+                        })()
+                      : undefined);
 
                 return (
                   <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
