@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx
+﻿// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -51,12 +51,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
   apiUrl.searchParams.set('day', String(selectedDaySafe));
   const resp = await fetch(String(apiUrl), { cache: 'no-store' });
   const payload = await resp.json();
+  try { console.log('[menu] selDay=', selectedDaySafe, 'products=', Array.isArray(payload?.products) ? payload.products.length : 0, 'firstDays=', Array.isArray(payload?.products) && payload.products[0] ? (payload.products[0].product_weekdays || []) : []); } catch {}
   const products: any[] = Array.isArray(payload?.products) ? payload.products : [];
   const categories: any[] = Array.isArray(payload?.categories) ? payload.categories : [];
   const menuMode: 'fixed' | 'daily' = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Mostrar pestaña "Todos los días" si hay productos 7/7
+  // Mostrar pestaÃ±a "Todos los dÃ­as" si hay productos 7/7
   const hasAllDays = menuMode === 'daily' && products.some((p) => normalizeDays(p.product_weekdays).length === 7);
 
   // Agrupar por categoria (robusto a string/number/null)
@@ -68,7 +69,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     groups.get(key)!.push(p);
   }
 
-  // Fallback: si no hay grupos con productos pero sí hay productos, mostrarlos en 'Otros'
+  // Fallback: si no hay grupos con productos pero sÃ­ hay productos, mostrarlos en 'Otros'
   const hasAnyGroup = Array.from(groups.values()).some((a)=>Array.isArray(a) && a.length>0);
   if (!hasAnyGroup && (products && products.length>0)) {
     groups.clear();
@@ -86,7 +87,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
+      <h1 className="mb-6 text-3xl font-semibold">MenÃº</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} />
@@ -110,13 +111,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el Menú</div>
+          <div className="font-medium">No se pudo cargar el MenÃº</div>
           <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
 
       {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categoría seleccionada.</p>
+        <p className="text-slate-600">No hay productos para la categorÃ­a seleccionada.</p>
       )}
 
       {visibleSections.map((section) => {
@@ -130,16 +131,16 @@ export default async function MenuPage({ searchParams }: PageProps) {
               {list.map((p: any) => {
                 const pDays = normalizeDays(p.product_weekdays);
 
-                // Visibilidad de la tarjeta según día seleccionado
+                // Visibilidad de la tarjeta segÃºn dÃ­a seleccionado
                 const showOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true;
-                  if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los días": solo 7/7
+                  if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los dÃ­as": solo 7/7
                   if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
                   return true;
                 })();
                 if (!showOnSelectedDay) return null;
 
-                // Botón activo solo si HOY corresponde (o 7/7). En modo fijo, depende solo de 'available'.
+                // BotÃ³n activo solo si HOY corresponde (o 7/7). En modo fijo, depende solo de 'available'.
                 const todayIso = jsToIso(new Date().getDay());
                 const canAddToday = (menuMode !== 'daily')
                   ? (p.available !== false)
@@ -148,7 +149,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const disabledLabel = p.available === false
                   ? 'Agotado'
                   : (menuMode === 'daily' && !canAddToday ? (() => {
-                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                      const names = ['', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
                       const sorted = [...pDays].sort((a, b) => a - b);
                       if (sorted.length === 7) return undefined;
                       if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -201,7 +202,7 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
 function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays: boolean }) {
   const js = new Date().getDay(); const today = jsToIso(js);
   const current = (typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7) ? selectedDay : today;
-  const baseDays = hasAllDays ? [ { d:0, label:'Todos los días' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ] : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ];
+  const baseDays = hasAllDays ? [ { d:0, label:'Todos los dÃ­as' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'MiÃ©rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'SÃ¡bado' }, { d:7, label:'Domingo' } ] : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'MiÃ©rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'SÃ¡bado' }, { d:7, label:'Domingo' } ];
   return (
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
