@@ -208,6 +208,14 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const todayIso = ((now.getDay() + 6) % 7) + 1; // 1..7
                 const canAddToday = p.available !== false && (pDays.includes(todayIso) || pDays.length === 7);
 
+                // ¿Está disponible en el DÍA SELECCIONADO (para mostrar la banda "Solo:")?
+                const isAvailableOnSelectedDay = (() => {
+                  if (menuMode !== 'daily') return true;
+                  if (selectedDaySafe === 0) return pDays.length === 7;
+                  if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
+                  return true;
+                })();
+
                 const out = !canAddToday; // bloquea botón si hoy no es su día
                 const disabledLabel = p.available === false
                   ? 'Agotado'
