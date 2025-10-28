@@ -100,20 +100,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return days.length === 7;
   });
 
-  // Optional day filter in view (default: show only available for the day)
-  const filteredProducts = (() => {
-    const arr = products || [];
-    if (menuMode !== 'daily') return arr;
-    if (selectedView === 'all') return arr;
-    return arr.filter((p: any) => {
-      const pDays: number[] = Array.isArray(p.product_weekdays)
-        ? p.product_weekdays.map((x: any) => toIsoDay(x?.day)).filter((n: any): n is number => typeof n === 'number')
-        : [];
-      if (selectedDaySafe === 0) return pDays.length === 7;
-      if (selectedDaySafe >= 1 && selectedDaySafe <= 7) return pDays.includes(selectedDaySafe) || pDays.length === 7;
-      return true;
-    });
-  })();
+  // Mostrar todos los productos (no filtramos en servidor). La disponibilidad se decide por tarjeta.
+  const filteredProducts = products || [];
 
   // Group by category
   const groups = new Map<number | 'nocat', any[]>();
@@ -136,7 +124,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Men\u00FA</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} tenant={tenant || undefined} />
@@ -171,7 +159,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el Men\u00FA</div>
+          <div className="font-medium">No se pudo cargar el Menú</div>
           <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
@@ -297,4 +285,3 @@ function DayTabs({ selectedDay, hasAllDays, openDaysISO, tenant }: { selectedDay
     </div>
   );
 }
-
