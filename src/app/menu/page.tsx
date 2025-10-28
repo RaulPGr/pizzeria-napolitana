@@ -122,14 +122,14 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return String(s.id) === selectedCat;
   });
 
+
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">MenÃº</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
-      {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} openDaysISO={openDaysISO || undefined} tenant={tenant || undefined} />
       )}
-
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {(() => {
           const validDay = typeof selectedDaySafe === 'number' && !Number.isNaN(selectedDaySafe) && selectedDaySafe >= 0 && selectedDaySafe <= 7;
@@ -179,7 +179,9 @@ export default async function MenuPage({ searchParams }: PageProps) {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
                 const pDays: number[] = Array.isArray(p.product_weekdays)
-                  ? p.product_weekdays.map((x: any) => toIsoDay(x?.day)).filter((n: any): n is number => typeof n === 'number')
+                  ? p.product_weekdays
+                      .map((x: any) => Number((x && typeof x === 'object') ? (x as any).day : x))
+                      .filter((n: any) => Number.isFinite(n) && n >= 1 && n <= 7)
                   : [];
                 const isAvailableOnSelectedDay = (() => {
                   if (menuMode !== 'daily') return true;
