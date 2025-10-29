@@ -11,6 +11,16 @@ type PageProps = { searchParams?: { [key: string]: string | string[] | undefined
 
 function jsToIso(jsDay: number) { return ((jsDay + 6) % 7) + 1; } // 0..6 -> 1..7
 
+function todayIsoTZ(tz?: string) {
+  try {
+    const zone = tz || process.env.NEXT_PUBLIC_TIMEZONE || 'Europe/Madrid';
+    const local = new Date(new Date().toLocaleString('en-US', { timeZone: zone }));
+    return jsToIso(local.getDay());
+  } catch {
+    return jsToIso(new Date().getDay());
+  }
+}
+
 function formatPrice(n: number) {
   try { return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n); }
   catch { return n.toFixed(2) + ' EUR'; }
@@ -32,7 +42,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   // Si no viene ?day, redirigimos al dÃ­a actual (ISO 1..7)
   if (!(selectedDay >= 0 && selectedDay <= 7) || Number.isNaN(selectedDay)) {
-    const todayIso = jsToIso(new Date().getDay());
+    const todayIso = todayIsoTZ();
     const qp = new URLSearchParams(); qp.set('day', String(todayIso));
     if (selectedCat) qp.set('cat', selectedCat);
     redirect(`/menu?${qp.toString()}`);
@@ -144,7 +154,7 @@ const dataset: any[] = (menuMode === 'daily' && filteredProducts.length === 0 &&
                 const pDays = normalizeDays(p.product_weekdays);
 
                 // BotÃ³n activo solo si HOY corresponde (o 7/7). En modo fijo, depende solo de 'available'.
-                const todayIso = jsToIso(new Date().getDay());
+                const todayIso = todayIsoTZ();
                 const canAddToday = (menuMode !== 'daily')
                   ? (p.available !== false)
                   : (p.available !== false && (pDays.includes(todayIso) || pDays.length === 7));
