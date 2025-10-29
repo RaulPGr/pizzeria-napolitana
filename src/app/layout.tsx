@@ -116,12 +116,19 @@ export default async function RootLayout({
               {children}
             </div>
             <footer className="mt-10 border-t border-slate-200 bg-white/60">
-              <div className="mx-auto max-w-6xl p-4 md:p-6 flex items-center justify-center gap-2 text-xs text-slate-500">
-                <span>Web creada con</span>
-                <a href="https://pidelocal.es" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-emerald-700">
-                  <img src="/images/pidelocal.png" alt="PideLocal" className="h-4 w-4" />
-                  <span>PideLocal</span>
-                </a>
+              <div className="mx-auto max-w-6xl p-4 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+                <div className="inline-flex items-center gap-2">
+                  <span>Web creada con</span>
+                  <a href="https://pidelocal.es" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-emerald-700">
+                    <img src="/images/pidelocal.png" alt="PideLocal" className="h-4 w-4" />
+                    <span>PideLocal</span>
+                  </a>
+                </div>
+                <div className="inline-flex items-center gap-4">
+                  <a href="#" className="hover:underline">Aviso Legal</a>
+                  <a href="#" className="hover:underline">Privacidad</a>
+                  <a href="#" className="hover:underline">Cookies</a>
+                </div>
               </div>
             </footer>
           </main>

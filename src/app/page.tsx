@@ -216,18 +216,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-brand-crust">
-        <div className="max-w-6xl mx-auto px-4 py-8 text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>© {new Date().getFullYear()} {INFO.nombre}. Todos los derechos reservados.</span>
-          <div className="flex items-center gap-4">
-            <a href="#" className="hover:underline">Aviso Legal</a>
-            <a href="#" className="hover:underline">Privacidad</a>
-            <a href="#" className="hover:underline">Cookies</a>
-          </div>
-        </div>
-      </footer>
+      {/* Footer propio de portada eliminado: los enlaces legales viven en el footer global */}
     </main>
   );
 }
-
