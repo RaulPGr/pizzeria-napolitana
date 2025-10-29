@@ -1,4 +1,4 @@
-ï»¿// src/app/menu/page.tsx
+// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -51,7 +51,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedDaySafe = selectedDay;
 
   // URL relativa para preservar el subdominio actual (tenant) en el Host
-  // Construimos URL absoluta desde la peticiÃ³n actual para preservar el subdominio (tenant)
+  // Construimos URL absoluta desde la petición actual para preservar el subdominio (tenant)
   const hdrs = await headers();
   const proto = (hdrs.get('x-forwarded-proto') || 'https').split(',')[0].trim();
   const host = (hdrs.get('host') || '').trim();
@@ -81,7 +81,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     error = { message: e?.message || 'Fetch error' };
   }
 
-  // Lista a renderizar segÃºn dÃ­a seleccionado (refuerza filtrado del API y maneja day=0)
+  // Lista a renderizar según día seleccionado (refuerza filtrado del API y maneja day=0)
   const viewProducts = (menuMode === 'daily')
     ? (products || []).filter((p: any) => {
         const pDays = normalizeDays(p?.product_weekdays);
@@ -111,10 +111,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">MenÃº</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
-        <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} />
+        <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} availableDays={(Array.isArray((payload as any)?.available_days) ? (payload as any).available_days : undefined) as any} />
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -164,13 +164,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el MenÃº</div>
+          <div className="font-medium">No se pudo cargar el Menú</div>
           <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
 
       {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categorÃ­a seleccionada.</p>
+        <p className="text-slate-600">No hay productos para la categoría seleccionada.</p>
       )}
 
       {(() => {
@@ -190,7 +190,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                   const disabledLabel = p.available === false
                     ? 'Agotado'
                     : (menuMode === 'daily' && !canAddToday ? (() => {
-                        const names = ['', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
+                        const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                         const sorted = [...pDays].sort((a, b) => a - b);
                         if (sorted.length === 7) return undefined;
                         if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -247,7 +247,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const disabledLabel = p.available === false
                   ? 'Agotado'
                   : (menuMode === 'daily' && !canAddToday ? (() => {
-                      const names = ['', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
+                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                       const sorted = [...pDays].sort((a, b) => a - b);
                       if (sorted.length === 7) return undefined;
                       if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -294,8 +294,8 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
   const js = new Date().getDay(); const today = jsToIso(js);
   const current = (typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7) ? selectedDay : today;
   const baseDays = hasAllDays
-    ? [ { d:0, label:'Todos los dÃ­as' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'MiÃ©rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'SÃ¡bado' }, { d:7, label:'Domingo' } ]
-    : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'MiÃ©rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'SÃ¡bado' }, { d:7, label:'Domingo' } ];
+    ? [ { d:0, label:'Todos los días' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ]
+    : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ];
   return (
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
@@ -308,4 +308,5 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
+
 

@@ -281,7 +281,29 @@ export async function GET(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, products, categories, menu_mode });
+  // available_days: unión de días configurados para productos activos del negocio
+  let available_days: number[] = [];
+  try {
+    const slugD = await getTenantSlug(req);
+    const bidD = await getBusinessIdBySlug(slugD);
+    if (bidD) {
+      const { data: all } = await supabaseAdmin
+        .from(TABLE)
+        .select('product_weekdays(day)')
+        .eq('active', true as any)
+        .eq('business_id', bidD);
+      const set = new Set<number>();
+      for (const row of (Array.isArray(all) ? all : [])) {
+        const days = Array.isArray((row as any)?.product_weekdays)
+          ? (row as any).product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
+          : [];
+        for (const d of days) set.add(d);
+      }
+      available_days = Array.from(set).sort((a, b) => a - b);
+    }
+  } catch {}
+
+  return NextResponse.json({ ok: true, products, categories, menu_mode, available_days });
 }
 
 // ---------- POST: crear ----------

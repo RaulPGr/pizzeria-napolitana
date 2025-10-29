@@ -3,6 +3,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { CartProvider } from "@/context/CartContext";
 import Navbar from "@/components/Navbar"; // Se mantiene tu Navbar
+import DayTabsClientAdjust from "@/components/DayTabsClientAdjust";
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import AuthHashRedirect from '@/components/AuthHashRedirect';
@@ -110,6 +111,7 @@ export default async function RootLayout({
 
           {/* Compensación de la altura del header fijo (ajusta si tu Navbar es más alto/bajo) */}
           <main className="min-h-screen pt-[64px] md:pt-[72px]">
+            <DayTabsClientAdjust />
             {children}
           </main>
         </CartProvider>
