@@ -50,21 +50,31 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedDaySafe = selectedDay;
 
   const h = await headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('host');
-  const baseUrl = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
-
-  const apiUrl = new URL('/api/products', baseUrl);
-  apiUrl.searchParams.set('day', String(selectedDaySafe));
-  const resp = await fetch(String(apiUrl), { cache: 'no-store' });
+  const host = (h.get('host') || '').split(':')[0];
+  const hostParts = host.split('.');
+  const tenantSlug = hostParts.length >= 3 ? hostParts[0] : '';
+  const qp = new URLSearchParams();
+  qp.set('day', String(selectedDaySafe));
+  if (tenantSlug) qp.set('tenant', tenantSlug);
+  const apiUrl = `/api/products?${qp.toString()}`;
+  const resp = await fetch(apiUrl, { cache: 'no-store' });
   const payload = await resp.json();
   const products: any[] = Array.isArray(payload?.products) ? payload.products : [];
   const categories: any[] = Array.isArray(payload?.categories) ? payload.categories : [];
   const menuMode: 'fixed' | 'daily' = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
+  // Lista a renderizar según día seleccionado (refuerza filtrado del API y maneja day=0)
+  const viewProducts = (menuMode === 'daily')
+    ? (products || []).filter((p: any) => {
+        const pDays = normalizeDays(p?.product_weekdays);
+        if (selectedDaySafe === 0) return pDays.length === 7;
+        return pDays.length === 7 || pDays.includes(selectedDaySafe);
+      })
+    : (products || []);
+
   const groups = new Map<number | 'nocat', any[]>();
-  for (const p of (products || [])) {
+  for (const p of viewProducts) {
     const cidNum = Number(p?.category_id);
     const key: number | 'nocat' = Number.isFinite(cidNum) ? cidNum : 'nocat';
     if (!groups.has(key)) groups.set(key, []);
@@ -112,7 +122,7 @@ selectedDaySafe
 }
 , products=
 {
-(products ? products.length : 0)
+(viewProducts ? viewProducts.length : 0)
 }
 , cats=
 {
@@ -126,12 +136,12 @@ selectedDaySafe
 
       {(() => {
         const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length>0);
-        if (!hasAny && (products && products.length>0)) {
+        if (!hasAny && (viewProducts && viewProducts.length>0)) {
           return (
             <section className="mb-10">
               <h2 className="mb-3 text-xl font-semibold">Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((p: any) => (
+                {viewProducts.map((p: any) => (
                   <li key={p.id} className="relative overflow-hidden rounded border bg-white">
                     <div className="p-3">
                       <h3 className="text-base font-medium">{p.name}</h3>
@@ -160,12 +170,12 @@ selectedDaySafe
 
       {(() => {
         const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length > 0);
-        if (!hasAny && (products && products.length > 0)) {
+        if (!hasAny && (viewProducts && viewProducts.length > 0)) {
           return (
             <section className="mb-10">
               <h2 className="mb-3 text-xl font-semibold">Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {(products || []).map((p: any) => {
+                {(viewProducts || []).map((p: any) => {
                   const pDays = normalizeDays(p.product_weekdays);
                   const todayIso = todayIsoTZ();
                   const canAddToday = (menuMode !== 'daily')
@@ -289,3 +299,4 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
+
