@@ -21,23 +21,42 @@ type Props = { day: number; categories?: any[]; selectedCat?: string };
 export default function MenuClient({ day, categories: initialCats, selectedCat }: Props) {
   const [products, setProducts] = useState<any[] | null>(null);
   const [cats, setCats] = useState<any[] | null>(Array.isArray(initialCats) ? initialCats : null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    const url = `/api/products?day=${encodeURIComponent(String(day))}`;
-    fetch(url, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(j => {
-        if (!alive) return;
-        setProducts(Array.isArray(j?.products) ? j.products : []);
-        if (!cats && Array.isArray(j?.categories)) setCats(j.categories);
-      })
-      .catch(() => { if (alive) setProducts([]); });
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const abs = new URL('/api/products', window.location.origin);
+      abs.searchParams.set('day', String(day));
+      fetch(String(abs), { cache: 'no-store', credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(j => {
+          if (!alive) return;
+          setProducts(Array.isArray(j?.products) ? j.products : []);
+          if (!cats && Array.isArray(j?.categories)) setCats(j.categories);
+          setLoading(false);
+        })
+        .catch((e) => { if (alive) { setLoadError('No se pudo cargar la carta'); setProducts([]); setLoading(false); } });
+    } catch (e: any) {
+      if (alive) { setLoadError('No se pudo preparar la petición'); setProducts([]); setLoading(false); }
+    }
     return () => { alive = false; };
   }, [day]);
 
+  if (loading) {
+    return (
+      <div className="mb-6 text-center text-sm text-slate-600">Cargando carta...</div>
+    );
+  }
   if (products == null) return null;
-  if (!products || products.length === 0) return null;
+  if (!products || products.length === 0) {
+    return loadError ? (
+      <div className="mb-6 rounded border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 text-sm">{loadError}</div>
+    ) : null;
+  }
 
   // Agrupar por categoría
   const groups = new Map<number | 'nocat', any[]>();
