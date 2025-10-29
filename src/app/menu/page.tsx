@@ -1,4 +1,4 @@
-﻿// src/app/menu/page.tsx
+﻿import MenuClient from '@/components/MenuClient';\n// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
