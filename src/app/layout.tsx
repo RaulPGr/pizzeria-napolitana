@@ -125,9 +125,9 @@ export default async function RootLayout({
                   </a>
                 </div>
                 <div className="inline-flex items-center gap-4">
-                  <a href="#" className="hover:underline">Aviso Legal</a>
-                  <a href="#" className="hover:underline">Privacidad</a>
-                  <a href="#" className="hover:underline">Cookies</a>
+                  <a href="/legal" className="hover:underline">Aviso Legal</a>
+                  <a href="/privacidad" className="hover:underline">Privacidad</a>
+                  <a href="/cookies" className="hover:underline">Cookies</a>
                 </div>
               </div>
             </footer>
