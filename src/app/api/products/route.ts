@@ -183,6 +183,15 @@ export async function GET(req: Request) {
     .order('name', { ascending: true });
   products = data as any[] | null;
   error = err;
+  // If menu is daily and a selectedDay is present, filter in-memory to that day
+  if (menu_mode === 'daily' && Array.isArray(products) && selectedDay && selectedDay >= 1 && selectedDay <= 7) {
+    products = products.filter((p: any) => {
+      const days = Array.isArray(p?.product_weekdays)
+        ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
+        : [];
+      return days.length === 7 || days.includes(selectedDay!);
+    });
+  }
   // Salvaguarda adicional: filtrar por negocio en memoria si hay bid
   try {
     const slugZ = await getTenantSlug(req);
