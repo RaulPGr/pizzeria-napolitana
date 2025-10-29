@@ -132,24 +132,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
           );
         })}
       </div>
-      <div className="mb-3 rounded border border-yellow-300 bg-yellow-50 p-2 text-yellow-800 text-sm">
-        Debug: day=
-{
-selectedDaySafe
-}
-, products=
-{
-(viewProducts ? viewProducts.length : 0)
-}
-, cats=
-{
-(categories ? categories.length : 0)
-}
-, groupKeys=
-{
-[...groups.keys()].join(",")
-}
-      </div>
+      {/* Debug banner removed */}
 
       {(() => {
         const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length>0);
