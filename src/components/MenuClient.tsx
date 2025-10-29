@@ -31,7 +31,12 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
     try {
       const abs = new URL('/api/products', window.location.origin);
       abs.searchParams.set('day', String(day));
-      fetch(String(abs), { cache: 'no-store', credentials: 'same-origin' })
+      try {
+        const host = window.location.hostname;
+        const parts = host.split('.');
+        if (parts.length >= 3) abs.searchParams.set('tenant', parts[0]);
+      } catch {}
+      fetch(String(abs), { cache: 'no-store', credentials: 'same-origin', mode: 'same-origin' as RequestMode })
         .then(r => r.json())
         .then(j => {
           if (!alive) return;
