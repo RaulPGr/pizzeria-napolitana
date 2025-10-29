@@ -1,4 +1,4 @@
-﻿import MenuClient from '@/components/MenuClient';\n// src/app/menu/page.tsx
+﻿// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -155,7 +155,7 @@ selectedDaySafe
       )}
 
       {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categor\u00EDa seleccionada.</p>
+        <p className="text-slate-600">No hay productos para la categoría seleccionada.</p>
       )}
 
       {(() => {
