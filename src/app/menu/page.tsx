@@ -175,7 +175,7 @@ selectedDaySafe
 
       {/* Fallback cliente: si SSR no obtuvo productos, intenta en el navegador */}
       {(!error && (!viewProducts || viewProducts.length === 0)) && (
-        <MenuClient day={selectedDaySafe} />
+        <MenuClient day={selectedDaySafe} categories={categories} selectedCat={selectedCat} />
       )}
 
 

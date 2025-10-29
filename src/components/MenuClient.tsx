@@ -16,15 +16,23 @@ function formatPrice(n: number) {
   catch { return n.toFixed(2) + ' EUR'; }
 }
 
-export default function MenuClient({ day }: { day: number }) {
+type Props = { day: number; categories?: any[]; selectedCat?: string };
+
+export default function MenuClient({ day, categories: initialCats, selectedCat }: Props) {
   const [products, setProducts] = useState<any[] | null>(null);
+  const [cats, setCats] = useState<any[] | null>(Array.isArray(initialCats) ? initialCats : null);
+
   useEffect(() => {
     let alive = true;
     const url = new URL('/api/products', window.location.origin);
     url.searchParams.set('day', String(day));
     fetch(String(url), { cache: 'no-store' })
       .then(r => r.json())
-      .then(j => { if (alive) setProducts(Array.isArray(j?.products) ? j.products : []); })
+      .then(j => {
+        if (!alive) return;
+        setProducts(Array.isArray(j?.products) ? j.products : []);
+        if (!cats && Array.isArray(j?.categories)) setCats(j.categories);
+      })
       .catch(() => { if (alive) setProducts([]); });
     return () => { alive = false; };
   }, [day]);
@@ -32,47 +40,73 @@ export default function MenuClient({ day }: { day: number }) {
   if (products == null) return null;
   if (!products || products.length === 0) return null;
 
+  // Agrupar por categoría
+  const groups = new Map<number | 'nocat', any[]>();
+  for (const p of products) {
+    const cidNum = Number(p?.category_id);
+    const key: number | 'nocat' = Number.isFinite(cidNum) ? cidNum : 'nocat';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(p);
+  }
+  const orderedSections: Array<{ id: number | 'nocat'; name: string; sort_order?: number }>
+    = [ ...(cats || []), ...(groups.has('nocat') ? [{ id: 'nocat' as const, name: 'Otros', sort_order: 9999 }] : []) ];
+  const visibleSections = orderedSections.filter((s) => {
+    if (!selectedCat) return true;
+    if (selectedCat === 'nocat') return s.id === 'nocat';
+    return String(s.id) === selectedCat;
+  });
+
   return (
-    <section className="mb-10">
-      <h2 className="mb-3 text-xl font-semibold">Productos</h2>
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((p: any) => {
-          const pDays = normalizeDays(p.product_weekdays);
-          const js = new Date().getDay();
-          const today = ((js + 6) % 7) + 1;
-          const canAddToday = p.available !== false && (pDays.includes(today) || pDays.length === 7);
-          const out = !canAddToday;
-          const disabledLabel = p.available === false
-            ? 'Agotado'
-            : (!canAddToday ? (() => {
-                const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                const sorted = [...pDays].sort((a, b) => a - b);
-                if (sorted.length === 7) return undefined;
-                if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
-                return `Solo disponible: ${sorted.map((d) => names[d]).join(', ')}`;
-              })() : undefined);
-          return (
-            <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
-              {p.available === false && (
-                <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
-              )}
-              <CartQtyActions productId={p.id} allowAdd={!out} />
-              {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
-              <div className="p-3">
-                <div className="flex items-baseline justify-between gap-4">
-                  <h3 className="text-base font-medium">{p.name}</h3>
-                  <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
-                    {formatPrice(Number(p.price || 0))}
-                  </span>
-                </div>
-                {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+    <>
+      {visibleSections.map((section) => {
+        const list = section.id === 'nocat'
+          ? (groups.get('nocat') || [])
+          : (groups.get(Number(section.id)) || []);
+        if (!list || list.length === 0) return null;
+        return (
+          <section key={String(section.id)} className="mb-10">
+            {!selectedCat && (<h2 className="mb-3 text-xl font-semibold">{section.name}</h2>)}
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {list.map((p: any) => {
+                const pDays = normalizeDays(p.product_weekdays);
+                const js = new Date().getDay();
+                const today = ((js + 6) % 7) + 1;
+                const canAddToday = p.available !== false && (pDays.includes(today) || pDays.length === 7);
+                const out = !canAddToday;
+                const disabledLabel = p.available === false
+                  ? 'Agotado'
+                  : (!canAddToday ? (() => {
+                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                      const sorted = [...pDays].sort((a, b) => a - b);
+                      if (sorted.length === 7) return undefined;
+                      if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
+                      return `Solo disponible: ${sorted.map((d) => names[d]).join(', ')}`;
+                    })() : undefined);
+                return (
+                  <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
+                    {p.available === false && (
+                      <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+                    )}
+                    <CartQtyActions productId={p.id} allowAdd={!out} />
+                    {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
+                    <div className="p-3">
+                      <div className="flex items-baseline justify-between gap-4">
+                        <h3 className="text-base font-medium">{p.name}</h3>
+                        <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
+                          {formatPrice(Number(p.price || 0))}
+                        </span>
+                      </div>
+                      {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
+                      <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+    </>
   );
 }
 
