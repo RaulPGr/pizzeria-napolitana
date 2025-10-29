@@ -105,6 +105,47 @@ export default async function MenuPage({ searchParams }: PageProps) {
           );
         })}
       </div>
+      <div className="mb-3 rounded border border-yellow-300 bg-yellow-50 p-2 text-yellow-800 text-sm">
+        Debug: day=
+{
+selectedDaySafe
+}
+, products=
+{
+(products ? products.length : 0)
+}
+, cats=
+{
+(categories ? categories.length : 0)
+}
+, groupKeys=
+{
+[...groups.keys()].join(",")
+}
+      </div>
+
+      {(() => {
+        const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length>0);
+        if (!hasAny && (products && products.length>0)) {
+          return (
+            <section className="mb-10">
+              <h2 className="mb-3 text-xl font-semibold">Productos</h2>
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {products.map((p: any) => (
+                  <li key={p.id} className="relative overflow-hidden rounded border bg-white">
+                    <div className="p-3">
+                      <h3 className="text-base font-medium">{p.name}</h3>
+                      <p className="text-sm text-slate-600">{p.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        }
+        return null;
+      })()}
+
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
