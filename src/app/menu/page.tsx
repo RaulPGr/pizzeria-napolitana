@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-// import { headers } from 'next/headers';
+import { headers } from 'next/headers';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 
@@ -50,7 +50,19 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const selectedDaySafe = selectedDay;
 
   // URL relativa para preservar el subdominio actual (tenant) en el Host
-  const apiUrl = `/api/products?day=${encodeURIComponent(String(selectedDaySafe))}`;
+  // Construimos URL absoluta desde la petición actual para preservar el subdominio (tenant)
+  const hdrs = headers();
+  const proto = (hdrs.get('x-forwarded-proto') || 'https').split(',')[0].trim();
+  const host = (hdrs.get('host') || '').trim();
+  const origin = host ? `${proto}://${host}` : '';
+  const qps = new URLSearchParams();
+  qps.set('day', String(selectedDaySafe));
+  // Derivar tenant del subdominio si existe
+  if (host) {
+    const parts = host.split('.');
+    if (parts.length >= 3) qps.set('tenant', parts[0]);
+  }
+  const apiUrl = origin ? `${origin}/api/products?${qps.toString()}` : `/api/products?${qps.toString()}`;
   let resp: Response | null = null;
   let payload: any = null;
   let products: any[] = [];
