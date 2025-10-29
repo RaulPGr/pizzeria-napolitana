@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+// import { headers } from 'next/headers';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 
@@ -49,14 +49,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   const selectedDaySafe = selectedDay;
 
-  const h = await headers();
-  const host = (h.get('host') || '').split(':')[0];
-  const hostParts = host.split('.');
-  const tenantSlug = hostParts.length >= 3 ? hostParts[0] : '';
-  const qp = new URLSearchParams();
-  qp.set('day', String(selectedDaySafe));
-  if (tenantSlug) qp.set('tenant', tenantSlug);
-  const apiUrl = `/api/products?${qp.toString()}`;
+  // Llamada relativa sin depender de headers() para evitar fallos en SSR.
+  const apiUrl = `/api/products?day=${encodeURIComponent(String(selectedDaySafe))}`;
   const resp = await fetch(apiUrl, { cache: 'no-store' });
   let payload: any = null;
   try { payload = await resp.json(); } catch {}
