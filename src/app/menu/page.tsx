@@ -51,13 +51,22 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   // URL relativa para preservar el subdominio actual (tenant) en el Host
   const apiUrl = `/api/products?day=${encodeURIComponent(String(selectedDaySafe))}`;
-  const resp = await fetch(apiUrl, { cache: 'no-store' });
+  let resp: Response | null = null;
   let payload: any = null;
-  try { payload = await resp.json(); } catch {}
-  const products: any[] = Array.isArray(payload?.products) ? payload.products : [];
-  const categories: any[] = Array.isArray(payload?.categories) ? payload.categories : [];
-  const menuMode: 'fixed' | 'daily' = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
-  const error = resp.ok ? null : { message: (payload && payload.error) ? payload.error : `HTTP ${resp.status}` };
+  let products: any[] = [];
+  let categories: any[] = [];
+  let menuMode: 'fixed' | 'daily' = 'fixed';
+  let error: { message: string } | null = null;
+  try {
+    resp = await fetch(apiUrl, { cache: 'no-store' });
+    try { payload = await resp.json(); } catch {}
+    products = Array.isArray(payload?.products) ? payload.products : [];
+    categories = Array.isArray(payload?.categories) ? payload.categories : [];
+    menuMode = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
+    error = resp.ok ? null : { message: (payload && payload.error) ? payload.error : `HTTP ${resp?.status}` };
+  } catch (e: any) {
+    error = { message: e?.message || 'Fetch error' };
+  }
 
   // Lista a renderizar según día seleccionado (refuerza filtrado del API y maneja day=0)
   const viewProducts = (menuMode === 'daily')
