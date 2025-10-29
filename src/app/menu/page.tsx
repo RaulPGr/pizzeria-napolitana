@@ -70,7 +70,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 const filteredProducts = (products || []).filter((p: any) => {
   if (menuMode !== 'daily') return true;
   const pDays = normalizeDays(p.product_weekdays);
-  if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los días": solo 7/7
+  if (selectedDaySafe === 0) return pDays.length === 7; // "Todos los d\\u00EDas": solo 7/7
   return pDays.includes(selectedDaySafe) || pDays.length === 7;
 });
 
@@ -79,7 +79,7 @@ const dataset: any[] = (menuMode === 'daily' && filteredProducts.length === 0 &&
   ? (products as any[])
   : filteredProducts;
 
-// Mostrar pestaña "Todos los días" si hay productos 7/7 (basado en la lista completa)Ã±a "Todos los dÃ­as" si hay productos 7/7 (basado en la lista completa)
+// Mostrar pestaña "Todos los d\\u00EDas" si hay productos 7/7 (basado en la lista completa)Ã±a "Todos los dÃ­as" si hay productos 7/7 (basado en la lista completa)
   const hasAllDays = menuMode === 'daily' && products.some((p) => normalizeDays(p.product_weekdays).length === 7);
 
   // Agrupar por categorÃ­a (robusto a string/number/null)
