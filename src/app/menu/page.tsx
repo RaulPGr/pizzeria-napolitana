@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx
+ï»¿// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -50,28 +50,26 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   const selectedDaySafe = selectedDay;
 
-  // URL relativa para preservar el subdominio actual (tenant) en el Host
-  // Construimos URL absoluta desde la petición actual para preservar el subdominio (tenant)
+  // Build absolute URL preserving subdomain (tenant)
   const hdrs = await headers();
   const proto = (hdrs.get('x-forwarded-proto') || 'https').split(',')[0].trim();
   const host = (hdrs.get('host') || '').trim();
   const origin = host ? `${proto}://${host}` : '';
   const qps = new URLSearchParams();
   qps.set('day', String(selectedDaySafe));
-  // Derivar tenant del subdominio si existe
   if (host) {
     const parts = host.split('.');
     if (parts.length >= 3) qps.set('tenant', parts[0]);
   }
   const apiUrl = origin ? `${origin}/api/products?${qps.toString()}` : `/api/products?${qps.toString()}`;
-  let resp: Response | null = null;
-  let payload: any = null;
+
   let products: any[] = [];
   let categories: any[] = [];
   let menuMode: 'fixed' | 'daily' = 'fixed';
   let error: { message: string } | null = null;
+  let payload: any = null;
   try {
-    resp = await fetch(apiUrl, { cache: 'no-store' });
+    const resp = await fetch(apiUrl, { cache: 'no-store' });
     try { payload = await resp.json(); } catch {}
     products = Array.isArray(payload?.products) ? payload.products : [];
     categories = Array.isArray(payload?.categories) ? payload.categories : [];
@@ -81,11 +79,11 @@ export default async function MenuPage({ searchParams }: PageProps) {
     error = { message: e?.message || 'Fetch error' };
   }
 
-  // Lista a renderizar según día seleccionado (refuerza filtrado del API y maneja day=0)
+  // View list for selected day (reinforce API filtering and handle day=0)
   const viewProducts = (menuMode === 'daily')
     ? (products || []).filter((p: any) => {
         const pDays = normalizeDays(p?.product_weekdays);
-        if (selectedDaySafe === 0) return pDays.length === 7;
+        if (selectedDaySafe === 0) return pDays.length === 7; // only 7/7
         return pDays.length === 7 || pDays.includes(selectedDaySafe);
       })
     : (products || []);
@@ -111,7 +109,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
+      <h1 className="mb-6 text-3xl font-semibold">MenÃº</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} availableDays={(Array.isArray((payload as any)?.available_days) ? (payload as any).available_days : undefined) as any} />
@@ -132,7 +130,6 @@ export default async function MenuPage({ searchParams }: PageProps) {
           );
         })}
       </div>
-      {/* Debug banner removed */}
 
       {(() => {
         const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length>0);
@@ -141,46 +138,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
             <section className="mb-10">
               <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {viewProducts.map((p: any) => (
-                  <li key={p.id} className="relative overflow-hidden rounded border bg-white">
-                    <div className="p-3">
-                      <h3 className="text-base font-medium">{p.name}</h3>
-                      <p className="text-sm text-slate-600">{p.description}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        }
-        return null;
-      })()}
-
-      {/* Fallback cliente: si SSR no obtuvo productos, intenta en el navegador */}
-      {((!viewProducts || viewProducts.length === 0)) && (
-        <MenuClient day={selectedDaySafe} categories={categories} selectedCat={selectedCat} />
-      )}
-
-
-      {error && (
-        <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el Menú</div>
-          <div className="text-sm">{(error as any).message}</div>
-        </div>
-      )}
-
-      {visibleSections.length === 0 && !error && (
-        <p className="text-slate-600">No hay productos para la categoría seleccionada.</p>
-      )}
-
-      {(() => {
-        const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length > 0);
-        if (!hasAny && (viewProducts && viewProducts.length > 0)) {
-          return (
-            <section className="mb-10">
-              <h2 className="mb-3 text-xl font-semibold">Productos</h2>
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {(viewProducts || []).map((p: any) => {
+                {viewProducts.map((p: any) => {
                   const pDays = normalizeDays(p.product_weekdays);
                   const todayIso = todayIsoTZ();
                   const canAddToday = (menuMode !== 'daily')
@@ -190,7 +148,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                   const disabledLabel = p.available === false
                     ? 'Agotado'
                     : (menuMode === 'daily' && !canAddToday ? (() => {
-                        const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                        const names = ['', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
                         const sorted = [...pDays].sort((a, b) => a - b);
                         if (sorted.length === 7) return undefined;
                         if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -247,7 +205,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const disabledLabel = p.available === false
                   ? 'Agotado'
                   : (menuMode === 'daily' && !canAddToday ? (() => {
-                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                      const names = ['', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
                       const sorted = [...pDays].sort((a, b) => a - b);
                       if (sorted.length === 7) return undefined;
                       if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -290,16 +248,20 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
   );
 }
 
-function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays: boolean }) {
+function DayTabs({ selectedDay, hasAllDays, availableDays }: { selectedDay?: number; hasAllDays: boolean; availableDays?: number[] }) {
   const js = new Date().getDay(); const today = jsToIso(js);
   const current = (typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7) ? selectedDay : today;
+  const names = ['', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
   const baseDays = hasAllDays
-    ? [ { d:0, label:'Todos los días' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ]
-    : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ];
+    ? [ { d:0, label:'Todos los dÃ­as' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'MiÃ©rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'SÃ¡bado' }, { d:7, label:'Domingo' } ]
+    : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'MiÃ©rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'SÃ¡bado' }, { d:7, label:'Domingo' } ];
+  const daysToShow = (Array.isArray(availableDays) && availableDays.length > 0)
+    ? baseDays.filter((x) => x.d !== 0 && (availableDays as number[]).includes(x.d))
+    : baseDays;
   return (
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
-        {baseDays.map(({ d, label }) => (
+        {daysToShow.map(({ d, label }) => (
           <Link key={d} href={`/menu?day=${d}`} className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', d === current ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50' ].join(' ')}>
             {label}
           </Link>
@@ -308,5 +270,3 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
-
-
