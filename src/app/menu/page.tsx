@@ -49,7 +49,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   const selectedDaySafe = selectedDay;
 
-  const h = headers();
+  const h = await headers();
   const host = (h.get('host') || '').split(':')[0];
   const hostParts = host.split('.');
   const tenantSlug = hostParts.length >= 3 ? hostParts[0] : '';
