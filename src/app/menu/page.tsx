@@ -51,7 +51,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   // URL relativa para preservar el subdominio actual (tenant) en el Host
   // Construimos URL absoluta desde la petición actual para preservar el subdominio (tenant)
-  const hdrs = headers();
+  const hdrs = await headers();
   const proto = (hdrs.get('x-forwarded-proto') || 'https').split(',')[0].trim();
   const host = (hdrs.get('host') || '').trim();
   const origin = host ? `${proto}://${host}` : '';
