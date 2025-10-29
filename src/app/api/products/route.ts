@@ -199,12 +199,11 @@ export async function GET(req: Request) {
           .from(TABLE)
           .select('*, product_weekdays(day)')
           .eq('active', true as any)
-          .eq('business_id', bidF)
           .order('category_id', { ascending: true })
           .order('sort_order', { ascending: true })
           .order('name', { ascending: true });
         if (!e2 && Array.isArray(p2)) {
-          products = p2 as any[];
+          products = (p2 as any[]).filter((p: any) => String(p?.business_id || '') === String(bidF));
         }
       }
     } catch {}
@@ -390,5 +389,6 @@ export async function DELETE(req: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
 
 
