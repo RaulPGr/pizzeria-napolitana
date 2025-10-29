@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
+import MenuClient from '@/components/MenuClient';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -171,6 +172,11 @@ selectedDaySafe
         }
         return null;
       })()}
+
+      {/* Fallback cliente: si SSR no obtuvo productos, intenta en el navegador */}
+      {(!error && (!viewProducts || viewProducts.length === 0)) && (
+        <MenuClient day={selectedDaySafe} />
+      )}
 
 
       {error && (
