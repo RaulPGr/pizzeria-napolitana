@@ -246,6 +246,34 @@ export async function GET(req: Request) {
     catErr = error;
   } catch (e) { catErr = e; }
 
+  // Fallback final: si aún no hay productos pero sí tenemos categorías con business_id,
+  // usamos supabaseAdmin para traer los productos de ese negocio (sin RLS) y aplicamos filtro de día.
+  try {
+    if (Array.isArray(products) && products.length === 0 && Array.isArray(categories) && categories.length > 0) {
+      const bidFromCats = (categories[0] as any)?.business_id;
+      if (bidFromCats) {
+        const { data: p3 } = await supabaseAdmin
+          .from(TABLE)
+          .select('*, product_weekdays(day)')
+          .eq('active', true as any)
+          .eq('business_id', bidFromCats)
+          .order('category_id', { ascending: true })
+          .order('sort_order', { ascending: true })
+          .order('name', { ascending: true });
+        let arr = Array.isArray(p3) ? (p3 as any[]) : [];
+        if (menu_mode === 'daily' && selectedDay && selectedDay >= 1 && selectedDay <= 7) {
+          arr = arr.filter((p: any) => {
+            const days = Array.isArray(p?.product_weekdays)
+              ? p.product_weekdays.map((x: any) => Number(x?.day)).filter((n: any) => n >= 1 && n <= 7)
+              : [];
+            return days.length === 7 || days.includes(selectedDay!);
+          });
+        }
+        products = arr;
+      }
+    }
+  } catch {}
+
   if (error || catErr) {
     return NextResponse.json(
       { ok: false, error: error?.message ?? catErr?.message },
