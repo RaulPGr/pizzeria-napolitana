@@ -74,10 +74,8 @@ const filteredProducts = (products || []).filter((p: any) => {
   return pDays.includes(selectedDaySafe) || pDays.length === 7;
 });
 
-// Fallback seguro: si el filtro deja 0 en modo diario, mostramos todos
-const dataset: any[] = (menuMode === 'daily' && filteredProducts.length === 0 && (products?.length || 0) > 0)
-  ? (products as any[])
-  : filteredProducts;
+  // Sin fallback: cada producto solo aparece en su día configurado
+  const dataset: any[] = filteredProducts;
 
 // Mostrar pestaña "Todos los d\\u00EDas" si hay productos 7/7 (basado en la lista completa)Ã±a "Todos los dÃ­as" si hay productos 7/7 (basado en la lista completa)
   const hasAllDays = menuMode === 'daily' && products.some((p) => normalizeDays(p.product_weekdays).length === 7);
@@ -93,10 +91,6 @@ const dataset: any[] = (menuMode === 'daily' && filteredProducts.length === 0 &&
 
   // Fallback: si no hay grupos con productos pero sÃ­ hay productos, mostrarlos en 'Otros'
   const hasAnyGroup = Array.from(groups.values()).some((a)=>Array.isArray(a) && a.length>0);
-  if (!hasAnyGroup && dataset.length > 0) {
-    groups.clear();
-    groups.set('nocat', dataset.slice());
-  }
 
   const orderedSections: Array<{ id: number | 'nocat'; name: string; sort_order?: number }>
     = [ ...(categories || []), ...(groups.has('nocat') ? [{ id: 'nocat' as const, name: 'Otros', sort_order: 9999 }] : []) ];
