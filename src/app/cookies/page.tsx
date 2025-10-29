@@ -1,5 +1,7 @@
 export const dynamic = 'force-static';
 
+import Link from 'next/link';
+
 export default function CookiesPage() {
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
@@ -14,7 +16,9 @@ export default function CookiesPage() {
           Al continuar navegando aceptas el uso de cookies conforme a esta política.
         </p>
       </div>
+      <div className="mt-6">
+        <Link href="/" className="text-emerald-700 hover:underline">Volver al inicio</Link>
+      </div>
     </div>
   );
 }
-
