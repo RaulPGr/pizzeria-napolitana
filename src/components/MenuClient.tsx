@@ -86,7 +86,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
         if (!hasAny && (products && products.length > 0)) {
           return (
             <section className="mb-10">
-              <h2 className="mb-3 text-xl font-semibold">Productos</h2>
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {products.map((p: any) => {
                   const pDays = normalizeDays(p.product_weekdays);
@@ -136,7 +136,11 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
         if (!list || list.length === 0) return null;
         return (
           <section key={String(section.id)} className="mb-10">
-            {!selectedCat && (<h2 className="mb-3 text-xl font-semibold">{section.name}</h2>)}
+            {!selectedCat && (
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">
+                {section.name}
+              </h2>
+            )}
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
                 const pDays = normalizeDays(p.product_weekdays);

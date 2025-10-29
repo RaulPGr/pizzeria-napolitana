@@ -139,7 +139,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         if (!hasAny && (viewProducts && viewProducts.length>0)) {
           return (
             <section className="mb-10">
-              <h2 className="mb-3 text-xl font-semibold">Productos</h2>
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {viewProducts.map((p: any) => (
                   <li key={p.id} className="relative overflow-hidden rounded border bg-white">
@@ -231,7 +231,11 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
         return (
           <section key={String(section.id)} className="mb-10">
-            {!selectedCat && (<h2 className="mb-3 text-xl font-semibold">{section.name}</h2>)}
+            {!selectedCat && (
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">
+                {section.name}
+              </h2>
+            )}
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
                 const pDays = normalizeDays(p.product_weekdays);
