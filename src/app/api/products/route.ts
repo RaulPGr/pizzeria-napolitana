@@ -180,17 +180,25 @@ export async function GET(req: Request) {
   let products: any[] | null = null;
   let error: any = null;
   // Siempre devolvemos todos los productos activos; si el modo es 'daily', adjuntamos los días
-  const { data, error: err } = await supabase
+  let qProd = supabase
     .from(TABLE)
     .select('*, product_weekdays(day)')
-    .eq('active', true as any)
+    .eq('active', true as any);
+  try {
+    const slugP = await getTenantSlug(req);
+    const bidP = await getBusinessIdBySlug(slugP);
+    if (bidP) {
+      qProd = (qProd as any).eq('business_id', bidP);
+    }
+  } catch {}
+  const { data, error: err } = await (qProd
     .order('category_id', { ascending: true })
     .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+    .order('name', { ascending: true }));
   products = data as any[] | null;
   error = err;
   // Fallback para casos donde RLS devuelva 0 productos en ciertos navegadores/dispositivos
-  if (!error && Array.isArray(products) && products.length === 0) {
+  if (Array.isArray(products) && products.length === 0) {
     try {
       const slugF = await getTenantSlug(req);
       const bidF = await getBusinessIdBySlug(slugF);
