@@ -39,7 +39,10 @@ async function supabaseFromRequest(req?: Request) {
     // Fallback: derivar slug del subdominio del Host (negocio.dominio.tld)
     const host = (hdrs.get('host') || '').split(':')[0];
     const parts = host.split('.');
-    if (parts.length >= 3) tenant = normalizeSlug(parts[0]);
+    if (parts.length >= 3) {
+      const first = normalizeSlug(parts[0]);
+      tenant = first && first !== 'www' && first !== 'm' ? first : normalizeSlug(parts[1]);
+    }
   }
   if (!tenant && req) {
     try {
@@ -68,8 +71,11 @@ async function getTenantSlug(req?: Request): Promise<string> {
     if (inCookie) return inCookie;
     const hdrs = await headers();
     const host = (hdrs.get('host') || '').split(':')[0];
-    const parts = host.split('.');
-    if (parts.length >= 3) return normalizeSlug(parts[0]);
+    const parts = host.split('.')
+    if (parts.length >= 3) {
+      const first = normalizeSlug(parts[0]);
+      return first && first !== 'www' && first !== 'm' ? first : normalizeSlug(parts[1]);
+    }
     if (req) {
       try { const u = new URL(req.url); const qp = normalizeSlug(u.searchParams.get('tenant')); if (qp) return qp; } catch {}
     }
