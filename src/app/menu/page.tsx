@@ -1,4 +1,4 @@
-// src/app/menu/page.tsx
+﻿// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -63,16 +63,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const menuMode: 'fixed' | 'daily' = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
   const error = resp.ok ? null : { message: payload?.error || 'Error' };
 
-  // Filtrar por día seleccionado (cada producto aparece sólo en su día; en 0 sólo 7/7)
-  const filteredProducts = (products || []).filter((p: any) => {
-    if (menuMode !== 'daily') return true;
-    const pDays = normalizeDays(p.product_weekdays);
-    if (selectedDaySafe === 0) return pDays.length === 7;
-    return pDays.includes(selectedDaySafe) || pDays.length === 7;
-  });
-
   const groups = new Map<number | 'nocat', any[]>();
-  for (const p of filteredProducts) {
+  for (const p of (products || [])) {
     const cidNum = Number(p?.category_id);
     const key: number | 'nocat' = Number.isFinite(cidNum) ? cidNum : 'nocat';
     if (!groups.has(key)) groups.set(key, []);
@@ -92,7 +84,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Men\u00FA</h1>
+      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} />
@@ -116,7 +108,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
       {error && (
         <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          <div className="font-medium">No se pudo cargar el Men\u00FA</div>
+          <div className="font-medium">No se pudo cargar el Menú</div>
           <div className="text-sm">{(error as any).message}</div>
         </div>
       )}
@@ -135,13 +127,6 @@ export default async function MenuPage({ searchParams }: PageProps) {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((p: any) => {
                 const pDays = normalizeDays(p.product_weekdays);
-                const showOnSelectedDay = (() => {
-                  if (menuMode !== 'daily') return true;
-                  if (selectedDaySafe === 0) return pDays.length === 7;
-                  return pDays.includes(selectedDaySafe) || pDays.length === 7;
-                })();
-                if (!showOnSelectedDay) return null;
-
                 const todayIso = todayIsoTZ();
                 const canAddToday = (menuMode !== 'daily')
                   ? (p.available !== false)
@@ -150,7 +135,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 const disabledLabel = p.available === false
                   ? 'Agotado'
                   : (menuMode === 'daily' && !canAddToday ? (() => {
-                      const names = ['', 'Lunes', 'Martes', 'Mi\u00E9rcoles', 'Jueves', 'Viernes', 'S\u00E1bado', 'Domingo'];
+                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                       const sorted = [...pDays].sort((a, b) => a - b);
                       if (sorted.length === 7) return undefined;
                       if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
@@ -197,8 +182,8 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
   const js = new Date().getDay(); const today = jsToIso(js);
   const current = (typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7) ? selectedDay : today;
   const baseDays = hasAllDays
-    ? [ { d:0, label:'Todos los d\u00EDas' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Mi\u00E9rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'S\u00E1bado' }, { d:7, label:'Domingo' } ]
-    : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Mi\u00E9rcoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'S\u00E1bado' }, { d:7, label:'Domingo' } ];
+    ? [ { d:0, label:'Todos los días' }, { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ]
+    : [ { d:1, label:'Lunes' }, { d:2, label:'Martes' }, { d:3, label:'Miércoles' }, { d:4, label:'Jueves' }, { d:5, label:'Viernes' }, { d:6, label:'Sábado' }, { d:7, label:'Domingo' } ];
   return (
     <div className="mb-6 -mx-2 overflow-x-auto whitespace-nowrap py-1 px-2">
       <div className="inline-flex items-center gap-2">
