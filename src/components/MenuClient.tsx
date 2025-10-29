@@ -24,9 +24,8 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
 
   useEffect(() => {
     let alive = true;
-    const url = new URL('/api/products', window.location.origin);
-    url.searchParams.set('day', String(day));
-    fetch(String(url), { cache: 'no-store' })
+    const url = `/api/products?day=${encodeURIComponent(String(day))}`;
+    fetch(url, { cache: 'no-store' })
       .then(r => r.json())
       .then(j => {
         if (!alive) return;
@@ -109,4 +108,3 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
     </>
   );
 }
-
