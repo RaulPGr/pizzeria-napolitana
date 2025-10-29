@@ -118,7 +118,9 @@ export default async function MenuPage({ searchParams }: PageProps) {
       )}
 
       {visibleSections.map((section) => {
-        const list = section.id === 'nocat' ? (groups.get('nocat') || []) : (groups.get(section.id as number) || []);
+        const list = section.id === 'nocat'
+          ? (groups.get('nocat') || [])
+          : (groups.get(Number(section.id)) || []);
         if (!list || list.length === 0) return null;
 
         return (
@@ -196,4 +198,3 @@ function DayTabs({ selectedDay, hasAllDays }: { selectedDay?: number; hasAllDays
     </div>
   );
 }
-
