@@ -49,7 +49,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   const selectedDaySafe = selectedDay;
 
-  const h = await headers();
+  const h = headers();
   const host = (h.get('host') || '').split(':')[0];
   const hostParts = host.split('.');
   const tenantSlug = hostParts.length >= 3 ? hostParts[0] : '';
@@ -58,11 +58,12 @@ export default async function MenuPage({ searchParams }: PageProps) {
   if (tenantSlug) qp.set('tenant', tenantSlug);
   const apiUrl = `/api/products?${qp.toString()}`;
   const resp = await fetch(apiUrl, { cache: 'no-store' });
-  const payload = await resp.json();
+  let payload: any = null;
+  try { payload = await resp.json(); } catch {}
   const products: any[] = Array.isArray(payload?.products) ? payload.products : [];
   const categories: any[] = Array.isArray(payload?.categories) ? payload.categories : [];
   const menuMode: 'fixed' | 'daily' = (payload?.menu_mode === 'daily') ? 'daily' : 'fixed';
-  const error = resp.ok ? null : { message: payload?.error || 'Error' };
+  const error = resp.ok ? null : { message: (payload && payload.error) ? payload.error : `HTTP ${resp.status}` };
 
   // Lista a renderizar según día seleccionado (refuerza filtrado del API y maneja day=0)
   const viewProducts = (menuMode === 'daily')
