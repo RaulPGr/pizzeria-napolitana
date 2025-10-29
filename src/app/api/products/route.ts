@@ -183,6 +183,26 @@ export async function GET(req: Request) {
     .order('name', { ascending: true });
   products = data as any[] | null;
   error = err;
+  // Fallback para casos donde RLS devuelva 0 productos en ciertos navegadores/dispositivos
+  if (!error && Array.isArray(products) && products.length === 0) {
+    try {
+      const slugF = await getTenantSlug(req);
+      const bidF = await getBusinessIdBySlug(slugF);
+      if (bidF) {
+        const { data: p2, error: e2 } = await supabaseAdmin
+          .from(TABLE)
+          .select('*, product_weekdays(day)')
+          .eq('active', true as any)
+          .eq('business_id', bidF)
+          .order('category_id', { ascending: true })
+          .order('sort_order', { ascending: true })
+          .order('name', { ascending: true });
+        if (!e2 && Array.isArray(p2)) {
+          products = p2 as any[];
+        }
+      }
+    } catch {}
+  }
   // If menu is daily and a selectedDay is present, filter in-memory to that day
   if (menu_mode === 'daily' && Array.isArray(products) && selectedDay && selectedDay >= 1 && selectedDay <= 7) {
     products = products.filter((p: any) => {
