@@ -49,8 +49,22 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   const selectedDaySafe = selectedDay;
 
-  // Llamada relativa sin depender de headers() para evitar fallos en SSR.
-  const apiUrl = `/api/products?day=${encodeURIComponent(String(selectedDaySafe))}`;
+  // Construimos URL absoluta si es posible (Vercel/entorno), con fallback relativo en dev.
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
+  const qps = new URLSearchParams();
+  qps.set('day', String(selectedDaySafe));
+  // Intentar derivar tenant del host base si existe
+  if (baseUrl) {
+    try {
+      const host = new URL(baseUrl).host;
+      const parts = host.split('.');
+      if (parts.length >= 3) qps.set('tenant', parts[0]);
+    } catch {}
+  }
+  const apiUrl = baseUrl
+    ? `${baseUrl}/api/products?${qps.toString()}`
+    : `/api/products?${qps.toString()}`;
   const resp = await fetch(apiUrl, { cache: 'no-store' });
   let payload: any = null;
   try { payload = await resp.json(); } catch {}
