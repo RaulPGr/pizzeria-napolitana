@@ -112,7 +112,18 @@ export default async function RootLayout({
           {/* Compensación de la altura del header fijo (ajusta si tu Navbar es más alto/bajo) */}
           <main className="min-h-screen pt-[64px] md:pt-[72px]">
             <DayTabsClientAdjust />
-            {children}
+            <div className="pt-4 md:pt-6">
+              {children}
+            </div>
+            <footer className="mt-10 border-t border-slate-200 bg-white/60">
+              <div className="mx-auto max-w-6xl p-4 md:p-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+                <span>Web creada con</span>
+                <a href="https://pidelocal.es" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-emerald-700">
+                  <img src="/images/pidelocal.png" alt="PideLocal" className="h-4 w-4" />
+                  <span>PideLocal</span>
+                </a>
+              </div>
+            </footer>
           </main>
         </CartProvider>
       </body>
