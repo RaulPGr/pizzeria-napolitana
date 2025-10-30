@@ -52,7 +52,11 @@ export async function GET(req: NextRequest) {
 
     // 1) base orders in range (limitado por negocio del subdominio)
     const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    let slug = cookieStore.get('x-tenant-slug')?.value || '';
+    if (!slug) {
+      // Fallback: permitir ?tenant=slug para entornos donde la cookie no esté presente
+      slug = (searchParams.get('tenant') || '').toLowerCase();
+    }
     let bid: string | null = null;
     if (slug) {
       const { data: biz } = await supabaseAdmin
