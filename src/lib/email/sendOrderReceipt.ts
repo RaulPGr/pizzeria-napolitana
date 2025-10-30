@@ -24,6 +24,24 @@ export type SendOrderReceiptParams = {
 const currency = (n: number) =>
   Number(n || 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
+// Timezone para formatear la hora de recogida en el email.
+// Puede configurarse con EMAIL_TZ (ej.: Europe/Madrid). Por defecto Europe/Madrid.
+const EMAIL_TZ = process.env.EMAIL_TZ || 'Europe/Madrid';
+
+function formatPickup(ts: string): string {
+  try {
+    const d = new Date(ts);
+    // Formato claro día/mes/año y hora 24h (local al TZ configurado)
+    return d.toLocaleString('es-ES', {
+      timeZone: EMAIL_TZ,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  } catch {
+    return ts;
+  }
+}
+
 export async function sendOrderReceiptEmail({
   orderId, orderCode, businessName, customerEmail, customerName,
   items, subtotal, deliveryFee = 0, discount = 0, total,
@@ -47,7 +65,7 @@ export async function sendOrderReceiptEmail({
       </tr>
     `).join("");
 
-    const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 12)}`;
+    const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 7)}`;
 
     const html = `
       <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto;line-height:1.5">
@@ -72,11 +90,10 @@ export async function sendOrderReceiptEmail({
           </tfoot>
         </table>
 
-        ${pickupTime ? `<p><strong>Hora estimada:</strong> ${pickupTime}</p>` : ""}
+        ${pickupTime ? `<p><strong>Hora estimada:</strong> ${formatPickup(pickupTime)}</p>` : ""}
         ${deliveryAddress ? `<p><strong>Dirección de entrega:</strong> ${deliveryAddress}</p>` : ""}
         ${notes ? `<p><strong>Notas:</strong> ${notes}</p>` : ""}
 
-        <p style="margin-top:16px">Si necesitas ayuda, responde a este correo.</p>
         <p style="color:#888;font-size:12px">© ${new Date().getFullYear()} PideLocal</p>
       </div>
     `;
@@ -93,3 +110,4 @@ export async function sendOrderReceiptEmail({
     // Importante: nunca relanzar el error; el pedido no debe fallar por el email.
   }
 }
+
