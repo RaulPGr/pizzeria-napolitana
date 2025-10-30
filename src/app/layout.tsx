@@ -112,7 +112,7 @@ export default async function RootLayout({
           {/* Compensación de la altura del header fijo (ajusta si tu Navbar es más alto/bajo) */}
           <main className="min-h-screen pt-[64px] md:pt-[72px]">
             <DayTabsClientAdjust />
-            <div className="pt-4 md:pt-6">
+            <div className="pt-0 md:pt-0">
               {children}
             </div>
             <footer className="mt-10 border-t border-slate-200 bg-white/60">
