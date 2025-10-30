@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import React, { useMemo, useRef, useState } from "react";
 
@@ -104,7 +104,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
   );
 }
 
-  // EdiciÃ³n
+  // Edición
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<Partial<Product>>({});
 
@@ -143,7 +143,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     setPriceMax("");
   }
 
-  // --- UI sencillo de gestiÃ³n de categorÃ­as ---
+  // --- UI sencillo de gestión de categorías ---
   function CategoriesManager() {
     const [newCatName, setNewCatName] = useState("");
     const [busy, setBusy] = useState(false);
@@ -154,7 +154,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
         setBusy(true);
         const res = await fetch('/api/admin/categories', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: newCatName.trim() }) });
         const j = await res.json().catch(() => ({}));
-        if (!res.ok || !j?.ok) throw new Error(j?.error || 'No se pudo crear la categorÃ­a');
+        if (!res.ok || !j?.ok) throw new Error(j?.error || 'No se pudo crear la categoría');
         setNewCatName("");
         await reloadCats();
       } catch (e: any) {
@@ -173,24 +173,27 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     }
 
     async function reorder(id: number, dir: -1 | 1) {
-      const me = cats.find(c => c.id === id);
-      if (!me) return;
-      const targetIdx = cats.findIndex(c => c.id === id) + (dir as number);
+      const idx = cats.findIndex((c) => c.id === id);
+      if (idx < 0) return;
+      const targetIdx = idx + (dir as number);
       if (targetIdx < 0 || targetIdx >= cats.length) return;
+      const me = cats[idx];
       const neighbor = cats[targetIdx];
       try {
         setBusy(true);
-        // swap sort_order (fallback to index)
-        const a = me.sort_order ?? cats.findIndex(c => c.id === me.id);
-        const b = (neighbor as any).sort_order ?? targetIdx;
-        await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: me.id, sort_order: b }) });
-        await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: neighbor.id, sort_order: a }) });
+        const next = cats.slice();
+        [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
+        const r1 = await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: me.id, sort_order: targetIdx }) });
+        if (!r1.ok) throw new Error('No se pudo guardar el orden');
+        const r2 = await fetch('/api/admin/categories', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: neighbor.id, sort_order: idx }) });
+        if (!r2.ok) throw new Error('No se pudo guardar el orden');
+        setCats(next);
         await reloadCats();
       } catch (e: any) { alert(e?.message || 'Error'); } finally { setBusy(false); }
     }
 
     async function remove(id: number) {
-      if (!confirm('Â¿Eliminar la categorÃ­a? Si tiene productos no se podrÃ¡ borrar.')) return;
+      if (!confirm('¿Eliminar la categoría? Si tiene productos no se podrá borrar.')) return;
       try {
         setBusy(true);
         const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
@@ -202,21 +205,21 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
 
     return (
       <div className="mb-4 rounded border bg-white p-3 shadow-sm">
-        <div className="mb-2 text-sm font-medium">CategorÃ­as</div>
+        <div className="mb-2 text-sm font-medium">Categorías</div>
         <div className="mb-3 flex items-center gap-2">
-          <input className="w-full rounded border px-2 py-1" placeholder="Nueva categorÃ­a" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
-          <button onClick={addCategory} disabled={busy || !newCatName.trim()} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">AÃ±adir</button>
+          <input className="w-full rounded border px-2 py-1" placeholder="Nueva categoría" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+          <button onClick={addCategory} disabled={busy || !newCatName.trim()} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">Añadir</button>
         </div>
         <ul className="space-y-2">
           {cats.map((c, idx) => (
             <li key={c.id} className="flex items-center gap-2">
               <input className="flex-1 rounded border px-2 py-1" defaultValue={c.name} onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== c.name) renameCategory(c.id, v); }} />
-              <button onClick={() => reorder(c.id, -1)} disabled={busy || idx===0} className="rounded border px-2 py-1">â†‘</button>
-              <button onClick={() => reorder(c.id, +1)} disabled={busy || idx===cats.length-1} className="rounded border px-2 py-1">â†“</button>
+              <button onClick={() => reorder(c.id, -1)} disabled={busy || idx===0} className="rounded border px-2 py-1">?</button>
+              <button onClick={() => reorder(c.id, +1)} disabled={busy || idx===cats.length-1} className="rounded border px-2 py-1">?</button>
               <button onClick={() => remove(c.id)} disabled={busy} className="rounded border px-2 py-1 text-red-600">Eliminar</button>
             </li>
           ))}
-          {cats.length === 0 && (<li className="text-sm text-gray-500">Sin categorÃ­as todavÃ­a.</li>)}
+          {cats.length === 0 && (<li className="text-sm text-gray-500">Sin categorías todavía.</li>)}
         </ul>
       </div>
     );
@@ -257,7 +260,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
 
   // Eliminar
   async function onDelete(id: number) {
-    if (!confirm("Â¿Eliminar producto?")) return;
+    if (!confirm("¿Eliminar producto?")) return;
     setLoading(true);
     const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
     setLoading(false);
@@ -265,7 +268,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     await refresh();
   }
 
-  // EdiciÃ³n
+  // Edición
   const [editDays, setEditDays] = useState<number[]>([]);
   function startEdit(p: Product) {
     setEditingId(p.id);
@@ -320,27 +323,27 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
       {/* input para subir imagen */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFilePicked} />
 
-      {/* GestiÃ³n de categorÃ­as (por negocio) */}
+      {/* Gestión de categorías (por negocio) */}
       <CategoriesManager />
 
       {/* Form crear */}
       <div ref={addFormRef}>
         <details className="rounded-md border p-4">
-          <summary className="cursor-pointer select-none text-sm font-medium">+ AÃ±adir producto</summary>
+          <summary className="cursor-pointer select-none text-sm font-medium">+ Añadir producto</summary>
           <div className="space-y-3">
             <div className="mt-3" />
             <div className="flex flex-col max-w-xl">
               <label className="text-sm text-gray-700">Nombre del producto</label>
-              <input className="border rounded px-3 py-2 w-full" placeholder="Ej. Croqueta de jamÃ³n" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <input className="border rounded px-3 py-2 w-full" placeholder="Ej. Croqueta de jamón" value={newName} onChange={(e) => setNewName(e.target.value)} />
             </div>
             <div className="flex flex-col max-w-xs">
               <label className="text-sm text-gray-700">Precio</label>
               <input className="border rounded px-3 py-2" placeholder="0.00" type="number" step="0.01" value={newPrice} onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))} />
             </div>
             <div className="flex flex-col max-w-xl">
-              <label className="text-sm text-gray-700">CategorÃ­a</label>
+              <label className="text-sm text-gray-700">Categoría</label>
               <select className="border rounded px-3 py-2 w-full" value={newCat} onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}>
-                <option value="">Sin CategorÃ­a</option>
+                <option value="">Sin Categoría</option>
         {cats.map((c) => (
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
@@ -361,12 +364,12 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
               )}
             </div>
             <div className="flex flex-col max-w-xl">
-              <label className="text-sm text-gray-700">DescripciÃ³n (opcional)</label>
+              <label className="text-sm text-gray-700">Descripción (opcional)</label>
               <textarea className="border rounded px-3 py-2 w-full" rows={3} placeholder="Describe el producto" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
             </div>
             {menuMode === 'daily' && (
               <div className="flex flex-col max-w-xl">
-                <label className="text-sm text-gray-700">DÃ¯Â¿Â½Ã¯Â¿Â½as de la semana</label>
+                <label className="text-sm text-gray-700">Dï¿½ï¿½as de la semana</label>
                 <div className="mb-2">
                   <label className="inline-flex items-center gap-2 text-sm">
                     <input
@@ -374,14 +377,14 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                       checked={newDays.length === 7}
                       onChange={(e) => setNewDays(e.target.checked ? ALL_DAYS.slice() : [])}
                     />
-                  <span>Todos los dÃ­as</span>
+                  <span>Todos los días</span>
                   </label>
                 </div>
                 <WeekdaySelector value={newDays} onChange={setNewDays} />
               </div>
             )}
             <label className="mt-1 inline-flex items-center gap-2"><input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} /><span>Disponible</span></label>
-            <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">AÃ±adir</button>
+            <button onClick={onCreate} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60">Añadir</button>
           </div>
         </details>
       </div>
@@ -389,11 +392,11 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
       {/* Filtros */}
       <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr,160px,160px,160px,1fr,auto]">
         <input className="w-full rounded border px-3 py-2" placeholder="Buscar por nombre" value={filterName} onChange={(e) => setFilterName(e.target.value)} />
-        <input className="w-full rounded border px-3 py-2" placeholder="Precio mÃ­n." value={priceMin === "" ? "" : String(priceMin)} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} />
-        <input className="w-full rounded border px-3 py-2" placeholder="Precio mÃ¡x." value={priceMax === "" ? "" : String(priceMax)} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} />
+        <input className="w-full rounded border px-3 py-2" placeholder="Precio mín." value={priceMin === "" ? "" : String(priceMin)} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} />
+        <input className="w-full rounded border px-3 py-2" placeholder="Precio máx." value={priceMax === "" ? "" : String(priceMax)} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} />
         <select className="w-full rounded border px-3 py-2" value={filterAvail} onChange={(e) => setFilterAvail(e.target.value as any)}>
           <option value="all">Todos</option>
-          <option value="yes">SÃ­</option>
+          <option value="yes">Sí</option>
           <option value="no">No</option>
         </select>
         <select className="w-full rounded border px-3 py-2" value={filterCat} onChange={(e) => setFilterCat(e.target.value === "" ? "" : Number(e.target.value))}>
@@ -412,7 +415,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
               <th className="px-3 py-2 text-left">Nombre</th>
               <th className="px-3 py-2 text-left">Precio</th>
               <th className="px-3 py-2 text-left">Disponible</th>
-              <th className="px-3 py-2 text-left">CategorÃ­a</th>
+              <th className="px-3 py-2 text-left">Categoría</th>
               <th className="px-3 py-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -426,11 +429,11 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                     <td className="px-3 py-2">
                       <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
                       <div className="mt-1 text-xs text-gray-500">
-                        <input className="w-full rounded border px-2 py-1" placeholder="DescripciÃ³n (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
+                        <input className="w-full rounded border px-2 py-1" placeholder="Descripción (opcional)" value={editRow.description ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} />
                       </div>
                       {menuMode === 'daily' && (
                         <div className="mt-2">
-                          <div className="text-xs text-gray-700 mb-1">DÃ¯Â¿Â½Ã¯Â¿Â½as visibles</div>
+                          <div className="text-xs text-gray-700 mb-1">Dï¿½ï¿½as visibles</div>
                           <div className="mb-2">
                             <label className="inline-flex items-center gap-2 text-xs">
                               <input
@@ -438,7 +441,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                                 checked={editDays.length === 7}
                                 onChange={(e) => setEditDays(e.target.checked ? ALL_DAYS.slice() : [])}
                               />
-                              <span>Todos los dÃ­as</span>
+                              <span>Todos los días</span>
                             </label>
                           </div>
                           <WeekdaySelector value={editDays} onChange={setEditDays} compact />
@@ -451,12 +454,12 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                     <td className="w-[110px] px-3 py-2">
                       <label className="inline-flex items-center gap-2">
                         <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
-                        <span>{editRow.available ? "SÃ­" : "No"}</span>
+                        <span>{editRow.available ? "Sí" : "No"}</span>
                       </label>
                     </td>
                     <td className="w-[220px] px-3 py-2">
                       <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ""} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === "" ? null : Number(e.target.value) }))}>
-                        <option value="">Sin CategorÃ­a</option>
+                        <option value="">Sin Categoría</option>
                         {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                       </select>
                     </td>
@@ -481,7 +484,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
                   <td className="px-3 py-2">
                     <label className="inline-flex items-center gap-2">
                       <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? "SÃ­" : "No"}</span>
+                      <span>{p.available ? "Sí" : "No"}</span>
                     </label>
                   </td>
                   <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '-' : '-'}</td>
@@ -507,5 +510,6 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
     </div>
   );
 }
+
 
 
