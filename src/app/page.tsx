@@ -1,18 +1,18 @@
-// /src/app/page.tsx
+﻿// /src/app/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 
-// Defaults (fallbacks si no hay configuración)
+// Defaults (fallbacks si no hay configuraciÃ³n)
 const INFO_DEFAULT = {
   nombre: "Pizzeria napolitana",
-  slogan: "La tradición de Nápoles en cada porción.",
+  slogan: "La tradiciÃ³n de NÃ¡poles en cada porciÃ³n.",
   telefono: "+34 600 000 000",
   email: "info@mirestaurante.com",
   whatsapp: "+34600000000",
-  direccion: "Calle Mayor 123, 30001 Murcia, España",
+  direccion: "Calle Mayor 123, 30001 Murcia, EspaÃ±a",
   logoUrl: "/images/fachada.png",
   fachadaUrl: "/images/fachada.png",
   menuPath: "/menu",
@@ -34,10 +34,10 @@ const HORARIOS_DEFAULT: Horarios = {
 const DAY_LABEL: Record<Dia, string> = {
   lunes: "Lunes",
   martes: "Martes",
-  miercoles: "Miércoles",
+  miercoles: "MiÃ©rcoles",
   jueves: "Jueves",
   viernes: "Viernes",
-  sabado: "Sábado",
+  sabado: "SÃ¡bado",
   domingo: "Domingo",
 };
 
@@ -87,7 +87,7 @@ function jsonLd(info: typeof INFO_DEFAULT, horarios: Horarios, coords: typeof CO
 export default function HomePage() {
   const router = useRouter();
 
-  // Cargar configuración dinámica
+  // Cargar configuraciÃ³n dinÃ¡mica
   const [cfg, setCfg] = useState<any>(null);
   useEffect(() => {
     (async () => {
@@ -134,7 +134,7 @@ export default function HomePage() {
       <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_DEFAULT)) }} />
 
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-transparent -mt-[64px] md:-mt-[72px]">
-        <div className="max-w-6xl mx-auto px-4 pt-[76px] md:pt-[84px] pb-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 pt-[60px] pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {INFO.logoUrl && <img src={INFO.logoUrl} alt={`${INFO.nombre} logo`} className="h-9 w-auto rounded" />}
             <div>
@@ -144,9 +144,9 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
-            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menú ahora</button>
+            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menÃº ahora</button>
           </div>
-        </div>
+          <div className="py-3 flex items-center justify-between"></div>
       </header>
 
       <section className="relative">
@@ -156,7 +156,7 @@ export default function HomePage() {
           <div className="text-center space-y-2">
             <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
             <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
-            <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menú ahora</button>
+            <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menÃº ahora</button>
           </div>
         </div>
       </section>
@@ -176,13 +176,13 @@ export default function HomePage() {
         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
           <ul className="text-sm space-y-1 contact-list">
-            <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
+            <li>TelÃ©fono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
             <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
-            <li>Dirección: <span className="block">{INFO.direccion}</span></li>
+            <li>DirecciÃ³n: <span className="block">{INFO.direccion}</span></li>
           </ul>
           {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
             <div className="mt-4">
-              <h3 className="font-medium mb-2">Síguenos</h3>
+              <h3 className="font-medium mb-2">SÃ­guenos</h3>
               <div className="flex flex-wrap gap-2">
                 {cfg?.social?.instagram && <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Instagram</a>}
                 {cfg?.social?.facebook && <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Facebook</a>}
@@ -196,7 +196,7 @@ export default function HomePage() {
 
       {/* Mapa */}
       <section className="max-w-6xl mx-auto px-4 pb-10 mt-8">
-        <h2 className="text-xl font-semibold mb-4 text-center">Dónde estamos</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">DÃ³nde estamos</h2>
         <div className="rounded-2xl overflow-hidden border border-brand-crust bg-white shadow-sm">
           <iframe title={`Mapa de ${INFO.nombre}`} src={mapaSrc} className="w-full h-[360px]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         </div>
@@ -206,13 +206,13 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-4 pb-14 mt-8">
         <div className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Sobre nosotros</h2>
-          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
+          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradiciÃ³n.
 
-<p>Preparamos cada día nuestras auténticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
+<p>Preparamos cada dÃ­a nuestras autÃ©nticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
 
-<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rápida. Perfecta para llevar (takeaway).
+<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rÃ¡pida. Perfecta para llevar (takeaway).
 
-¡Ti aspettiamo! (¡Te esperamos!)</>)}</p>
+Â¡Ti aspettiamo! (Â¡Te esperamos!)</>)}</p>
         </div>
       </section>
 
@@ -220,3 +220,10 @@ export default function HomePage() {
     </main>
   );
 }
+
+
+
+
+
+
+
