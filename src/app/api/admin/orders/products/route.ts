@@ -67,6 +67,7 @@ export async function GET() {
       )
       .order('sort_order', { ascending: true })
       .order('id', { ascending: true });
+    prodQuery = prodQuery.eq('active', true as any);
     if (bid) prodQuery = prodQuery.eq('business_id', bid);
     const { data: products, error } = await prodQuery;
     if (error) throw error;

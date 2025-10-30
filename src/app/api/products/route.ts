@@ -441,10 +441,10 @@ export async function DELETE(req: Request) {
 
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
-  let qDel = supabaseAdmin.from(TABLE).delete().eq('id', id);
-  const { error } = bid ? await qDel.eq('business_id', bid) : await qDel;
-  // si llega aquí, ya no hay error
-
+  let qUpd = supabaseAdmin.from(TABLE).update({ active: false as any, available: false as any }).eq('id', id);
+  const { error } = bid ? await qUpd.eq('business_id', bid) : await qUpd;
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  try { await supabaseAdmin.from('product_weekdays').delete().eq('product_id', id); } catch {}
   return NextResponse.json({ ok: true });
 }
 
