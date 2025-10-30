@@ -58,6 +58,13 @@ export default function AdminStatsPage() {
       const url = new URL('/api/admin/stats', window.location.origin);
       if (start) url.searchParams.set('from', start.toISOString());
       if (end) url.searchParams.set('to', end.toISOString());
+      // Fallback: si la cookie del tenant no está disponible en esta petición,
+      // añadimos el slug del subdominio como parámetro (?tenant=...). No rompe nada.
+      const host = window.location.hostname;
+      const parts = host.split('.');
+      if (parts.length >= 3) {
+        url.searchParams.set('tenant', parts[0].toLowerCase());
+      }
       const r = await fetch(url.toString(), { cache: 'no-store' });
       const j = await r.json();
       if (!j?.ok) throw new Error(j?.message || 'Error');
