@@ -97,28 +97,29 @@ export async function POST(req: NextRequest) {
       .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId, business_id: (tenant as any)?.id || null })));
     if (itemsErr) throw itemsErr;
     ;(async () => {
-  try {
-    if (initialStatus !== 'confirmed' || !body.customer?.email) return;
-    const { data: business } = await supabaseAdmin
-      .from('businesses').select('name').eq('id', (tenant as any)?.id || null).maybeSingle();
-    const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
-    const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
-    const { sendOrderReceiptEmail } = await import('@/lib/email/sendOrderReceipt');
-    await sendOrderReceiptEmail({
-      orderId,
-      businessName: (business as any)?.name || 'PideLocal',
-      customerEmail: body.customer.email!,
-      customerName: body.customer.name,
-      items: itemsSimple,
-      subtotal,
-      total: totalCents/100,
-      pickupTime: body.pickupAt,
-      notes: body.notes || undefined,
-    });
-  } catch (e) {
-    console.error('[email] create-order (card/confirmed) fallo:', e);
-  }
-})();
+      try {
+        // Enviar SIEMPRE si el pedido trae email del cliente (no bloquea la respuesta)
+        if (!body.customer?.email) return;
+        const { data: business } = await supabaseAdmin
+          .from('businesses').select('name').eq('id', (tenant as any)?.id || null).maybeSingle();
+        const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
+        const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
+        const { sendOrderReceiptEmail } = await import('@/lib/email/sendOrderReceipt');
+        await sendOrderReceiptEmail({
+          orderId,
+          businessName: (business as any)?.name || 'PideLocal',
+          customerEmail: body.customer.email!,
+          customerName: body.customer.name,
+          items: itemsSimple,
+          subtotal,
+          total: totalCents/100,
+          pickupTime: body.pickupAt,
+          notes: body.notes || undefined,
+        });
+      } catch (e) {
+        console.error('[email] create-order (non-blocking) fallo:', e);
+      }
+    })();
     return NextResponse.json({ ok: true, orderId, code });
   } catch (err: any) {
     return NextResponse.json(

@@ -1,7 +1,7 @@
 // src/app/api/orders/[id]/status/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin"; // helper de Service Role
-import { sendOrderReceiptEmail } from "@/lib/email/sendOrderReceipt";
+// Email de confirmación se envía al crear el pedido (evitamos duplicados aquí)
 import { cookies } from 'next/headers';
 
 async function getTenantSlug(): Promise<string> {
@@ -31,41 +31,7 @@ export async function POST(req: Request, { params }: Params) {
     const { error } = bid ? await q.eq('business_id', bid) : await q;
     if (error) return NextResponse.json({ ok: false, message: error.message }, { status: 400 });
 
-    // Email no bloqueante: si pasa a 'confirmed' y hay email del cliente, disparamos el envío.
-    (async () => {
-      try {
-        if (status !== 'confirmed') return;
-        const { data: order } = await supabaseAdmin
-          .from('orders')
-          .select('id, customer_name, customer_email, total_cents, pickup_at, business_id')
-          .eq('id', id)
-          .maybeSingle();
-        if (!order || !order.customer_email) return;
-        const { data: business } = await supabaseAdmin
-          .from('businesses')
-          .select('name')
-          .eq('id', order.business_id)
-          .maybeSingle();
-        const { data: lines } = await supabaseAdmin
-          .from('order_items')
-          .select('name, quantity, unit_price_cents')
-          .eq('order_id', id);
-        const items = (lines || []).map((l: any) => ({ name: l.name, qty: Number(l.quantity||0), price: Number(l.unit_price_cents||0)/100 }));
-        const subtotal = items.reduce((a, it) => a + it.price * it.qty, 0);
-        await sendOrderReceiptEmail({
-          orderId: String(order.id),
-          businessName: (business as any)?.name || 'PideLocal',
-          customerEmail: order.customer_email,
-          customerName: order.customer_name || undefined,
-          items,
-          subtotal,
-          total: Number(order.total_cents||0)/100,
-          pickupTime: order.pickup_at || undefined,
-        });
-      } catch (e) {
-        console.error('[email] fallo post-confirmation:', e);
-      }
-    })();
+    // Nota: no se envía email en el cambio de estado para evitar duplicados.
 
     return NextResponse.json({ ok: true });
   } catch (e) {

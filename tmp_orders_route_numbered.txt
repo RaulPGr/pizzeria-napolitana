@@ -1,102 +1,131 @@
-   1: // src/app/api/orders/route.ts
-   2: import { NextRequest, NextResponse } from 'next/server';
-   3: import { supabaseAdmin } from '@/lib/supabaseAdmin';
-   4: 
-   5: type ItemInput = { productId: number; quantity: number };
-   6: type BodyInput = {
-   7:   customer: { name: string; phone: string; email?: string };
-   8:   pickupAt: string; // ISO
-   9:   items: ItemInput[];
-  10:   paymentMethod: 'cash' | 'card';
-  11:   notes?: string;
-  12: };
-  13: 
-  14: export async function POST(req: NextRequest) {
-  15:   try {
-  16:     const body = (await req.json()) as BodyInput;
-  17: 
-  18:     if (!body.customer?.name || !body.customer?.phone)
-  19:       return NextResponse.json(
-  20:         { ok: false, message: 'Faltan datos del cliente' },
-  21:         { status: 400 }
-  22:       );
-  23: 
-  24:     if (!Array.isArray(body.items) || body.items.length === 0)
-  25:       return NextResponse.json(
-  26:         { ok: false, message: 'Debes incluir al menos 1 item' },
-  27:         { status: 400 }
-  28:       );
-  29: 
-  30:     // Traer precios de productos y calcular totales en céntimos
-  31:     const productIds = [...new Set(body.items.map((i) => i.productId))];
-  32:     const { data: products, error: prodErr } = await supabaseAdmin
-  33:       .from('products')
-  34:       .select('id, name, price')
-  35:       .in('id', productIds);
-  36:     if (prodErr) throw prodErr;
-  37: 
-  38:     const map = new Map(products?.map((p) => [p.id, p]) || []);
-  39: 
-  40:     let totalCents = 0;
-  41:     const itemsPrepared = body.items.map((i) => {
-  42:       const p = map.get(i.productId);
-  43:       if (!p) {
-  44:         throw new Error(`Producto no existe (id=${i.productId})`);
-  45:       }
-  46:       const unit_price_cents = Math.round(Number(p.price) * 100);
-  47:       const line_total_cents = unit_price_cents * i.quantity;
-  48:       totalCents += line_total_cents;
-  49:       return {
-  50:         product_id: i.productId,
-  51:         name: p.name,
-  52:         unit_price_cents,
-  53:         quantity: i.quantity,
-  54:         line_total_cents,
-  55:       };
-  56:     });
-  57: 
-  58:     // Decidir estado inicial según método de pago
-  59:     const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
-  60: 
-  61:     // Insertar pedido
-  62:     const { data: inserted, error: insErr } = await supabaseAdmin
-  63:       .from('orders')
-  64:       .insert({
-  65:         customer_name: body.customer.name,
-  66:         customer_phone: body.customer.phone,
-  67:         customer_email: body.customer.email || null,
-  68:         pickup_at: body.pickupAt ? new Date(body.pickupAt).toISOString() : null,
-  69:         status: initialStatus,
-  70:         total_cents: totalCents,
-  71:         payment_method: body.paymentMethod,
-  72:         payment_status: 'unpaid',
-  73:         notes: body.notes || null,
-  74:       })
-  75:       .select('id')
-  76:       .single();
-  77:     if (insErr) throw insErr;
-  78: 
-  79:     const orderId: string = inserted.id;
-  80: 
-  81:     // Generar code corto (p.ej. primeros 7 chars del uuid)
-  82:     const code = orderId.split('-')[0];
-  83:     const { error: upErr } = await supabaseAdmin
-  84:       .from('orders')
-  85:       .update({ code })
-  86:       .eq('id', orderId);
-  87:     if (upErr) throw upErr;
-  88: 
-  89:     // Insertar los items
-  90:     const { error: itemsErr } = await supabaseAdmin
-  91:       .from('order_items')
-  92:       .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId })));
-  93:     if (itemsErr) throw itemsErr;
-  94: 
-  95:     return NextResponse.json({ ok: true, orderId, code });
-  96:   } catch (err: any) {
-  97:     return NextResponse.json(
-  98:       { ok: false, message: err?.message || 'Error creando pedido' },
-  99:       { status: 400 }
- 100:     );
- 101:   }
- 102: }
+// src/app/api/orders/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getTenant } from '@/lib/tenant';
+
+type ItemInput = { productId: number; quantity: number };
+type BodyInput = {
+  customer: { name: string; phone: string; email?: string };
+  pickupAt: string; // ISO
+  items: ItemInput[];
+  paymentMethod: 'cash' | 'card';
+  notes?: string;
+};
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = (await req.json()) as BodyInput;
+
+    // 0) Cargar tenant (para asociar negocio). La validación estricta del horario se realiza en cliente.
+    const tenant = await getTenant();
+
+    if (!body.customer?.name || !body.customer?.phone)
+      return NextResponse.json(
+        { ok: false, message: 'Faltan datos del cliente' },
+        { status: 400 }
+      );
+
+    if (!Array.isArray(body.items) || body.items.length === 0)
+      return NextResponse.json(
+        { ok: false, message: 'Debes incluir al menos 1 item' },
+        { status: 400 }
+      );
+
+    // Traer precios de productos y calcular totales en céntimos
+    const productIds = [...new Set(body.items.map((i) => i.productId))];
+    const { data: products, error: prodErr } = await supabaseAdmin
+      .from('products')
+      .select('id, name, price')
+      .in('id', productIds);
+    if (prodErr) throw prodErr;
+
+    const map = new Map(products?.map((p) => [p.id, p]) || []);
+
+    let totalCents = 0;
+    const itemsPrepared = body.items.map((i) => {
+      const p = map.get(i.productId);
+      if (!p) {
+        throw new Error(`Producto no existe (id=${i.productId})`);
+      }
+      const unit_price_cents = Math.round(Number(p.price) * 100);
+      const line_total_cents = unit_price_cents * i.quantity;
+      totalCents += line_total_cents;
+      return {
+        product_id: i.productId,
+        name: p.name,
+        unit_price_cents,
+        quantity: i.quantity,
+        line_total_cents,
+      };
+    });
+
+    // Decidir estado inicial según método de pago
+    const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
+
+    // Insertar pedido
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        customer_name: body.customer.name,
+        customer_phone: body.customer.phone,
+        customer_email: body.customer.email || null,
+        pickup_at: body.pickupAt ? new Date(body.pickupAt).toISOString() : null,
+        status: initialStatus,
+        total_cents: totalCents,
+        payment_method: body.paymentMethod,
+        payment_status: 'unpaid',
+        notes: body.notes || null,
+        business_id: (tenant as any)?.id || null,
+      })
+      .select('id')
+      .single();
+    if (insErr) throw insErr;
+
+    const orderId: string = inserted.id;
+
+    // Generar code corto (p.ej. primeros 7 chars del uuid)
+    const code = orderId.split('-')[0];
+    const { error: upErr } = await supabaseAdmin
+      .from('orders')
+      .update({ code })
+      .eq('id', orderId);
+    if (upErr) throw upErr;
+
+    // Insertar los items
+    const { error: itemsErr } = await supabaseAdmin
+      .from('order_items')
+      .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId, business_id: (tenant as any)?.id || null })));
+    if (itemsErr) throw itemsErr;
+    ;(async () => {
+  try {
+    if (initialStatus !== 'confirmed' || !body.customer?.email) return;
+    const { data: business } = await supabaseAdmin
+      .from('businesses').select('name').eq('id', (tenant as any)?.id || null).maybeSingle();
+    const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
+    const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
+    const { sendOrderReceiptEmail } = await import('@/lib/email/sendOrderReceipt');
+    await sendOrderReceiptEmail({
+      orderId,
+      businessName: (business as any)?.name || 'PideLocal',
+      customerEmail: body.customer.email!,
+      customerName: body.customer.name,
+      items: itemsSimple,
+      subtotal,
+      total: totalCents/100,
+      pickupTime: body.pickupAt,
+      notes: body.notes || undefined,
+    });
+  } catch (e) {
+    console.error('[email] create-order (card/confirmed) fallo:', e);
+  }
+})();
+    return NextResponse.json({ ok: true, orderId, code });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, message: err?.message || 'Error creando pedido' },
+      { status: 400 }
+    );
+  }
+}
+
+
