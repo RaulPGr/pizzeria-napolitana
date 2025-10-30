@@ -20,13 +20,11 @@ async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: R
     const supa = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
+      { cookies: {
           get: (n: string) => cookieStore.get(n)?.value,
           set: (n: string, v: string, o: any) => { try { cookieStore.set({ name: n, value: v, ...o }); } catch {} },
           remove: (n: string, o: any) => { try { cookieStore.set({ name: n, value: '', ...o, maxAge: 0 }); } catch {} },
-        },
-      }
+        } }
     );
     const { data } = await supa.auth.getUser();
     const email = data.user?.email?.toLowerCase() || '';
@@ -37,7 +35,11 @@ async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: R
       try {
         const slug = cookieStore.get('x-tenant-slug')?.value || '';
         if (slug && uid) {
-          const { data: biz } = await supabaseAdmin.from('businesses').select('id').eq('slug', slug).maybeSingle();
+          const { data: biz } = await supabaseAdmin
+            .from('businesses')
+            .select('id')
+            .eq('slug', slug)
+            .maybeSingle();
           const bid = (biz as any)?.id as string | undefined;
           if (bid) {
             const { data: mm } = await supabaseAdmin
@@ -60,7 +62,11 @@ async function assertAdminOrMember(): Promise<{ ok: true } | { ok: false; res: R
 
 async function getBusinessIdBySlug(slug: string): Promise<string | null> {
   if (!slug) return null;
-  const { data, error } = await supabaseAdmin.from('businesses').select('id').eq('slug', slug).maybeSingle();
+  const { data, error } = await supabaseAdmin
+    .from('businesses')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
   if (error) return null;
   return (data as any)?.id ?? null;
 }
@@ -75,7 +81,7 @@ export async function GET() {
     .from('categories')
     .select('*')
     .eq('business_id', bid)
-    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true, categories: data || [] });
@@ -87,7 +93,8 @@ export async function POST(req: Request) {
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
   if (!bid) return NextResponse.json({ ok: false, error: 'Negocio no encontrado' }, { status: 400 });
-  let body: any = null; try { body = await req.json(); } catch {}
+  let body: any = null;
+  try { body = await req.json(); } catch {}
   const name = String(body?.name || '').trim();
   const sort_order = body?.sort_order == null ? null : Number(body.sort_order);
   if (!name) return NextResponse.json({ ok: false, error: 'Nombre requerido' }, { status: 400 });
@@ -106,7 +113,8 @@ export async function PATCH(req: Request) {
   const slug = await getTenantSlug();
   const bid = await getBusinessIdBySlug(slug);
   if (!bid) return NextResponse.json({ ok: false, error: 'Negocio no encontrado' }, { status: 400 });
-  let body: any = null; try { body = await req.json(); } catch {}
+  let body: any = null;
+  try { body = await req.json(); } catch {}
   const id = Number(body?.id);
   if (!id) return NextResponse.json({ ok: false, error: 'id requerido' }, { status: 400 });
   const updates: any = {};
@@ -131,33 +139,16 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = Number(url.searchParams.get('id')) || Number((await req.text()).trim());
   if (!id) return NextResponse.json({ ok: false, error: 'id requerido' }, { status: 400 });
-
-  // Bloquear solo si hay productos ACTIVOS en la categoría
   const { count } = await supabaseAdmin
     .from('products')
     .select('*', { count: 'exact', head: true })
     .eq('business_id', bid)
-    .eq('category_id', id)
-    .eq('active', true as any);
+    .eq('category_id', id )__BREAK___.eq('active', true as any);
   if ((count || 0) > 0) {
-    return NextResponse.json({ ok: false, error: 'No se puede eliminar: hay productos en esta categoría' }, { status: 409 });
+    return NextResponse.json({ ok: false, error: 'No se puede eliminar: hay productos en esta categorÃ­a' }, { status: 409 });
   }
-
-  // Desasociar productos INACTIVOS para evitar restricciones de FK
-  try {
-    await supabaseAdmin
-      .from('products')
-      .update({ category_id: null })
-      .eq('business_id', bid)
-      .eq('category_id', id)
-      .eq('active', false as any);
-  } catch {}
-
-  const { error } = await supabaseAdmin
-    .from('categories')
-    .delete()
-    .eq('id', id)
-    .eq('business_id', bid);
+  try { await supabaseAdmin.from('products').update({ category_id: null }).eq('business_id', bid).eq('category_id', id).eq('active', false as any); } catch {}\n  const { error } = await supabaseAdmin\n    .from('categories')\n    .delete()\n    .eq('id', id)\n    .eq('business_id', bid);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
+
