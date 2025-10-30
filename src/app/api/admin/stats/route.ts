@@ -25,7 +25,7 @@ type Dataset = {
 
 export async function GET(req: NextRequest) {
   try {
-    // Guard: requiere sesión admin
+    // Guard: requiere sesión admin o ser miembro del negocio
     try {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -40,7 +40,33 @@ export async function GET(req: NextRequest) {
       const { data } = await supa.auth.getUser();
       const email = data.user?.email?.toLowerCase() || '';
       const admins = adminEmails();
-      const ok = admins.length === 0 ? !!email : admins.includes(email);
+      const isSuper = admins.length === 0 ? !!email : admins.includes(email);
+
+      // Miembro del negocio del subdominio
+      let isMember = false;
+      try {
+        let slug = cookieStore.get('x-tenant-slug')?.value || '';
+        if (!slug) {
+          // permite ?tenant=
+          const { searchParams } = new URL(req.url);
+          slug = (searchParams.get('tenant') || '').toLowerCase();
+        }
+        if (slug && data.user?.id) {
+          const { data: biz } = await supabaseAdmin.from('businesses').select('id').eq('slug', slug).maybeSingle();
+          const bid = (biz as any)?.id as string | undefined;
+          if (bid) {
+            const { data: mm } = await supabaseAdmin
+              .from('business_members')
+              .select('user_id')
+              .eq('business_id', bid)
+              .eq('user_id', data.user.id)
+              .maybeSingle();
+            isMember = !!mm;
+          }
+        }
+      } catch {}
+
+      const ok = isSuper || isMember;
       if (!ok) { return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 }); }
     } catch {
       return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
