@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { headers } from 'next/headers';
-import ProductsTable from '@/components/admin/ProductsTable';
+import ProductsTable from '@/components/admin/ProductsTable.clean';
 
 // Obtiene la URL base de forma robusta (Vercel, local, etc.)
 async function getBaseUrl() {
