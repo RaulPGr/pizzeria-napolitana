@@ -49,6 +49,7 @@ export default function OrderDetailPage(props: PageProps) {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bizName, setBizName] = useState<string>("Mi Restaurante");
+  const [bizLogo, setBizLogo] = useState<string | null>(null);
 
   async function ensureJsPDF() {
     if ((window as any).jspdf?.jsPDF) return (window as any).jspdf.jsPDF;
@@ -62,12 +63,45 @@ export default function OrderDetailPage(props: PageProps) {
     return (window as any).jspdf.jsPDF;
   }
 
+  async function toDataURL(url: string): Promise<string | null> {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) return null;
+      const blob = await r.blob();
+      return await new Promise<string | null>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async function downloadPdf() {
     if (!order) return;
     try {
       const jsPDF = await ensureJsPDF();
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-      let y = 50;
+      let y = 40;
+      // Logo centrado (opcional)
+      if (bizLogo) {
+        try {
+          const dataUrl = await toDataURL(bizLogo);
+          if (dataUrl) {
+            const img = new Image();
+            img.src = dataUrl;
+            await new Promise((res) => { img.onload = () => res(null); img.onerror = () => res(null); });
+            const maxW = 120;
+            const w = Math.min(maxW, img.width || maxW);
+            const h = img.width ? (w * (img.height || maxW) / (img.width || maxW)) : 60;
+            const x = 300 - w / 2;
+            doc.addImage(dataUrl, 'PNG', x, y, w, h);
+            y += h + 8;
+          }
+        } catch { /* ignorar fallo de imagen */ }
+      }
       doc.setFontSize(18);
       doc.text(bizName || 'Mi Restaurante', 300, y, { align: 'center' });
       y += 24;
@@ -164,7 +198,7 @@ export default function OrderDetailPage(props: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Cargar nombre del negocio para el encabezado del PDF
+  // Cargar nombre y logo del negocio para el encabezado del PDF
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -172,7 +206,9 @@ export default function OrderDetailPage(props: PageProps) {
         const r = await fetch('/api/settings/home', { cache: 'no-store' });
         const j = await r.json();
         const name = j?.data?.business?.name || '';
+        const logo = j?.data?.images?.logo || null;
         if (alive && name) setBizName(name);
+        if (alive && logo) setBizLogo(logo);
       } catch {}
     })();
     return () => { alive = false; };
@@ -294,4 +330,3 @@ export default function OrderDetailPage(props: PageProps) {
     </div>
   );
 }
-
