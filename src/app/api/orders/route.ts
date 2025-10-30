@@ -1,4 +1,4 @@
-// src/app/api/orders/route.ts
+﻿// src/app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BodyInput;
 
-    // 0) Cargar tenant (para asociar negocio). La validación estricta del horario se realiza en cliente.
+    // 0) Cargar tenant (para asociar negocio). La validaciÃ³n estricta del horario se realiza en cliente.
     const tenant = await getTenant();
 
     if (!body.customer?.name || !body.customer?.phone)
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
 
-    // Traer precios de productos y calcular totales en céntimos
+    // Traer precios de productos y calcular totales en cÃ©ntimos
     const productIds = [...new Set(body.items.map((i) => i.productId))];
     const { data: products, error: prodErr } = await supabaseAdmin
       .from('products')
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Decidir estado inicial según método de pago
+    // Decidir estado inicial segÃºn mÃ©todo de pago
     const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
 
     // Insertar pedido
@@ -96,7 +96,29 @@ export async function POST(req: NextRequest) {
       .from('order_items')
       .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId, business_id: (tenant as any)?.id || null })));
     if (itemsErr) throw itemsErr;
-
+    ;(async () => {
+  try {
+    if (initialStatus !== 'confirmed' || !body.customer?.email) return;
+    const { data: business } = await supabaseAdmin
+      .from('businesses').select('name').eq('id', (tenant as any)?.id || null).maybeSingle();
+    const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
+    const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
+    const { sendOrderReceiptEmail } = await import('@/lib/email/sendOrderReceipt');
+    await sendOrderReceiptEmail({
+      orderId,
+      businessName: (business as any)?.name || 'PideLocal',
+      customerEmail: body.customer.email!,
+      customerName: body.customer.name,
+      items: itemsSimple,
+      subtotal,
+      total: totalCents/100,
+      pickupTime: body.pickupAt,
+      notes: body.notes || undefined,
+    });
+  } catch (e) {
+    console.error('[email] create-order (card/confirmed) fallo:', e);
+  }
+})();
     return NextResponse.json({ ok: true, orderId, code });
   } catch (err: any) {
     return NextResponse.json(
@@ -105,3 +127,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
