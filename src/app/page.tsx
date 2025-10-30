@@ -5,14 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 
-// Defaults (fallbacks si no hay configuraciÃ³n)
+// Defaults (fallbacks si no hay configuración)
 const INFO_DEFAULT = {
   nombre: "Pizzeria napolitana",
-  slogan: "La tradiciÃ³n de NÃ¡poles en cada porciÃ³n.",
+  slogan: "La tradición de Nápoles en cada porción.",
   telefono: "+34 600 000 000",
   email: "info@mirestaurante.com",
   whatsapp: "+34600000000",
-  direccion: "Calle Mayor 123, 30001 Murcia, EspaÃ±a",
+  direccion: "Calle Mayor 123, 30001 Murcia, España",
   logoUrl: "/images/fachada.png",
   fachadaUrl: "/images/fachada.png",
   menuPath: "/menu",
@@ -34,10 +34,10 @@ const HORARIOS_DEFAULT: Horarios = {
 const DAY_LABEL: Record<Dia, string> = {
   lunes: "Lunes",
   martes: "Martes",
-  miercoles: "MiÃ©rcoles",
+  miercoles: "Miércoles",
   jueves: "Jueves",
   viernes: "Viernes",
-  sabado: "SÃ¡bado",
+  sabado: "Sábado",
   domingo: "Domingo",
 };
 
@@ -87,7 +87,7 @@ function jsonLd(info: typeof INFO_DEFAULT, horarios: Horarios, coords: typeof CO
 export default function HomePage() {
   const router = useRouter();
 
-  // Cargar configuraciÃ³n dinÃ¡mica
+  // Cargar configuración dinÃ¡mica
   const [cfg, setCfg] = useState<any>(null);
   useEffect(() => {
     (async () => {
@@ -175,13 +175,13 @@ export default function HomePage() {
         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
           <ul className="text-sm space-y-1 contact-list">
-            <li>TelÃ©fono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
+            <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
             <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
-            <li>DirecciÃ³n: <span className="block">{INFO.direccion}</span></li>
+            <li>Dirección: <span className="block">{INFO.direccion}</span></li>
           </ul>
           {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
             <div className="mt-4">
-              <h3 className="font-medium mb-2">SÃ­guenos</h3>
+              <h3 className="font-medium mb-2">Síguenos</h3>
               <div className="flex flex-wrap gap-2">
                 {cfg?.social?.instagram && <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Instagram</a>}
                 {cfg?.social?.facebook && <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Facebook</a>}
@@ -195,7 +195,7 @@ export default function HomePage() {
 
       {/* Mapa */}
       <section className="max-w-6xl mx-auto px-4 pb-10 mt-8">
-        <h2 className="text-xl font-semibold mb-4 text-center">DÃ³nde estamos</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">Dónde estamos</h2>
         <div className="rounded-2xl overflow-hidden border border-brand-crust bg-white shadow-sm">
           <iframe title={`Mapa de ${INFO.nombre}`} src={mapaSrc} className="w-full h-[360px]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         </div>
@@ -205,11 +205,11 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-4 pb-14 mt-8">
         <div className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4 text-center">Sobre nosotros</h2>
-          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradiciÃ³n.
+          <p className="text-sm leading-6 text-gray-700">{cfg?.business?.description ? cfg.business.description : (<>En <strong>{INFO.nombre}</strong> no solo hacemos pizza, revivimos la tradición.
 
-<p>Preparamos cada dÃ­a nuestras autÃ©nticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
+<p>Preparamos cada día nuestras auténticas recetas napolitanas con la passione italiana, utilizando ingredientes de primera calidad como el Tomate San Marzano D.O.P. y la Mozzarella Fior di Latte, garantizando el sabor original.</p>
 
-<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rÃ¡pida. Perfecta para llevar (takeaway).
+<p></p>Nuestro objetivo es que saborees la verdadera pizza napolitana de forma rica y rápida. Perfecta para llevar (takeaway).
 
 Â¡Ti aspettiamo! (Â¡Te esperamos!)</>)}</p>
         </div>
@@ -219,6 +219,7 @@ export default function HomePage() {
     </main>
   );
 }
+
 
 
 
