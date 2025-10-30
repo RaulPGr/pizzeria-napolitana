@@ -6,6 +6,7 @@ import { Resend } from "resend";
 export type OrderItem = { name: string; qty: number; price: number };
 export type SendOrderReceiptParams = {
   orderId: string;
+  orderCode?: string; // código corto usado en el panel (p.ej., primeros chars)
   businessName: string;
   customerEmail: string;
   customerName?: string;
@@ -24,7 +25,7 @@ const currency = (n: number) =>
   Number(n || 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
 export async function sendOrderReceiptEmail({
-  orderId, businessName, customerEmail, customerName,
+  orderId, orderCode, businessName, customerEmail, customerName,
   items, subtotal, deliveryFee = 0, discount = 0, total,
   pickupTime, deliveryAddress, notes, bcc
 }: SendOrderReceiptParams): Promise<void> {
@@ -46,11 +47,13 @@ export async function sendOrderReceiptEmail({
       </tr>
     `).join("");
 
+    const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 12)}`;
+
     const html = `
       <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto;line-height:1.5">
         <h2>${businessName} – Hemos recibido tu pedido</h2>
         <p>Hola ${customerName ?? "cliente"}, gracias por tu pedido.</p>
-        <p><strong>Nº pedido:</strong> ${orderId}</p>
+        <p><strong>Nº pedido:</strong> ${ticket}</p>
 
         <table width="100%" cellpadding="8" style="border-collapse:collapse;border-top:1px solid #eee;border-bottom:1px solid #eee">
           <thead>
@@ -82,7 +85,7 @@ export async function sendOrderReceiptEmail({
       from,
       to: [customerEmail],
       ...(process.env.EMAIL_BCC || bcc ? { bcc: [process.env.EMAIL_BCC || (bcc as string)] } : {}),
-      subject: `Tu pedido #${orderId} en ${businessName}`,
+      subject: `Hemos recibido tu pedido ${ticket} en ${businessName}`,
       html,
     });
   } catch (err) {
@@ -90,4 +93,3 @@ export async function sendOrderReceiptEmail({
     // Importante: nunca relanzar el error; el pedido no debe fallar por el email.
   }
 }
-
