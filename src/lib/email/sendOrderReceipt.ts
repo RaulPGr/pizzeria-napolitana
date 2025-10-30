@@ -34,6 +34,7 @@ function formatPickup(ts: string): string {
     // Formato claro día/mes/año y hora 24h (local al TZ configurado)
     return d.toLocaleString('es-ES', {
       timeZone: EMAIL_TZ,
+      weekday: 'short',
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', hour12: false,
     });
@@ -110,4 +111,3 @@ export async function sendOrderReceiptEmail({
     // Importante: nunca relanzar el error; el pedido no debe fallar por el email.
   }
 }
-
