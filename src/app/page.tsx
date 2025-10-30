@@ -134,7 +134,7 @@ export default function HomePage() {
       <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_DEFAULT)) }} />
 
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-transparent -mt-[64px] md:-mt-[72px]">
-        <div className="max-w-6xl mx-auto px-4 pt-[80px] md:pt-[88px] pb-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 pt-[72px] md:pt-[80px] pb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {INFO.logoUrl && <img src={INFO.logoUrl} alt={`${INFO.nombre} logo`} className="h-9 w-auto rounded" />}
             <div>
