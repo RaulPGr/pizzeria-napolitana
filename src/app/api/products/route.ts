@@ -316,7 +316,17 @@ export async function POST(req: Request) {
   if (contentType.includes('application/json')) {
     const body = await req.json();
     const slug = await getTenantSlug();
-    const bid = await getBusinessIdBySlug(slug);
+    let bid = await getBusinessIdBySlug(slug);
+    try {
+      if (!bid && (body?.category_id != null)) {
+        const { data: cat } = await supabaseAdmin
+          .from('categories')
+          .select('business_id')
+          .eq('id', Number(body.category_id))
+          .maybeSingle();
+        bid = (cat as any)?.business_id ?? bid;
+      }
+    } catch {}
     const { data, error } = await supabaseAdmin
       .from(TABLE)
       .insert({
@@ -327,6 +337,7 @@ export async function POST(req: Request) {
         available: !!body.available,
         category_id: body.category_id ?? null,
         business_id: bid ?? null,
+        active: true as any,
       })
       .select('id')
       .single();
