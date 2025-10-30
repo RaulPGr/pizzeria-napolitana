@@ -50,6 +50,8 @@ export default function OrderDetailPage(props: PageProps) {
   const [error, setError] = useState<string | null>(null);
   const [bizName, setBizName] = useState<string>("Mi Restaurante");
   const [bizLogo, setBizLogo] = useState<string | null>(null);
+  const [bizPhone, setBizPhone] = useState<string | null>(null);
+  const [bizAddress, setBizAddress] = useState<string | null>(null);
 
   async function ensureJsPDF() {
     if ((window as any).jspdf?.jsPDF) return (window as any).jspdf.jsPDF;
@@ -93,12 +95,14 @@ export default function OrderDetailPage(props: PageProps) {
             const img = new Image();
             img.src = dataUrl;
             await new Promise((res) => { img.onload = () => res(null); img.onerror = () => res(null); });
-            const maxW = 120;
-            const w = Math.min(maxW, img.width || maxW);
-            const h = img.width ? (w * (img.height || maxW) / (img.width || maxW)) : 60;
+            const maxW = 90; const maxH = 90;
+            const iw = img.width || maxW; const ih = img.height || maxH;
+            const scale = Math.min(maxW/iw, maxH/ih);
+            const w = Math.max(40, Math.round(iw * scale));
+            const h = Math.max(40, Math.round(ih * scale));
             const x = 300 - w / 2;
             doc.addImage(dataUrl, 'PNG', x, y, w, h);
-            y += h + 8;
+            y += h + 18; // dejar margen suficiente para no solapar el título
           }
         } catch { /* ignorar fallo de imagen */ }
       }
@@ -108,7 +112,16 @@ export default function OrderDetailPage(props: PageProps) {
       doc.setFontSize(12);
       const ticket = `#${String(order.id).split('-')[0].slice(0,7)}`;
       doc.text(`Pedido ${ticket}`, 300, y, { align: 'center' });
-      y += 20;
+      y += 16;
+
+      // Línea con datos de contacto (opcional, letra pequeña)
+      const contactLine = [bizPhone || null, bizAddress || null].filter(Boolean).join(" · ");
+      if (contactLine) {
+        doc.setFontSize(10);
+        doc.text(contactLine, 300, y, { align: 'center' });
+        doc.setFontSize(12);
+        y += 10;
+      }
 
       const tz = (process.env.NEXT_PUBLIC_TZ as string) || 'Europe/Madrid';
       const created = new Date(order.created_at).toLocaleString('es-ES', {
@@ -198,7 +211,7 @@ export default function OrderDetailPage(props: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Cargar nombre y logo del negocio para el encabezado del PDF
+  // Cargar nombre, logo y contacto del negocio para el encabezado del PDF
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -207,8 +220,12 @@ export default function OrderDetailPage(props: PageProps) {
         const j = await r.json();
         const name = j?.data?.business?.name || '';
         const logo = j?.data?.images?.logo || null;
+        const phone = j?.data?.contact?.phone || null;
+        const address = j?.data?.contact?.address || null;
         if (alive && name) setBizName(name);
         if (alive && logo) setBizLogo(logo);
+        if (alive && phone) setBizPhone(phone);
+        if (alive && address) setBizAddress(address);
       } catch {}
     })();
     return () => { alive = false; };
