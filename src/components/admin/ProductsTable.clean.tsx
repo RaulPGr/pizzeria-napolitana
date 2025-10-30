@@ -78,6 +78,35 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [newDays, setNewDays] = useState<number[]>([]);
   const ALL_DAYS = [1,2,3,4,5,6,7];
 
+  // Comprime imágenes grandes para evitar el límite de payload en funciones
+  async function compressImage(file: File, maxW = 1400, maxH = 1400, quality = 0.84): Promise<File> {
+    try {
+      if (!file || !(file instanceof File)) return file;
+      if (file.size <= 3 * 1024 * 1024) return file; // ya es razonable
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = url; });
+      const iw = img.naturalWidth || img.width;
+      const ih = img.naturalHeight || img.height;
+      let w = iw, h = ih;
+      const scale = Math.min(maxW / iw, maxH / ih, 1);
+      w = Math.max(1, Math.round(iw * scale));
+      h = Math.max(1, Math.round(ih * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+      ctx.drawImage(img, 0, 0, w, h);
+      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+      URL.revokeObjectURL(url);
+      if (!blob) return file;
+      const name = (file.name || 'image').replace(/\.[^.]+$/, '.jpg');
+      return new File([blob], name, { type: 'image/jpeg' });
+    } catch {
+      return file;
+    }
+  }
+
   React.useEffect(() => {
     if (!newFile) { setNewFilePreview(null); return; }
     try {
@@ -214,7 +243,8 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     if (!res.ok) { setLoading(false); alert("Error al crear producto"); return; }
     const { id } = (await res.json()) as { id: number };
     if (id && newFile) {
-      const fd = new FormData(); fd.append("id", String(id)); fd.append("file", newFile);
+      const compact = await compressImage(newFile);
+      const fd = new FormData(); fd.append("id", String(id)); fd.append("file", compact);
       const up = await fetch("/api/products", { method: "PATCH", body: fd });
       if (!up.ok) { setLoading(false); alert("Producto creado, pero error al subir la imagen"); await refresh(); resetNewForm(); return; }
     }
@@ -254,7 +284,8 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   function triggerUpload(id: number) { setUploadTargetId(id); fileRef.current?.click(); }
   async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f || !uploadTargetId) return; setLoading(true);
-    const fd = new FormData(); fd.append("id", String(uploadTargetId)); fd.append("file", f);
+    const compact = await compressImage(f);
+    const fd = new FormData(); fd.append("id", String(uploadTargetId)); fd.append("file", compact);
     const res = await fetch("/api/products", { method: "PATCH", body: fd }); setLoading(false); e.target.value = ""; setUploadTargetId(null);
     if (!res.ok) { const txt = await res.text().catch(() => ""); alert("Error al subir imagen" + (txt ? `: ${txt}` : "")); return; }
     await refresh();
@@ -458,4 +489,3 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     </div>
   );
 }
-
