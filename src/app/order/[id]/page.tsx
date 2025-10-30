@@ -30,21 +30,12 @@ function centsToEUR(cents: number) {
 
 function paymentBadge(pm: Order["payment_method"], ps: Order["payment_status"]) {
   const method = pm === "CARD" ? "Tarjeta" : pm === "BIZUM" ? "Bizum" : "Efectivo";
-  const text =
-    ps === "paid" ? "Pagado" : ps === "failed" ? "Fallido" : ps === "refunded" ? "Reembolsado" : "Pendiente";
-  const cls =
-    ps === "paid"
-      ? "bg-green-100 text-green-700"
-      : ps === "failed"
-      ? "bg-red-100 text-red-700"
-      : ps === "refunded"
-      ? "bg-purple-100 text-purple-700"
-      : "bg-yellow-100 text-yellow-700";
-
-  return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} · {method}</span>;
+  const text = ps === "paid" ? "Pagado" : ps === "failed" ? "Fallido" : ps === "refunded" ? "Reembolsado" : "Pendiente";
+  const cls = ps === "paid" ? "bg-green-100 text-green-700" : ps === "failed" ? "bg-red-100 text-red-700" : ps === "refunded" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700";
+  return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} — {method}</span>;
 }
 
-// 👇 Aquí la clave: Next 15 tipa `params` como Promise en PageProps
+// Next 15 tipa `params` como Promise en PageProps
 type PageProps = {
   params: Promise<{ id: string }>;
 };
@@ -57,6 +48,7 @@ export default function OrderDetailPage(props: PageProps) {
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bizName, setBizName] = useState<string>("Mi Restaurante");
 
   async function ensureJsPDF() {
     if ((window as any).jspdf?.jsPDF) return (window as any).jspdf.jsPDF;
@@ -77,15 +69,20 @@ export default function OrderDetailPage(props: PageProps) {
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
       let y = 50;
       doc.setFontSize(18);
-      doc.text('Mi Restaurante', 300, y, { align: 'center' });
+      doc.text(bizName || 'Mi Restaurante', 300, y, { align: 'center' });
       y += 24;
       doc.setFontSize(12);
-      doc.text(`Pedido #${order.id}`, 300, y, { align: 'center' });
+      const ticket = `#${String(order.id).split('-')[0].slice(0,7)}`;
+      doc.text(`Pedido ${ticket}`, 300, y, { align: 'center' });
       y += 20;
 
-      const created = new Date(order.created_at).toLocaleString('es-ES');
+      const tz = (process.env.NEXT_PUBLIC_TZ as string) || 'Europe/Madrid';
+      const created = new Date(order.created_at).toLocaleString('es-ES', {
+        timeZone: tz, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      });
       const pickup = order.pickup_at
-        ? new Date(order.pickup_at).toLocaleString('es-ES')
+        ? new Date(order.pickup_at).toLocaleString('es-ES', { timeZone: tz, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
         : '—';
       const method = order.payment_method === 'CARD' ? 'Tarjeta' : order.payment_method === 'BIZUM' ? 'Bizum' : 'Efectivo';
       const ps = order.payment_status === 'paid' ? 'Pagado' : order.payment_status === 'failed' ? 'Fallido' : order.payment_status === 'refunded' ? 'Reembolsado' : 'Pendiente';
@@ -126,7 +123,7 @@ export default function OrderDetailPage(props: PageProps) {
       doc.text((order.total_cents/100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }), 535, y, { align: 'right' });
       doc.setFont(undefined, 'normal');
 
-      const filename = `pedido-${String(order.id).slice(0,8)}.pdf`;
+      const filename = `pedido-${ticket.slice(1)}.pdf`;
       doc.save(filename);
     } catch (e) {
       alert('No se pudo generar el PDF');
@@ -167,6 +164,20 @@ export default function OrderDetailPage(props: PageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Cargar nombre del negocio para el encabezado del PDF
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch('/api/settings/home', { cache: 'no-store' });
+        const j = await r.json();
+        const name = j?.data?.business?.name || '';
+        if (alive && name) setBizName(name);
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, []);
+
   if (loading) return <div className="p-6">Cargando…</div>;
   if (error || !order) return <div className="p-6">Error: {error ?? "No se pudo cargar el pedido"}</div>;
 
@@ -205,7 +216,7 @@ export default function OrderDetailPage(props: PageProps) {
       </div>
 
       <h1 className="text-2xl font-semibold mb-1">Detalle del pedido</h1>
-      <div className="text-sm text-gray-600 mb-4">Código: {order.id}</div>
+      <div className="text-sm text-gray-600 mb-4">Código: #{String(order.id).split('-')[0].slice(0,7)}</div>
 
       {showPaidBanner ? (
         <div className="p-3 mb-6 rounded bg-green-100 text-green-700">
@@ -283,3 +294,4 @@ export default function OrderDetailPage(props: PageProps) {
     </div>
   );
 }
+
