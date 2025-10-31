@@ -364,7 +364,7 @@ export default function CartPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Teléfono</label>
-            <input className="w-full rounded border px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono de contacto" inputMode="tel" />
+            <input className="w-full rounded border px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D+/g, "").slice(0, 9))} placeholder="Teléfono de contacto" inputMode="tel" maxLength={9} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-gray-600">Email (opcional)</label>
@@ -430,5 +430,11 @@ export default function CartPage() {
     </main>
   );
 }
+
+
+
+
+
+
 
 
