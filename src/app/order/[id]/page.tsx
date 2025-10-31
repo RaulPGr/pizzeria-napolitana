@@ -27,7 +27,7 @@ function paymentBadge(pm?: Order["payment_method"], ps?: Order["payment_status"]
   const method = pm === "CARD" ? "Tarjeta" : pm === "BIZUM" ? "Bizum" : "Efectivo";
   const text = ps === "paid" ? "Pagado" : ps === "failed" ? "Fallido" : ps === "refunded" ? "Reembolsado" : "Pendiente";
   const cls = ps === "paid" ? "bg-green-100 text-green-700" : ps === "failed" ? "bg-red-100 text-red-700" : ps === "refunded" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700";
-  return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} — {method}</span>;
+  return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} · {method}</span>;
 }
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -75,6 +75,100 @@ export default function OrderDetailPage(props: PageProps) {
   const pickup = order.pickup_at ? new Date(order.pickup_at).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
   const showPaidBanner = paidFlag === "1" || order.payment_status === "paid";
 
+  function buildPrintHtml(o: Order) {
+    const createdAt = new Date(o.created_at).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const pickupAt = o.pickup_at ? new Date(o.pickup_at).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+    const rows = (o.items || []).map((it) => `
+      <tr>
+        <td>${(it.name ?? 'Producto').replace(/</g, '&lt;')}</td>
+        <td style="text-align:center">x${it.quantity}</td>
+        <td style="text-align:right">${(it.quantity * it.unit_price_cents / 100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</td>
+      </tr>
+    `).join("");
+    const code = `#${String(o.id).split('-')[0].slice(0,7)}`;
+    const payMethod = o.payment_method === 'CARD' ? 'Tarjeta' : o.payment_method === 'BIZUM' ? 'Bizum' : 'Efectivo';
+    const payStatus = o.payment_status === 'paid' ? 'Pagado' : o.payment_status === 'failed' ? 'Fallido' : o.payment_status === 'refunded' ? 'Reembolsado' : 'Pendiente';
+    return `<!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Pedido ${code}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #111827; }
+          h1 { font-size: 20px; margin: 0 0 8px; }
+          .chip { display:inline-flex; align-items:center; gap:8px; padding:4px 10px; border:1px solid #e5e7eb; border-radius:9999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05); font-size:12px; color:#374151 }
+          .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px }
+          .card { border:1px solid #e5e7eb; border-radius:8px; background:#fff; padding:12px; box-shadow:0 1px 2px rgba(0,0,0,.04) }
+          .muted { color:#6b7280 }
+          table { width:100%; border-collapse:collapse; }
+          th, td { padding:8px 0; }
+          thead th { text-align:left; border-bottom:1px solid #e5e7eb; }
+          tbody tr + tr { border-top:1px solid #f3f4f6; }
+          tfoot td { padding-top:12px; font-weight:600 }
+          .right { text-align:right }
+          .center { text-align:center }
+          @media print { .no-print { display:none } }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px">
+          <h1>Detalle del pedido</h1>
+          <span class="chip"><span class="muted">Código</span> <strong>${code}</strong></span>
+          <span class="chip"><span class="muted">${payMethod}</span> ${payStatus}</span>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div style="font-weight:600; margin-bottom:6px">Cliente</div>
+            <div class="card">
+              <div><span class="muted">Nombre:</span> ${o.customer_name ?? ''}</div>
+              <div><span class="muted">Teléfono:</span> ${o.customer_phone ?? ''}</div>
+              <div><span class="muted">Fecha pedido:</span> ${createdAt}</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-weight:600; margin-bottom:6px">Recogida</div>
+            <div class="card">
+              <div><span class="muted">Fecha y hora:</span> ${pickupAt}</div>
+              <div><span class="muted">Estado del pedido:</span> ${o.status}</div>
+              <div><span class="muted">Método y estado del pago:</span> ${payMethod} · ${payStatus}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px">
+          <div style="font-weight:600; margin-bottom:6px">Artículos</div>
+          <div class="card">
+            <table>
+              <thead>
+                <tr><th>Producto</th><th class="center">Cantidad</th><th class="right">Subtotal</th></tr>
+              </thead>
+              <tbody>${rows}</tbody>
+              <tfoot>
+                <tr><td colspan="2">Total</td><td class="right">${(o.total_cents/100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</td></tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 30); };</script>
+      </body>
+      </html>`;
+  }
+
+  function downloadPdf() {
+    try {
+      const html = buildPrintHtml(order!);
+      const w = window.open("", "_blank", "noopener,noreferrer");
+      if (!w) { window.print(); return; }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    } catch {
+      try { window.print(); } catch {}
+    }
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
@@ -87,7 +181,7 @@ export default function OrderDetailPage(props: PageProps) {
         </Link>
         <div className="ml-auto">
           <button
-            onClick={() => window.print()}
+            onClick={downloadPdf}
             className="inline-flex items-center gap-2 rounded border bg-white px-3 py-2 text-blue-700 shadow-sm hover:bg-gray-50"
             aria-label="Descargar PDF"
           >
@@ -168,3 +262,4 @@ export default function OrderDetailPage(props: PageProps) {
     </div>
   );
 }
+
