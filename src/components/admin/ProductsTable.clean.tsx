@@ -336,6 +336,13 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
             <input type="file" accept="image/*" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
             {newFile && <span className="text-xs text-gray-500">{newFile.name}</span>}
             {newFile && <button onClick={() => setNewFile(null)} className="rounded border px-2 py-1">Quitar</button>}
+            {newFilePreview && (
+              <img
+                src={newFilePreview}
+                alt="Vista previa"
+                className="h-20 w-28 rounded border object-cover"
+              />
+            )}
           </div>
           {menuMode === 'daily' && (
             <div className="md:col-span-6 space-y-2">
