@@ -32,7 +32,7 @@ function paymentBadge(pm: Order["payment_method"], ps: Order["payment_status"]) 
   const method = pm === "CARD" ? "Tarjeta" : pm === "BIZUM" ? "Bizum" : "Efectivo";
   const text = ps === "paid" ? "Pagado" : ps === "failed" ? "Fallido" : ps === "refunded" ? "Reembolsado" : "Pendiente";
   const cls = ps === "paid" ? "bg-green-100 text-green-700" : ps === "failed" ? "bg-red-100 text-red-700" : ps === "refunded" ? "bg-purple-100 text-purple-700" : "bg-yellow-100 text-yellow-700";
-  return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} — {method}</span>;
+  return <span className={`px-2 py-1 rounded text-sm ${cls}`}>{text} â€” {method}</span>;
 }
 
 // Next 15 tipa `params` como Promise en PageProps
@@ -102,7 +102,7 @@ export default function OrderDetailPage(props: PageProps) {
             const h = Math.max(40, Math.round(ih * scale));
             const x = 300 - w / 2;
             doc.addImage(dataUrl, 'PNG', x, y, w, h);
-            y += h + 18; // dejar margen suficiente para no solapar el título
+            y += h + 18; // dejar margen suficiente para no solapar el tÃ­tulo
           }
         } catch { /* ignorar fallo de imagen */ }
       }
@@ -114,8 +114,8 @@ export default function OrderDetailPage(props: PageProps) {
       doc.text(`Pedido ${ticket}`, 300, y, { align: 'center' });
       y += 16;
 
-      // Línea con datos de contacto (opcional, letra pequeña)
-      const contactLine = [bizPhone || null, bizAddress || null].filter(Boolean).join(" · ");
+      // LÃ­nea con datos de contacto (opcional, letra pequeÃ±a)
+      const contactLine = [bizPhone || null, bizAddress || null].filter(Boolean).join(" Â· ");
       if (contactLine) {
         doc.setFontSize(10);
         doc.text(contactLine, 300, y, { align: 'center' });
@@ -130,7 +130,7 @@ export default function OrderDetailPage(props: PageProps) {
       });
       const pickup = order.pickup_at
         ? new Date(order.pickup_at).toLocaleString('es-ES', { timeZone: tz, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-        : '—';
+        : 'â€”';
       const method = order.payment_method === 'CARD' ? 'Tarjeta' : order.payment_method === 'BIZUM' ? 'Bizum' : 'Efectivo';
       const ps = order.payment_status === 'paid' ? 'Pagado' : order.payment_status === 'failed' ? 'Fallido' : order.payment_status === 'refunded' ? 'Reembolsado' : 'Pendiente';
 
@@ -139,11 +139,11 @@ export default function OrderDetailPage(props: PageProps) {
       y += 18;
       doc.text(`Cliente: ${order.customer_name}`, 60, y);
       y += 18;
-      doc.text(`Teléfono: ${order.customer_phone}`, 60, y);
+      doc.text(`TelÃ©fono: ${order.customer_phone}`, 60, y);
       y += 18;
       doc.text(`Recogida: ${pickup}`, 60, y);
       y += 18;
-      doc.text(`Pago: ${method} — ${ps}`, 60, y);
+      doc.text(`Pago: ${method} â€” ${ps}`, 60, y);
       y += 24;
 
       doc.setFont(undefined, 'bold');
@@ -248,7 +248,7 @@ export default function OrderDetailPage(props: PageProps) {
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "—";
+    : "â€”";
 
   const showPaidBanner = paidFlag === "1" || order.payment_status === "paid";
 
@@ -256,7 +256,7 @@ export default function OrderDetailPage(props: PageProps) {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
         <Link href="/" className="text-blue-600 underline">
-          Volver al menú
+          Volver al menúº
         </Link>
         <div className="ml-auto">
           <button
@@ -273,7 +273,7 @@ export default function OrderDetailPage(props: PageProps) {
 
       {showPaidBanner ? (
         <div className="p-3 mb-6 rounded bg-green-100 text-green-700">
-          ¡Pago completado correctamente! Estamos procesando tu pedido.
+          Â¡¡Pago completado correctamente! Estamos procesando tu pedido.
         </div>
       ) : order.payment_status === "pending" ? (
         <div className="p-3 mb-6 rounded bg-yellow-100 text-yellow-700">
@@ -281,33 +281,33 @@ export default function OrderDetailPage(props: PageProps) {
         </div>
       ) : order.payment_status === "failed" ? (
         <div className="p-3 mb-6 rounded bg-red-100 text-red-700">
-          El pago ha fallado. Si el cargo no aparece en tu extracto, inténtalo de nuevo.
+          El pago ha fallado. Si el cargo no aparece en tu extracto, intÃ©ntalo de nuevo.
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <section>
           <div className="font-medium mb-2">Cliente</div>
-          <div className="border rounded p-3 space-y-1">
+          <div className="border rounded bg-white p-3 shadow-sm space-y-1">
             <div><span className="text-gray-600">Nombre:</span> {order.customer_name}</div>
-            <div><span className="text-gray-600">Teléfono:</span> {order.customer_phone}</div>
+            <div><span className="text-gray-600">TelÃ©fono:</span> {order.customer_phone}</div>
             <div><span className="text-gray-600">Fecha pedido:</span> {created}</div>
           </div>
         </section>
 
         <section>
           <div className="font-medium mb-2">Recogida</div>
-          <div className="border rounded p-3 space-y-1">
+          <div className="border rounded bg-white p-3 shadow-sm space-y-1">
             <div><span className="text-gray-600">Fecha y hora:</span> {pickup}</div>
             <div><span className="text-gray-600">Estado del pedido:</span> {order.status}</div>
-            <div><span className="text-gray-600">Método y estado del pago:</span> {paymentBadge(order.payment_method, order.payment_status)}</div>
+            <div><span className="text-gray-600">MÃ©todo y estado del pago:</span> {paymentBadge(order.payment_method, order.payment_status)}</div>
           </div>
         </section>
       </div>
 
       <section className="mt-8">
         <div className="font-medium mb-2">Artículos</div>
-        <div className="border rounded p-3">
+        <div className="border rounded bg-white p-3 shadow-sm">
           {order.items?.length ? (
             <table className="w-full">
               <thead>
@@ -340,7 +340,7 @@ export default function OrderDetailPage(props: PageProps) {
               </tfoot>
             </table>
           ) : (
-            <div className="text-gray-600">No hay artículos asociados.</div>
+            <div className="text-gray-600">No hay Artículos asociados.</div>
           )}
         </div>
       </section>
