@@ -317,7 +317,45 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
 
       <CategoriesManager />
 
-      {/* Filtros */}
+      {/* Alta de producto */}
+      <div className="rounded border bg-white p-3 shadow-sm">
+        <div className="mb-2 text-sm font-medium">Añadir producto</div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
+          <input className="rounded border px-2 py-1 md:col-span-2" placeholder="Nombre" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <input type="number" step="0.01" className="rounded border px-2 py-1" placeholder="Precio" value={String(newPrice)} onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))} />
+          <select className="rounded border px-2 py-1" value={newCat} onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}>
+            <option value="">Sin categoría</option>
+            {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+          </select>
+          <textarea className="rounded border px-2 py-2 md:col-span-3 h-24 resize-y" placeholder="Descripción" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+          <label className="inline-flex items-center gap-2">
+            <input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} />
+            <span>Disponible</span>
+          </label>
+          <div className="md:col-span-6 flex items-center gap-3">
+            <input type="file" accept="image/*" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
+            {newFile && <span className="text-xs text-gray-500">{newFile.name}</span>}
+            {newFile && <button onClick={() => setNewFile(null)} className="rounded border px-2 py-1">Quitar</button>}
+          </div>
+          {menuMode === 'daily' && (
+            <div className="md:col-span-6 space-y-2">
+              <div className="text-sm">Días disponibles</div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={newDays.length === 7} onChange={(e) => setNewDays(e.target.checked ? ALL_DAYS.slice() : [])} />
+                  <span>Todos los días</span>
+                </label>
+              </div>
+              <WeekdaySelector value={newDays} onChange={setNewDays} />
+            </div>
+          )}
+          <div className="md:col-span-6">
+            <button onClick={onCreate} disabled={loading || !newName.trim()} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">Crear</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros (movidos justo encima del listado) */}
       <div className="rounded border bg-white p-3 shadow-sm">
         <div className="mb-2 text-sm font-medium">Filtros</div>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
@@ -350,44 +388,6 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
           </div>
           <div>
             <button onClick={resetFilters} className="rounded border px-3 py-1">Limpiar</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Alta de producto */}
-      <div className="rounded border bg-white p-3 shadow-sm">
-        <div className="mb-2 text-sm font-medium">Añadir producto</div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
-          <input className="rounded border px-2 py-1 md:col-span-2" placeholder="Nombre" value={newName} onChange={(e) => setNewName(e.target.value)} />
-          <input type="number" step="0.01" className="rounded border px-2 py-1" placeholder="Precio" value={String(newPrice)} onChange={(e) => setNewPrice(e.target.value === "" ? "" : Number(e.target.value))} />
-          <select className="rounded border px-2 py-1" value={newCat} onChange={(e) => setNewCat(e.target.value === "" ? "" : Number(e.target.value))}>
-            <option value="">Sin categoría</option>
-            {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-          </select>
-          <input className="rounded border px-2 py-1 md:col-span-2" placeholder="Descripción" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
-          <label className="inline-flex items-center gap-2">
-            <input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} />
-            <span>Disponible</span>
-          </label>
-          <div className="md:col-span-6 flex items-center gap-3">
-            <input type="file" accept="image/*" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
-            {newFile && <span className="text-xs text-gray-500">{newFile.name}</span>}
-            {newFile && <button onClick={() => setNewFile(null)} className="rounded border px-2 py-1">Quitar</button>}
-          </div>
-          {menuMode === 'daily' && (
-            <div className="md:col-span-6 space-y-2">
-              <div className="text-sm">Días disponibles</div>
-              <div className="flex items-center gap-3">
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={newDays.length === 7} onChange={(e) => setNewDays(e.target.checked ? ALL_DAYS.slice() : [])} />
-                  <span>Todos los días</span>
-                </label>
-              </div>
-              <WeekdaySelector value={newDays} onChange={setNewDays} />
-            </div>
-          )}
-          <div className="md:col-span-6">
-            <button onClick={onCreate} disabled={loading || !newName.trim()} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">Crear</button>
           </div>
         </div>
       </div>
