@@ -78,7 +78,13 @@ export default function OrderDetailPage(props: PageProps) {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/" className="text-blue-600 underline">Volver al menú</Link>
+        <Link
+          href="/menu"
+          className="inline-flex items-center gap-2 rounded border bg-white px-3 py-2 text-blue-700 shadow-sm hover:bg-gray-50"
+          aria-label="Volver al menú"
+        >
+          Volver al menú
+        </Link>
         <div className="ml-auto">
           <button className="px-3 py-2 rounded border hover:bg-gray-50" onClick={() => window.print()}>Descargar PDF</button>
         </div>
