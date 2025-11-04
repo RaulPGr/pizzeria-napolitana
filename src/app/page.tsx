@@ -127,11 +127,23 @@ export default function HomePage() {
     } as Horarios;
   }, [cfg]);
   const abierto = useMemo(() => estaAbiertoAhora(new Date(), HORARIOS_USED), [HORARIOS_USED]);
-  const mapaSrc = useMemo(() => cfg?.mapUrl ? (cfg.mapUrl as string) : `https://maps.google.com/maps?q=${COORDS_DEFAULT.lat},${COORDS_DEFAULT.lng}&z=${COORDS_DEFAULT.zoom}&output=embed`, [cfg?.mapUrl]);
+  // Coordenadas efectivas: prioriza cfg.coords si existen; si no, usa los defaults.
+  const COORDS_USED = useMemo(() => {
+    const c = (cfg as any)?.coords;
+    if (c && typeof c.lat === "number" && typeof c.lng === "number") {
+      return { lat: Number(c.lat), lng: Number(c.lng), zoom: COORDS_DEFAULT.zoom };
+    }
+    return COORDS_DEFAULT;
+  }, [cfg?.coords]);
+  // URL del mapa: si hay mapUrl explícito, se respeta; si no, se construye con las coords efectivas
+  const mapaSrc = useMemo(() => {
+    if (cfg?.mapUrl) return String(cfg.mapUrl);
+    return `https://maps.google.com/maps?q=${COORDS_USED.lat},${COORDS_USED.lng}&z=${COORDS_USED.zoom}&output=embed`;
+  }, [cfg?.mapUrl, COORDS_USED.lat, COORDS_USED.lng, COORDS_USED.zoom]);
 
   return (
     <main className="min-h-screen bg-brand-chalk text-gray-900">
-      <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_DEFAULT)) }} />
+      <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_USED)) }} />
 
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-transparent -mt-[64px] md:-mt-[72px]">
         <div className="max-w-6xl mx-auto px-4 pt-[60px] pb-3 flex items-center justify-between">
