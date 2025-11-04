@@ -19,16 +19,20 @@ function normalizeSlug(v: string | null | undefined): string {
 
 export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    let slug = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
+    // 1) Permite forzar el tenant con ?tenant= (útil en previews de Vercel)
+    let slug = '';
+    try { const u = new URL(req.url); slug = normalizeSlug(u.searchParams.get('tenant')); } catch {}
+    // 2) Si no viene por query, intenta cookie
+    if (!slug) {
+      const cookieStore = await cookies();
+      slug = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
+    }
+    // 3) Si tampoco, usa el subdominio del host
     if (!slug) {
       const hdrs = await headers();
       const host = (hdrs.get('host') || '').split(':')[0];
       const parts = host.split('.');
       if (parts.length >= 3) slug = normalizeSlug(parts[0]);
-    }
-    if (!slug && req) {
-      try { const u = new URL(req.url); slug = normalizeSlug(u.searchParams.get('tenant')) || slug; } catch {}
     }
     if (!slug) return NextResponse.json({ ok: true, data: null });
     const supa = adminClient();

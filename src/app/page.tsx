@@ -92,7 +92,9 @@ export default function HomePage() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch("/api/settings/home", { cache: "no-store" });
+        const tenant = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tenant") : null;
+        const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
+        const r = await fetch(url, { cache: "no-store" });
         const j = await r.json();
         if (j?.ok && j?.data) setCfg(j.data);
       } catch {}
