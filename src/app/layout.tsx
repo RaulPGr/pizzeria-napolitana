@@ -98,23 +98,31 @@ export default async function RootLayout({
         )}
       </head>
       <body className="bg-brand-chalk">
-        
+
          {/* Banner visible solo en entorno de pruebas */}
               {process.env.NEXT_PUBLIC_APP_ENV !== 'production' && (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '8px',
-                    background: '#fff8e1',
-                    borderBottom: '1px solid #ddd',
-                    fontSize: '14px',
-                    zIndex: 9999,
-                  }}
-                >
-                  💡 Estás en PRUEBAS (staging)
-                </div>
-              )}
-
+                <>
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      textAlign: 'center',
+                      padding: '8px',
+                      background: '#fff8e1',
+                      borderBottom: '1px solid #ddd',
+                      fontSize: '14px',
+                      zIndex: 9999, // por encima del Navbar (z-50)
+                    }}
+                  >
+                    💡 Estás en PRUEBAS (staging)
+                  </div>
+                  {/* separador para que nada quede tapado por el banner fijo */}
+                  <div style={{ height: 36 }} />
+                </>
+              )
+              }
               
         {/* Redirige tokens/hash de Supabase a /auth/reset si llegan a la raíz u otras rutas */}
         {/* Client-only, no afecta SSR ni la lógica existente */}
