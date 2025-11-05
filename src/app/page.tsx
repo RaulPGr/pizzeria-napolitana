@@ -104,19 +104,7 @@ export default function HomePage() {
     })();
   }, []);
 
-  // Evitar parpadeo: mientras carga, muestra un loader centrado.
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-brand-chalk flex items-center justify-center">
-        <div className="flex flex-col items-center justify-center">
-          <div className="h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" aria-hidden="true" />
-          <p className="mt-3 text-sm text-gray-600">Cargando…</p>
-        </div>
-      </main>
-    );
-  }
-
-  const INFO = useMemo(() => ({
+    const INFO = useMemo(() => ({
     nombre: cfg?.business?.name || INFO_DEFAULT.nombre,
     slogan: cfg?.business?.slogan || INFO_DEFAULT.slogan,
     telefono: cfg?.contact?.phone || INFO_DEFAULT.telefono,
@@ -167,6 +155,26 @@ export default function HomePage() {
       return null;
     }
   }, [INFO, HORARIOS_USED, COORDS_USED]);
+  if (loading) {
+    return (
+      <main className=\"min-h-screen bg-brand-chalk flex items-center justify-center\">
+        <div className=\"flex flex-col items-center justify-center\">
+          <div className=\"h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin\" aria-hidden=\"true\" />
+          <p className=\"mt-3 text-sm text-gray-600\">Cargando…</p>
+        </div>
+      </main>
+    );
+  }
+  if (loading) {
+    return (
+      <main className=\"min-h-screen bg-brand-chalk flex items-center justify-center\">
+        <div className=\"flex flex-col items-center justify-center\">
+          <div className=\"h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin\" aria-hidden=\"true\" />
+          <p className=\"mt-3 text-sm text-gray-600\">Cargando…</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-brand-chalk text-gray-900">
@@ -267,6 +275,11 @@ export default function HomePage() {
     </main>
   );
 }
+
+
+
+
+
 
 
 
