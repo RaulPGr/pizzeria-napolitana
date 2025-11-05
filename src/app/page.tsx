@@ -90,6 +90,7 @@ export default function HomePage() {
 
   // Cargar configuración dinÃ¡mica
   const [cfg, setCfg] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     (async () => {
       try {
@@ -99,12 +100,12 @@ export default function HomePage() {
         const j = await r.json();
         if (j?.ok && j?.data) setCfg(j.data);
       } catch {}
+      finally { setLoading(false); }
     })();
   }, []);
 
-  // Evita cualquier parpadeo: no renderiza la portada
-  // hasta que carguemos la configuración del negocio.
-  if (!cfg) {
+  // Evitar parpadeo: mientras carga, muestra un loader centrado.
+  if (loading) {
     return (
       <main className="min-h-screen bg-brand-chalk flex items-center justify-center">
         <div className="flex flex-col items-center justify-center">
