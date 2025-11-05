@@ -160,9 +160,19 @@ export default function HomePage() {
     return `https://maps.google.com/maps?q=${COORDS_USED.lat},${COORDS_USED.lng}&z=${COORDS_USED.zoom}&output=embed`;
   }, [cfg?.mapUrl, COORDS_USED.lat, COORDS_USED.lng, COORDS_USED.zoom]);
 
+  const ldData = useMemo(() => {
+    try {
+      return jsonLd(INFO, HORARIOS_USED, COORDS_USED);
+    } catch {
+      return null;
+    }
+  }, [INFO, HORARIOS_USED, COORDS_USED]);
+
   return (
     <main className="min-h-screen bg-brand-chalk text-gray-900">
-      <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(INFO, HORARIOS_USED, COORDS_USED)) }} />
+      {ldData ? (
+        <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldData) }} />
+      ) : null}
 
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-transparent -mt-[64px] md:-mt-[72px]">
         <div className="max-w-6xl mx-auto px-4 pt-[60px] pb-3 flex items-center justify-between">
