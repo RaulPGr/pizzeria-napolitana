@@ -7,6 +7,10 @@ type Tramo = { abre: string; cierra: string };
 type OrderingHours = Partial<Record<DayKey, Tramo[]>>;
 
 export default function OrdersHoursSettingsClient() {
+  function getTenantFromUrl(): string {
+    if (typeof window === 'undefined') return '';
+    try { return new URLSearchParams(window.location.search).get('tenant') || ''; } catch { return ''; }
+  }
   const [value, setValue] = useState<OrderingHours>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -14,7 +18,9 @@ export default function OrdersHoursSettingsClient() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/admin/business', { cache: 'no-store' });
+        const t = getTenantFromUrl();
+        const url = t ? `/api/admin/business?tenant=${encodeURIComponent(t)}` : '/api/admin/business';
+        const r = await fetch(url, { cache: 'no-store' });
         const j = await r.json();
         if (j?.ok) {
           const raw = j.data?.ordering_hours;
@@ -28,7 +34,9 @@ export default function OrdersHoursSettingsClient() {
     try {
       setSaving(true);
       setMsg(null);
-      const r = await fetch('/api/admin/business', {
+      const t = getTenantFromUrl();
+      const url = t ? `/api/admin/business?tenant=${encodeURIComponent(t)}` : '/api/admin/business';
+      const r = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ordering_hours: value && Object.keys(value).length ? value : '' }),

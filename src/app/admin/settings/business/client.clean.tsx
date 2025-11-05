@@ -19,6 +19,10 @@ type Biz = {
 };
 
 export default function BusinessSettingsClient() {
+  function getTenantFromUrl(): string {
+    if (typeof window === 'undefined') return '';
+    try { return new URLSearchParams(window.location.search).get('tenant') || ''; } catch { return ''; }
+  }
   const [biz, setBiz] = useState<Biz | null>(null);
   const [name, setName] = useState('');
   const [slogan, setSlogan] = useState('');
@@ -40,7 +44,9 @@ export default function BusinessSettingsClient() {
 
   useEffect(() => {
     (async () => {
-      const r = await fetch('/api/admin/business', { cache: 'no-store' });
+      const t = getTenantFromUrl();
+      const url = t ? `/api/admin/business?tenant=${encodeURIComponent(t)}` : '/api/admin/business';
+      const r = await fetch(url, { cache: 'no-store' });
       const j = await r.json();
       if (j?.ok) {
         setBiz(j.data);
@@ -73,7 +79,9 @@ export default function BusinessSettingsClient() {
     setSaving(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/admin/business', {
+      const t = getTenantFromUrl();
+      const url = t ? `/api/admin/business?tenant=${encodeURIComponent(t)}` : '/api/admin/business';
+      const r = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,7 +113,9 @@ export default function BusinessSettingsClient() {
     const fd = new FormData();
     fd.append('type', kind);
     fd.append('file', file);
-    const r = await fetch('/api/admin/business', { method: 'POST', body: fd });
+    const t = getTenantFromUrl();
+    const url = t ? `/api/admin/business?tenant=${encodeURIComponent(t)}` : '/api/admin/business';
+    const r = await fetch(url, { method: 'POST', body: fd });
     const j = await r.json();
     if (!j?.ok) throw new Error(j?.error || 'Error subiendo');
     setBiz((b) => (b ? ({ ...b, [kind + '_url' as any]: j.url } as any) : b));

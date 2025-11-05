@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
 function sanitizeFileName(name: string) {
@@ -33,10 +33,34 @@ async function getBusinessBySlug(slug: string) {
   return data;
 }
 
-export async function GET() {
+function normalizeSlug(v: string | null | undefined): string {
+  const s = (v || '').trim().toLowerCase();
+  return s && /^[a-z0-9-_.]{1,120}$/.test(s) ? s : '';
+}
+
+async function getTenantSlug(req?: Request) {
+  // 1) Permite ?tenant= (útil en previews)
+  let slug = '';
+  try { if (req) { const u = new URL(req.url); slug = normalizeSlug(u.searchParams.get('tenant')); } } catch {}
+  // 2) Cookie puesta por middleware o manualmente
+  if (!slug) {
+    try { const cookieStore = await cookies(); slug = normalizeSlug(cookieStore.get('x-tenant-slug')?.value); } catch {}
+  }
+  // 3) Subdominio del host (producción)
+  if (!slug) {
+    try {
+      const hdrs = await headers();
+      const host = (hdrs.get('host') || '').split(':')[0];
+      const parts = host.split('.');
+      if (parts.length >= 3) slug = normalizeSlug(parts[0]);
+    } catch {}
+  }
+  return slug;
+}
+
+export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    const slug = await getTenantSlug(req);
     if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
     const biz = await getBusinessBySlug(slug);
     if (!biz) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
@@ -48,8 +72,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    const slug = await getTenantSlug(req);
     if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
     const biz = await getBusinessBySlug(slug);
     if (!biz) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
@@ -111,8 +134,7 @@ export async function PATCH(req: Request) {
 // Upload logo/hero (multipart): fields -> type ('logo'|'hero'), file
 export async function POST(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const slug = cookieStore.get('x-tenant-slug')?.value || '';
+    const slug = await getTenantSlug(req);
     if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
     const biz = await getBusinessBySlug(slug);
     if (!biz) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
