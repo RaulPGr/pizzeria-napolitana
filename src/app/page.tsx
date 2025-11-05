@@ -155,22 +155,13 @@ export default function HomePage() {
       return null;
     }
   }, [INFO, HORARIOS_USED, COORDS_USED]);
+
   if (loading) {
     return (
-      <main className=\"min-h-screen bg-brand-chalk flex items-center justify-center\">
-        <div className=\"flex flex-col items-center justify-center\">
-          <div className=\"h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin\" aria-hidden=\"true\" />
-          <p className=\"mt-3 text-sm text-gray-600\">Cargando…</p>
-        </div>
-      </main>
-    );
-  }
-  if (loading) {
-    return (
-      <main className=\"min-h-screen bg-brand-chalk flex items-center justify-center\">
-        <div className=\"flex flex-col items-center justify-center\">
-          <div className=\"h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin\" aria-hidden=\"true\" />
-          <p className=\"mt-3 text-sm text-gray-600\">Cargando…</p>
+      <main className="min-h-screen bg-brand-chalk flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
+          <div className="h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" aria-hidden="true" />
+          <p className="mt-3 text-sm text-gray-600">Cargando...</p>
         </div>
       </main>
     );
@@ -275,6 +266,9 @@ export default function HomePage() {
     </main>
   );
 }
+
+
+
 
 
 
