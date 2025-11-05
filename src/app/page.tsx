@@ -102,6 +102,19 @@ export default function HomePage() {
     })();
   }, []);
 
+  // Evita cualquier parpadeo: no renderiza la portada
+  // hasta que carguemos la configuración del negocio.
+  if (!cfg) {
+    return (
+      <main className="min-h-screen bg-brand-chalk flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
+          <div className="h-10 w-10 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" aria-hidden="true" />
+          <p className="mt-3 text-sm text-gray-600">Cargando…</p>
+        </div>
+      </main>
+    );
+  }
+
   const INFO = useMemo(() => ({
     nombre: cfg?.business?.name || INFO_DEFAULT.nombre,
     slogan: cfg?.business?.slogan || INFO_DEFAULT.slogan,
@@ -189,32 +202,32 @@ export default function HomePage() {
         </article>
 
         {/* Contacto + Redes */}
-         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
-           <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
-          <ul className="text-sm space-y-1 contact-list">
-            <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
-            {INFO.whatsapp ? (
-              <li>WhatsApp: <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${INFO.whatsapp.replace(/[^0-9+]/g,'')}`}>{INFO.whatsapp}</a></li>
-            ) : null}
-            {INFO.email ? (
-              <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
-            ) : null}
-            {INFO.direccion ? (
-              <li>Dirección: <span className="block">{INFO.direccion}</span></li>
-            ) : null}
-          </ul>
-          {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
-            <div className="mt-4">
-              <h3 className="font-medium mb-2">Síguenos</h3>
-              <div className="flex flex-wrap gap-2">
-                {cfg?.social?.instagram && <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Instagram</a>}
-                {cfg?.social?.facebook && <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Facebook</a>}
-                {cfg?.social?.tiktok && <a href={cfg.social.tiktok} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">TikTok</a>}
-                {cfg?.social?.web && <a href={cfg.social.web} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Web</a>}
+          <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
+            <ul className="text-sm space-y-1 contact-list text-center">
+              <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
+              {INFO.whatsapp ? (
+                <li>WhatsApp: <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${INFO.whatsapp.replace(/[^0-9+]/g,'')}`}>{INFO.whatsapp}</a></li>
+              ) : null}
+              {INFO.email ? (
+                <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
+              ) : null}
+              {INFO.direccion ? (
+                <li>Dirección: <span className="block">{INFO.direccion}</span></li>
+              ) : null}
+            </ul>
+            {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
+              <div className="mt-4">
+                <h3 className="font-medium mb-2">Síguenos</h3>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {cfg?.social?.instagram && <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Instagram</a>}
+                  {cfg?.social?.facebook && <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Facebook</a>}
+                  {cfg?.social?.tiktok && <a href={cfg.social.tiktok} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">TikTok</a>}
+                  {cfg?.social?.web && <a href={cfg.social.web} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Web</a>}
+                </div>
               </div>
-            </div>
-          ) : null}
-        </article>
+            ) : null}
+          </article>
       </section>
 
       {/* Mapa */}
