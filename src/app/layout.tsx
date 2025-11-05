@@ -7,6 +7,7 @@ import DayTabsClientAdjust from "@/components/DayTabsClientAdjust";
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import AuthHashRedirect from '@/components/AuthHashRedirect';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: "Comida para llevar",
@@ -128,6 +129,35 @@ export default async function RootLayout({
         {/* Client-only, no afecta SSR ni la lógica existente */}
         {/* Inserción temprana para que actúe antes de cualquier interacción */}
         <AuthHashRedirect />
+        {/* Fija cookie x-tenant-slug a partir de ?tenant= en previews (cliente) */}
+        <Script id="set-tenant-cookie" strategy="afterInteractive">
+          {`
+            (function(){
+              try {
+                var params = new URLSearchParams(window.location.search);
+                var t = (params.get('tenant') || '').trim().toLowerCase();
+                var hasCookie = document.cookie.indexOf('x-tenant-slug=') !== -1;
+                if (t && /^[a-z0-9-_.]{1,120}$/.test(t)) {
+                  document.cookie = 'x-tenant-slug=' + t + '; path=/; max-age=31536000; samesite=lax';
+                  try { localStorage.setItem('xTenant', t); } catch {}
+                } else if (!hasCookie) {
+                  try {
+                    var saved = (localStorage.getItem('xTenant') || '').trim().toLowerCase();
+                    if (saved && /^[a-z0-9-_.]{1,120}$/.test(saved)) {
+                      document.cookie = 'x-tenant-slug=' + saved + '; path=/; max-age=31536000; samesite=lax';
+                      // Fuerza una recarga solo la primera vez para que SSR/RouteHandlers vean la cookie
+                      if (!params.get('reloaded')) {
+                        params.set('reloaded', '1');
+                        var href = window.location.pathname + '?' + params.toString() + window.location.hash;
+                        window.location.replace(href);
+                      }
+                    }
+                  } catch {}
+                }
+              } catch {}
+            })();
+          `}
+        </Script>
         {themeAssets.css && <style suppressHydrationWarning>{themeAssets.css}</style>}
         <CartProvider>
           {/* Header fijo en todas las páginas */}

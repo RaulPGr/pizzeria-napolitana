@@ -6,15 +6,16 @@ export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
   const host = req.headers.get('host') || '';
 
-  // Extrae subdominio: negocio.pidelocal.es -> negocio
+  // 1) Intentar subdominio: negocio.pidelocal.es -> negocio
   let slug = '';
   const parts = host.split(':')[0].split('.');
   if (parts.length >= 3) {
-    // sub.dominio.tld
     slug = parts[0].toLowerCase();
-  } else if (host.startsWith('localhost')) {
-    // Permite ?tenant=slug en local
-    slug = url.searchParams.get('tenant') || '';
+  }
+  // 2) Si no hay subdominio (p.ej. previews de Vercel), aceptar ?tenant=
+  if (!slug) {
+    const q = (url.searchParams.get('tenant') || '').trim().toLowerCase();
+    if (q && /^[a-z0-9-_.]{1,120}$/.test(q)) slug = q;
   }
 
   const res = NextResponse.next();
@@ -27,4 +28,3 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: ['/((?!_next|api/health|favicon.ico).*)'],
 };
-

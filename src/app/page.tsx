@@ -70,18 +70,19 @@ function formatearTramos(tramos: Tramo[]) {
     .join(" / ");
 }
 function jsonLd(info: typeof INFO_DEFAULT, horarios: Horarios, coords: typeof COORDS_DEFAULT) {
-  return {
+  const out: any = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
     name: info.nombre,
-    address: { "@type": "PostalAddress", streetAddress: info.direccion, addressCountry: "ES" },
-    telephone: info.telefono,
-    email: info.email,
+    telephone: (info as any).telefono || undefined,
+    email: (info as any).email || undefined,
     url: typeof window !== "undefined" ? window.location.origin : undefined,
     image: info.fachadaUrl,
     openingHoursSpecification: Object.entries(horarios).flatMap(([dia, tr]) => (tr as Tramo[]).map((t) => ({ "@type": "OpeningHoursSpecification", dayOfWeek: dia, opens: t.abre, closes: t.cierra }))),
     geo: { "@type": "GeoCoordinates", latitude: coords.lat, longitude: coords.lng },
   };
+  if ((info as any).direccion) out.address = { "@type": "PostalAddress", streetAddress: (info as any).direccion, addressCountry: "ES" };
+  return out;
 }
 
 export default function HomePage() {
@@ -105,9 +106,11 @@ export default function HomePage() {
     nombre: cfg?.business?.name || INFO_DEFAULT.nombre,
     slogan: cfg?.business?.slogan || INFO_DEFAULT.slogan,
     telefono: cfg?.contact?.phone || INFO_DEFAULT.telefono,
-    email: cfg?.contact?.email || INFO_DEFAULT.email,
-    whatsapp: cfg?.contact?.whatsapp || INFO_DEFAULT.whatsapp,
-    direccion: cfg?.contact?.address || INFO_DEFAULT.direccion,
+    // No mostrar email por defecto: solo si se configuró en admin
+    email: cfg?.contact?.email || null,
+    // WhatsApp y Dirección solo si se configuraron en admin
+    whatsapp: cfg?.contact?.whatsapp || null,
+    direccion: cfg?.contact?.address || null,
     logoUrl: cfg?.images?.logo || INFO_DEFAULT.logoUrl,
     fachadaUrl: cfg?.images?.hero || INFO_DEFAULT.fachadaUrl,
     menuPath: INFO_DEFAULT.menuPath,
@@ -186,12 +189,19 @@ export default function HomePage() {
         </article>
 
         {/* Contacto + Redes */}
-        <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
+         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
+           <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
           <ul className="text-sm space-y-1 contact-list">
             <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
-            <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
-            <li>Dirección: <span className="block">{INFO.direccion}</span></li>
+            {INFO.whatsapp ? (
+              <li>WhatsApp: <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${INFO.whatsapp.replace(/[^0-9+]/g,'')}`}>{INFO.whatsapp}</a></li>
+            ) : null}
+            {INFO.email ? (
+              <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
+            ) : null}
+            {INFO.direccion ? (
+              <li>Dirección: <span className="block">{INFO.direccion}</span></li>
+            ) : null}
           </ul>
           {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
             <div className="mt-4">
