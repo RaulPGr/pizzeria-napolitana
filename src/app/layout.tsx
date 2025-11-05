@@ -14,7 +14,11 @@ export const metadata: Metadata = {
   description: "Pedidos online",
 };
 
-type ThemeConfig = { colors?: Record<string, string | undefined>; fonts?: Record<string, string | undefined> };
+type ThemeConfig = {
+  colors?: Record<string, string | undefined>;
+  fonts?: Record<string, string | undefined>;
+  home?: { heroOverlay?: boolean };
+};
 
 function primaryFontName(stack?: string): string | null {
   if (!stack) return null;

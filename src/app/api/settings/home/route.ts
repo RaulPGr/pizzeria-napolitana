@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     const supa = adminClient();
     const { data: biz, error } = await supa
       .from('businesses')
-      .select('name, slogan, description, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, logo_url, hero_url, social')
+      .select('name, slogan, description, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, logo_url, hero_url, social, theme_config')
       .eq('slug', slug)
       .maybeSingle();
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -58,6 +58,7 @@ export async function GET(req: Request) {
       images: { logo: biz.logo_url || null, hero: biz.hero_url || null },
       coords: biz.lat != null && biz.lng != null ? { lat: Number(biz.lat), lng: Number(biz.lng) } : null,
       social: biz.social || null,
+      theme: biz.theme_config || null,
     };
     return NextResponse.json({ ok: true, data: out });
   } catch (e: any) {

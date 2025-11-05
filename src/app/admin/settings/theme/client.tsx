@@ -19,12 +19,17 @@ type ThemeFonts = {
   headings?: string;
 };
 
+type ThemeHome = {
+  heroOverlay?: boolean;
+};
+
 type ThemeConfig = {
   colors?: ThemeColors;
   fonts?: ThemeFonts;
+  home?: ThemeHome;
 };
 
-const DEFAULTS: Required<ThemeConfig> = {
+const DEFAULTS: { colors: Required<ThemeColors>; fonts: Required<ThemeFonts>; home: Required<ThemeHome> } = {
   colors: {
     background: "#DAD6D1",
     text: "#333333",
@@ -40,6 +45,9 @@ const DEFAULTS: Required<ThemeConfig> = {
     body:
       'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"',
     headings: "inherit",
+  },
+  home: {
+    heroOverlay: true,
   },
 };
 
@@ -155,10 +163,23 @@ export default function ThemeSettingsClient() {
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeConfig>({});
 
-  const merged = useMemo<Required<ThemeConfig>>(
-    () => ({ colors: { ...DEFAULTS.colors, ...(theme.colors || {}) }, fonts: { ...DEFAULTS.fonts, ...(theme.fonts || {}) } }),
+  const merged = useMemo(
+    () => ({
+      colors: { ...DEFAULTS.colors, ...(theme.colors || {}) },
+      fonts: { ...DEFAULTS.fonts, ...(theme.fonts || {}) },
+      home: { heroOverlay: theme.home?.heroOverlay !== false },
+    }),
     [theme]
   );
+
+  const heroOverlayEnabled = merged.home.heroOverlay;
+
+  const handleHeroOverlayChange = (checked: boolean) => {
+    setTheme((prev) => ({
+      ...prev,
+      home: { ...(prev.home || {}), heroOverlay: checked },
+    }));
+  };
 
   // Live preview: actualiza variables CSS usadas por el sitio
   useEffect(() => {
@@ -379,6 +400,23 @@ export default function ThemeSettingsClient() {
           onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, headings: v } }))}
           placeholder="Ej: Poppins, system-ui, sans-serif"
         />
+    </div>
+
+      {/* Portada */}
+      <div className="rounded border bg-white p-4">
+        <h2 className="text-sm font-medium text-slate-700">Portada</h2>
+        <label className="mt-3 inline-flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            checked={heroOverlayEnabled}
+            onChange={(e) => handleHeroOverlayChange(e.target.checked)}
+          />
+          <span>Mostrar nombre, eslogan y botón sobre la imagen principal</span>
+        </label>
+        <p className="mt-1 text-xs text-slate-500">
+          Si lo desactivas, el nombre y el botón "Ver menú ahora" solo se mostrarán en el banner superior.
+        </p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -387,7 +425,13 @@ export default function ThemeSettingsClient() {
         </button>
         <button
           type="button"
-          onClick={() => setTheme(DEFAULTS)}
+          onClick={() =>
+            setTheme({
+              colors: { ...DEFAULTS.colors },
+              fonts: { ...DEFAULTS.fonts },
+              home: { ...DEFAULTS.home },
+            })
+          }
           className="rounded border px-3 py-1 text-sm"
           title="Restaura los valores por defecto del tema"
         >
