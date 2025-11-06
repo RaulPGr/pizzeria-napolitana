@@ -101,7 +101,10 @@ export async function POST(req: NextRequest) {
         // Enviar SIEMPRE si el pedido trae email del cliente (no bloquea la respuesta)
         if (!body.customer?.email) return;
         const { data: business } = await supabaseAdmin
-          .from('businesses').select('name').eq('id', (tenant as any)?.id || null).maybeSingle();
+          .from('businesses')
+          .select('name, address_line, city, postal_code, logo_url')
+          .eq('id', (tenant as any)?.id || null)
+          .maybeSingle();
         const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
         const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
         const { sendOrderReceiptEmail } = await import('@/lib/email/sendOrderReceipt');
@@ -109,6 +112,10 @@ export async function POST(req: NextRequest) {
           orderId,
           orderCode: code,
           businessName: (business as any)?.name || 'PideLocal',
+          businessAddress: [ (business as any)?.address_line, (business as any)?.postal_code, (business as any)?.city ]
+            .filter(Boolean)
+            .join(', ') || undefined,
+          businessLogoUrl: (business as any)?.logo_url || undefined,
           customerEmail: body.customer.email!,
           customerName: body.customer.name,
           items: itemsSimple,

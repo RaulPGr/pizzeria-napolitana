@@ -8,6 +8,8 @@ export type SendOrderReceiptParams = {
   orderId: string;
   orderCode?: string; // código corto usado en el panel (p.ej., primeros chars)
   businessName: string;
+  businessAddress?: string;
+  businessLogoUrl?: string;
   customerEmail: string;
   customerName?: string;
   items: OrderItem[];
@@ -44,7 +46,7 @@ function formatPickup(ts: string): string {
 }
 
 export async function sendOrderReceiptEmail({
-  orderId, orderCode, businessName, customerEmail, customerName,
+  orderId, orderCode, businessName, businessAddress, businessLogoUrl, customerEmail, customerName,
   items, subtotal, deliveryFee = 0, discount = 0, total,
   pickupTime, deliveryAddress, notes, bcc
 }: SendOrderReceiptParams): Promise<void> {
@@ -68,11 +70,17 @@ export async function sendOrderReceiptEmail({
 
     const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 7)}`;
 
+    const logoSection = businessLogoUrl
+      ? `<div style="margin-bottom:16px;"><img src="${businessLogoUrl}" alt="${businessName}" style="max-height:70px; object-fit:contain;" /></div>`
+      : "";
+
     const html = `
       <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto;line-height:1.5">
+        ${logoSection}
         <h2>${businessName} – Hemos recibido tu pedido</h2>
         <p>Hola ${customerName ?? "cliente"}, gracias por tu pedido.</p>
         <p><strong>Nº pedido:</strong> ${ticket}</p>
+        ${businessAddress ? `<p><strong>Direccion del negocio:</strong> ${businessAddress}</p>` : ""}
 
         <table width="100%" cellpadding="8" style="border-collapse:collapse;border-top:1px solid #eee;border-bottom:1px solid #eee">
           <thead>
