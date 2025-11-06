@@ -23,6 +23,22 @@ export type SendOrderReceiptParams = {
   bcc?: string;
 };
 
+export type SendOrderBusinessNotificationParams = {
+  orderId: string;
+  orderCode?: string;
+  businessName: string;
+  businessAddress?: string;
+  businessLogoUrl?: string;
+  businessEmail: string;
+  items: OrderItem[];
+  total: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  pickupTime?: string;
+  notes?: string;
+};
+
 const currency = (n: number) =>
   Number(n || 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
@@ -117,5 +133,86 @@ export async function sendOrderReceiptEmail({
   } catch (err) {
     console.error("[email] Error enviando confirmación:", err);
     // Importante: nunca relanzar el error; el pedido no debe fallar por el email.
+  }
+}
+
+export async function sendOrderBusinessNotificationEmail({
+  orderId,
+  orderCode,
+  businessName,
+  businessAddress,
+  businessLogoUrl,
+  businessEmail,
+  items,
+  total,
+  customerName,
+  customerPhone,
+  customerEmail,
+  pickupTime,
+  notes,
+}: SendOrderBusinessNotificationParams): Promise<void> {
+  try {
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.EMAIL_FROM;
+    if (!apiKey || !from) {
+      console.warn('[email] Falta RESEND_API_KEY o EMAIL_FROM; omito envio (alerta negocio).');
+      return;
+    }
+    const resend = new Resend(apiKey);
+
+    const rows = items.map((it) => `
+      <tr>
+        <td>${it.name}</td>
+        <td align="center">${it.qty}</td>
+        <td align="right">${currency(it.price * it.qty)}</td>
+      </tr>
+    `).join('');
+    const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 7)}`;
+    const logoSection = businessLogoUrl
+      ? `<div style="margin-bottom:16px;"><img src="${businessLogoUrl}" alt="${businessName}" style="max-height:70px; object-fit:contain;" /></div>`
+      : '';
+
+    const html = `
+      <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto;line-height:1.5">
+        ${logoSection}
+        <h2>Nuevo pedido recibido en ${businessName}</h2>
+        <p><strong>Nº pedido:</strong> ${ticket}</p>
+        ${businessAddress ? `<p><strong>Direccion:</strong> ${businessAddress}</p>` : ''}
+
+        <p><strong>Cliente:</strong> ${customerName}</p>
+        <p><strong>Telefono:</strong> ${customerPhone}</p>
+        ${customerEmail ? `<p><strong>Email:</strong> ${customerEmail}</p>` : ''}
+
+        <table width="100%" cellpadding="8" style="border-collapse:collapse;border-top:1px solid #eee;border-bottom:1px solid #eee;margin-top:16px">
+          <thead>
+            <tr>
+              <th align="left">Producto</th>
+              <th align="center">Ud.</th>
+              <th align="right">Importe</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr><td></td><td align="right"><strong>Total</strong></td><td align="right"><strong>${currency(total)}</strong></td></tr>
+          </tfoot>
+        </table>
+
+        ${pickupTime ? `<p style="margin-top:16px;"><strong>Hora estimada:</strong> ${formatPickup(pickupTime)}</p>` : ''}
+        ${notes ? `<p><strong>Notas del cliente:</strong> ${notes}</p>` : ''}
+
+        <p style="margin-top:24px;font-size:12px;color:#666">
+          Revisa el panel de pedidos para gestionarlo. Este aviso se envio automaticamente desde pedidos.pidelocal.es
+        </p>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from,
+      to: [businessEmail],
+      subject: `Nuevo pedido ${ticket} en ${businessName}`,
+      html,
+    });
+  } catch (err) {
+    console.error('[email] Error enviando alerta negocio:', err);
   }
 }

@@ -34,6 +34,8 @@ export default function BusinessSettingsClient() {
   const [lat, setLat] = useState<string>('');
   const [lng, setLng] = useState<string>('');
   const [hours, setHours] = useState<any>({});
+  const [notifyOrders, setNotifyOrders] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState('');
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
   const [tiktok, setTiktok] = useState('');
@@ -64,6 +66,8 @@ export default function BusinessSettingsClient() {
         } catch {
           setHours({});
         }
+        setNotifyOrders(Boolean(j.data.notify_orders_enabled));
+        setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
         setInstagram(j.data.social?.instagram || '');
         setFacebook(j.data.social?.facebook || '');
         setTiktok(j.data.social?.tiktok || '');
@@ -84,18 +88,20 @@ export default function BusinessSettingsClient() {
       const r = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          slogan,
-          description: about,
-          phone,
-          whatsapp,
-          email,
-          address_line: address,
-          lat: lat !== '' ? Number(lat) : null,
-          lng: lng !== '' ? Number(lng) : null,
-          social: { instagram, facebook, tiktok, web },
-          opening_hours: hours && Object.keys(hours).length ? hours : '',
+      body: JSON.stringify({
+        name,
+        slogan,
+        description: about,
+        phone,
+        whatsapp,
+        email,
+        notify_orders_enabled: notifyOrders,
+        notify_orders_email: notifyEmail || null,
+        address_line: address,
+        lat: lat !== '' ? Number(lat) : null,
+        lng: lng !== '' ? Number(lng) : null,
+        social: { instagram, facebook, tiktok, web },
+        opening_hours: hours && Object.keys(hours).length ? hours : '',
           menu_mode: menuMode,
         }),
       });
@@ -248,6 +254,37 @@ export default function BusinessSettingsClient() {
         </div>
 
         <HoursEditor value={hours} onChange={setHours} />
+
+        <div className="space-y-3 border rounded-lg p-4 bg-slate-50">
+          <h3 className="text-lg font-semibold text-gray-800">Notificaciones por correo</h3>
+          <p className="text-sm text-gray-600">
+            Te avisamos por email cada vez que entre un pedido nuevo.
+          </p>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={notifyOrders}
+              onChange={(e) => setNotifyOrders(e.target.checked)}
+            />
+            <span>Recibir notificaciones por email</span>
+          </label>
+          {notifyOrders && (
+            <div>
+              <label className="text-sm text-gray-700">Email donde recibir los avisos</label>
+              <input
+                className="border rounded px-3 py-2 w-full"
+                type="email"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                placeholder="correo@negocio.com"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Si lo dejas vacío usaremos el email del negocio.
+              </p>
+            </div>
+          )}
+        </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
           <div>

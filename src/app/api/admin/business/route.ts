@@ -64,7 +64,17 @@ export async function GET(req: Request) {
     if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
     const biz = await getBusinessBySlug(slug);
     if (!biz) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
-    return NextResponse.json({ ok: true, data: biz });
+    const social = (biz as any)?.social || {};
+    const notifyEnabled = Boolean((social as any)?.notify_orders_enabled);
+    const notifyEmail = (social as any)?.notify_orders_email || (biz as any)?.email || null;
+    return NextResponse.json({
+      ok: true,
+      data: {
+        ...biz,
+        notify_orders_enabled: notifyEnabled,
+        notify_orders_email: notifyEmail,
+      },
+    });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'Error' }, { status: 500 });
   }
@@ -93,8 +103,23 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ ok: false, error: 'menu_mode inválido' }, { status: 400 });
       }
     }
-    if ('social' in body) {
-      updates.social = body.social && typeof body.social === 'object' ? body.social : null;
+    let socialUpdates: any | null = null;
+    let socialBase = (biz as any)?.social ? { ...(biz as any).social } : {};
+    if (body.social && typeof body.social === 'object') {
+      socialBase = { ...socialBase, ...body.social };
+      socialUpdates = socialBase;
+    }
+    if (body.notify_orders_enabled !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      socialUpdates.notify_orders_enabled = !!body.notify_orders_enabled;
+    }
+    if (body.notify_orders_email !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const val = typeof body.notify_orders_email === 'string' ? body.notify_orders_email.trim() : null;
+      socialUpdates.notify_orders_email = val ? val : null;
+    }
+    if (socialUpdates) {
+      updates.social = socialUpdates;
     }
     if ('opening_hours' in body) {
       const raw = body.opening_hours;

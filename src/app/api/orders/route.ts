@@ -102,12 +102,12 @@ export async function POST(req: NextRequest) {
         if (!body.customer?.email) return;
         const { data: business } = await supabaseAdmin
           .from('businesses')
-          .select('name, address_line, city, postal_code, logo_url')
+          .select('name, email, address_line, city, postal_code, logo_url, social')
           .eq('id', (tenant as any)?.id || null)
           .maybeSingle();
         const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
         const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
-        const { sendOrderReceiptEmail } = await import('@/lib/email/sendOrderReceipt');
+        const { sendOrderReceiptEmail, sendOrderBusinessNotificationEmail } = await import('@/lib/email/sendOrderReceipt');
         await sendOrderReceiptEmail({
           orderId,
           orderCode: code,
@@ -124,6 +124,31 @@ export async function POST(req: NextRequest) {
           pickupTime: body.pickupAt,
           notes: body.notes || undefined,
         });
+        const notifySettings = (business as any)?.social || {};
+        const notifyEnabled = !!notifySettings?.notify_orders_enabled;
+        const notifyTarget =
+          (notifySettings?.notify_orders_email && String(notifySettings.notify_orders_email).trim()) ||
+          (business as any)?.email ||
+          null;
+        if (notifyEnabled && notifyTarget) {
+          await sendOrderBusinessNotificationEmail({
+            orderId,
+            orderCode: code,
+            businessName: (business as any)?.name || 'PideLocal',
+            businessAddress: [ (business as any)?.address_line, (business as any)?.postal_code, (business as any)?.city ]
+              .filter(Boolean)
+              .join(', ') || undefined,
+            businessLogoUrl: (business as any)?.logo_url || undefined,
+            businessEmail: notifyTarget,
+            items: itemsSimple,
+            total: totalCents / 100,
+            customerName: body.customer.name,
+            customerPhone: body.customer.phone,
+            customerEmail: body.customer.email || null,
+            pickupTime: body.pickupAt,
+            notes: body.notes || undefined,
+          });
+        }
       } catch (e) {
         console.error('[email] create-order (non-blocking) fallo:', e);
       }
