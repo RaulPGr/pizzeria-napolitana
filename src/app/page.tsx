@@ -219,10 +219,7 @@ export default function HomePage() {
 
         {/* Contacto + Redes */}
         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-800 mb-4">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-lg">✉️</span>
-            <h2 className="text-xl font-semibold">Contacto</h2>
-          </div>
+          <h2 className="text-xl font-semibold mb-4 text-slate-800">Contacto</h2>
           <div className="space-y-3 text-sm text-slate-700">
             {INFO.direccion && (
               <div>
@@ -262,23 +259,55 @@ export default function HomePage() {
               <div className="font-semibold text-slate-900">Síguenos</div>
               <div className="flex flex-col gap-2">
                 {cfg?.social?.instagram && (
-                  <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
-                    <span className="text-lg">📸</span> Instagram
+                  <a
+                    href={cfg.social.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[#E1306C] hover:underline"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                      <path d="M12 5.8A6.2 6.2 0 0 0 5.8 12 6.2 6.2 0 0 0 12 18.2 6.2 6.2 0 0 0 18.2 12 6.2 6.2 0 0 0 12 5.8Zm0 10.2A4 4 0 1 1 16 12a4 4 0 0 1-4 4Zm6.4-10.8a1.44 1.44 0 1 1-1.44-1.44A1.44 1.44 0 0 1 18.4 5.2ZM12 2c-2.4 0-2.7 0-3.7.05A6.69 6.69 0 0 0 4.05 4.3 6.69 6.69 0 0 0 1.8 8.3C1.75 9.3 1.75 9.6 1.75 12s0 2.7.05 3.7a6.69 6.69 0 0 0 2.25 4 6.69 6.69 0 0 0 4 2.25c1 .05 1.3.05 3.7.05s2.7 0 3.7-.05a6.69 6.69 0 0 0 4-2.25 6.69 6.69 0 0 0 2.25-4c.05-1 .05-1.3.05-3.7s0-2.7-.05-3.7a6.69 6.69 0 0 0-2.25-4A6.69 6.69 0 0 0 15.7 2C14.7 1.95 14.4 1.95 12 1.95Zm0 2c2.3 0 2.6 0 3.6.05a4.69 4.69 0 0 1 3.3 1.2 4.69 4.69 0 0 1 1.2 3.3c0 1 .05 1.3.05 3.5s0 2.5-.05 3.6a4.69 4.69 0 0 1-1.2 3.3 4.69 4.69 0 0 1-3.3 1.2c-1 .05-1.3.05-3.6.05s-2.5 0-3.6-.05a4.69 4.69 0 0 1-3.3-1.2 4.69 4.69 0 0 1-1.2-3.3C3.95 14.6 3.95 14.3 3.95 12s0-2.5.05-3.6a4.69 4.69 0 0 1 1.2-3.3 4.69 4.69 0 0 1 3.3-1.2c1-.05 1.3-.05 3.5-.05Z" />
+                    </svg>
+                    <span>Instagram</span>
                   </a>
                 )}
                 {cfg?.social?.facebook && (
-                  <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
-                    <span className="text-lg">👍</span> Facebook
+                  <a
+                    href={cfg.social.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[#1877F2] hover:underline"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                      <path d="M13.2 22v-8.2h2.6l.4-3.2h-3v-2.1c0-.9.3-1.6 1.6-1.6H16V3.1c-.3 0-1.3-.1-2.3-.1-2.3 0-3.8 1.4-3.8 3.9v2.2H7.4v3.2h2.5V22h3.3Z" />
+                    </svg>
+                    <span>Facebook</span>
                   </a>
                 )}
                 {cfg?.social?.tiktok && (
-                  <a href={cfg.social.tiktok} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
-                    <span className="text-lg">🎵</span> TikTok
+                  <a
+                    href={cfg.social.tiktok}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-slate-800 hover:underline"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                      <path d="M19.8 8.4c-1.9 0-3.9-.9-5-2.3v8.6c0 3.3-2.7 6-6 6S2.8 18 2.8 14.7s2.7-6 6-6c.5 0 1 .1 1.5.2v3.4c-.5-.2-1-.3-1.5-.3-1.3 0-2.3 1.1-2.3 2.4s1 2.4 2.3 2.4 2.4-1.1 2.4-2.4V2h3.1c.3 2 2 3.5 4 3.6v2.8Z" />
+                    </svg>
+                    <span>TikTok</span>
                   </a>
                 )}
                 {cfg?.social?.web && (
-                  <a href={cfg.social.web} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
-                    <span className="text-lg">🌐</span> Web
+                  <a
+                    href={cfg.social.web}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:underline"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c1.1 0 2.1.3 3 1H9a6 6 0 0 1 3-1Zm-5.3 3H8c-.3.7-.6 1.5-.7 2.3-.5 0-1 .1-1.6.2A8 8 0 0 1 6.7 7Zm-.8 8.5c.5.1 1 .2 1.5.2.2.8.4 1.6.7 2.3h-1.3a8 8 0 0 1-1-2.5Zm3.8 2.5c-.4-.7-.7-1.5-.9-2.3h2.8v2.3H9.7Zm0-4.3c-.1-.7-.2-1.4-.2-2.1 0-.7.1-1.4.2-2h2.8v4.1H9.7Zm4.6 4.3v-2.3h2.8c-.2.8-.5 1.6-.9 2.3h-1.9Zm0-4.3V9.3h2.8c.1.6.2 1.3.2 2 0 .7-.1 1.4-.2 2.1h-2.8Zm3.4 4.3h-1.3c.3-.7.5-1.5.7-2.3.5 0 1-.1 1.5-.2a8 8 0 0 1-1 2.5Zm.2-6.6c-.5-.1-1-.2-1.6-.2-.1-.8-.4-1.6-.7-2.3h1.6c.4.8.7 1.6.7 2.5Z" />
+                    </svg>
+                    <span>Web</span>
                   </a>
                 )}
               </div>
