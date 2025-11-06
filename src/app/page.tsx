@@ -221,7 +221,7 @@ export default function HomePage() {
         <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 text-slate-800 mb-4">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-lg">✉️</span>
-            <h2 className="text-xl font-semibold">Contacto y Redes</h2>
+            <h2 className="text-xl font-semibold">Contacto</h2>
           </div>
           <div className="space-y-3 text-sm text-slate-700">
             {INFO.direccion && (
