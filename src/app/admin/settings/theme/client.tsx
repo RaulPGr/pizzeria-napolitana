@@ -142,7 +142,7 @@ function FontSelect({
           value={selectVal}
           onChange={(e) => onChange(e.target.value || value || "")}
         >
-          <option value="">— Personalizada —</option>
+          <option value="">- Personalizada -</option>
           {presets.map((p) => (
             <option key={p.label} value={p.val} style={{ fontFamily: p.val }}>
               {p.label}
@@ -159,7 +159,7 @@ function FontSelect({
           style={{ fontFamily: value || undefined }}
         />
         <div className="mt-1 text-xs text-slate-500">
-          Puedes elegir una opción del listado o escribir tu propia pila de fuentes.
+          Puedes elegir una opcion del listado o escribir tu propia pila de fuentes.
         </div>
       </div>
     </div>
@@ -254,22 +254,22 @@ export default function ThemeSettingsClient() {
     }
   }
 
-  if (loading) return <div className="rounded border bg-white p-4 shadow-sm">Cargando…</div>;
+  if (loading) return <div className="rounded border bg-white p-4 shadow-sm">Cargando...</div>;
   if (error) return <div className="rounded border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm">{error}</div>;
 
   return (
     <div className="space-y-6 rounded border bg-white p-4 shadow-sm">
       <div>
-        <h1 className="text-xl font-semibold">Personalización de tema</h1>
+        <h1 className="text-xl font-semibold">Personalizacion de tema</h1>
         <p className="text-sm text-slate-600">
-          Ajusta colores, tipografías y la barra superior. Cada campo tiene una breve descripción. Los cambios se aplican
+          Ajusta colores, tipografias y la barra superior. Cada campo tiene una breve descripcion. Los cambios se aplican
           de inmediato tras guardar.
         </p>
       </div>
 
       <div className="rounded border bg-white p-4">
-        <h2 className="text-sm font-medium text-slate-700">Suscripci�n del negocio</h2>
-        <p className="mt-1 text-xs text-slate-500">Controla qu� funcionalidades est�n disponibles para el comercio.</p>
+        <h2 className="text-sm font-medium text-slate-700">Suscripcion del negocio</h2>
+        <p className="mt-1 text-xs text-slate-500">Controla que funcionalidades estan disponibles para el comercio.</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <label
             className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
@@ -287,7 +287,7 @@ export default function ThemeSettingsClient() {
             <span>
               <span className="block font-medium">Starter/Medium</span>
               <span className="text-xs text-slate-500">
-                Acceso b�sico: panel con productos y configuraci�n. No admite pedidos online.
+                Acceso basico: panel con productos y configuracion. No admite pedidos online.
               </span>
             </span>
           </label>
@@ -327,7 +327,7 @@ export default function ThemeSettingsClient() {
           <div className="flex items-center justify-between">
             <div className="flex gap-6">
               <span>Inicio</span>
-              <span>Menú</span>
+              <span>Menu</span>
             </div>
             <span>Carrito</span>
           </div>
@@ -343,15 +343,15 @@ export default function ThemeSettingsClient() {
             type="button"
             className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
             style={{ backgroundColor: merged.colors.accent || "#999" }}
-            aria-label="Botón primario"
+            aria-label="Boton primario"
           >
-            Botón primario
+            Boton primario
           </button>
           <button
             type="button"
             className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
             style={{ backgroundColor: merged.colors.accentHover || merged.colors.accent || "#777" }}
-            aria-label="Botón primario (hover)"
+            aria-label="Boton primario (hover)"
           >
             Hover (primario)
           </button>
@@ -359,15 +359,15 @@ export default function ThemeSettingsClient() {
             type="button"
             className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
             style={{ backgroundColor: merged.colors.secondary || "#557a52" }}
-            aria-label="Botón secundario"
+            aria-label="Boton secundario"
           >
-            Botón secundario
+            Boton secundario
           </button>
           <button
             type="button"
             className="rounded px-4 py-2 text-sm font-semibold text-white shadow-sm"
             style={{ backgroundColor: merged.colors.secondaryHover || merged.colors.secondary || "#476646" }}
-            aria-label="Botón secundario (hover)"
+            aria-label="Boton secundario (hover)"
           >
             Hover (secundario)
           </button>
@@ -379,10 +379,10 @@ export default function ThemeSettingsClient() {
             className="mb-1 text-lg"
             style={{ color: merged.colors.text || "#333", fontFamily: merged.fonts.headings || "inherit", fontWeight: 600 }}
           >
-            Título de ejemplo
+            Titulo de ejemplo
           </div>
           <div className="text-sm" style={{ color: merged.colors.text || "#333", fontFamily: merged.fonts.body || "inherit" }}>
-            Este es un texto de párrafo para comprobar la legibilidad con la combinación de colores y la fuente del
+            Este es un texto de parrafo para comprobar la legibilidad con la combinacion de colores y la fuente del
             cuerpo.
           </div>
           <div className="mt-1 text-xs" style={{ color: merged.colors.muted || "#777", fontFamily: merged.fonts.body || "inherit" }}>
@@ -401,7 +401,7 @@ export default function ThemeSettingsClient() {
         />
         <ColorInput
           label="Texto"
-          desc="Color principal de los textos (párrafos y títulos)."
+          desc="Color principal de los textos (parrafos y titulos)."
           value={theme.colors?.text}
           onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, text: v } }))}
         />
@@ -413,7 +413,7 @@ export default function ThemeSettingsClient() {
         />
         <ColorInput
           label="Primario (botones/enlaces)"
-          desc="Color de acción principal en botones y enlaces."
+          desc="Color de accion principal en botones y enlaces."
           value={theme.colors?.accent}
           onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, accent: v } }))}
         />
@@ -449,18 +449,18 @@ export default function ThemeSettingsClient() {
         />
       </div>
 
-      {/* Tipografías */}
+      {/* Tipografias */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FontSelect
           label="Fuente del cuerpo"
-          desc="Familia tipográfica para párrafos y la interfaz."
+          desc="Familia tipografica para parrafos y la interfaz."
           value={theme.fonts?.body}
           onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, body: v } }))}
           placeholder="Ej: Inter, system-ui, sans-serif"
         />
         <FontSelect
-          label="Fuente de títulos"
-          desc="Familia tipográfica para encabezados (H1—H5)."
+          label="Fuente de titulos"
+          desc="Familia tipografica para encabezados (H1-H5)."
           value={theme.fonts?.headings}
           onChange={(v) => setTheme((t) => ({ ...t, fonts: { ...t.fonts, headings: v } }))}
           placeholder="Ej: Poppins, system-ui, sans-serif"
@@ -477,16 +477,16 @@ export default function ThemeSettingsClient() {
             checked={heroOverlayEnabled}
             onChange={(e) => handleHeroOverlayChange(e.target.checked)}
           />
-          <span>Mostrar nombre, eslogan y botón sobre la imagen principal</span>
+          <span>Mostrar nombre, eslogan y boton sobre la imagen principal</span>
         </label>
         <p className="mt-1 text-xs text-slate-500">
-          Si lo desactivas, el nombre y el botón "Ver menú ahora" solo se mostrarán en el banner superior.
+          Si lo desactivas, el nombre y el boton "Ver menu ahora" solo se mostraran en el banner superior.
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={saving} className="btn-brand">
-          {saving ? "Guardando…" : "Guardar cambios"}
+          {saving ? "Guardando..." : "Guardar cambios"}
         </button>
         <button
           type="button"

@@ -53,9 +53,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminAccessProvider plan={access.plan} isSuper={access.isSuper}>
       <div className="mx-auto max-w-5xl px-4 py-6">
-        <h1 className="mb-2 text-2xl font-semibold">Panel de Administraci�n</h1>
+        <h1 className="mb-2 text-2xl font-semibold">Panel de Administracion</h1>
         <AdminTabs />
-        {/* Bot�n flotante para activar sonido de nuevos pedidos */}
+        {/* Boton flotante para activar sonido de nuevos pedidos */}
         {!limited && <NewOrderSound />}
         {children}
       </div>

@@ -46,7 +46,7 @@ export default function AdminTabs() {
             isSettings ? "bg-black text-white" : "bg-white"
           )}
         >
-          Configuración
+          Configuracion
         </Link>
 
         {!limited && (
@@ -57,7 +57,7 @@ export default function AdminTabs() {
               isStats ? "bg-black text-white" : "bg-white"
             )}
           >
-            Estadísticas
+            Estadisticas
           </Link>
         )}
       </div>
