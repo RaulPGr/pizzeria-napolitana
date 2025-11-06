@@ -218,32 +218,73 @@ export default function HomePage() {
         </article>
 
         {/* Contacto + Redes */}
-          <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4 text-center">Contacto</h2>
-            <ul className="text-sm space-y-1 contact-list text-center">
-              <li>Teléfono: <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a></li>
-              {INFO.whatsapp ? (
-                <li>WhatsApp: <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${INFO.whatsapp.replace(/[^0-9+]/g,'')}`}>{INFO.whatsapp}</a></li>
-              ) : null}
-              {INFO.email ? (
-                <li>Email: <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a></li>
-              ) : null}
-              {INFO.direccion ? (
-                <li>Dirección: <span className="block">{INFO.direccion}</span></li>
-              ) : null}
-            </ul>
-            {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
-              <div className="mt-4">
-                <h3 className="font-medium mb-2">Síguenos</h3>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {cfg?.social?.instagram && <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Instagram</a>}
-                  {cfg?.social?.facebook && <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Facebook</a>}
-                  {cfg?.social?.tiktok && <a href={cfg.social.tiktok} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">TikTok</a>}
-                  {cfg?.social?.web && <a href={cfg.social.web} target="_blank" rel="noopener noreferrer" className="text-sm rounded-full border px-3 py-1 hover:bg-gray-50">Web</a>}
-                </div>
+        <article className="rounded-2xl border border-brand-crust bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-800 mb-4">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-lg">✉️</span>
+            <h2 className="text-xl font-semibold">Contacto y Redes</h2>
+          </div>
+          <div className="space-y-3 text-sm text-slate-700">
+            {INFO.direccion && (
+              <div>
+                <span className="font-semibold block text-slate-900">Dirección:</span>
+                <span>{INFO.direccion}</span>
               </div>
-            ) : null}
-          </article>
+            )}
+            {INFO.telefono && (
+              <div>
+                <span className="font-semibold block text-slate-900">Teléfono:</span>
+                <a className="text-blue-600 hover:underline" href={`tel:${INFO.telefono}`}>{INFO.telefono}</a>
+              </div>
+            )}
+            {INFO.whatsapp && (
+              <div>
+                <span className="font-semibold block text-slate-900">WhatsApp:</span>
+                <a
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={`https://wa.me/${INFO.whatsapp.replace(/[^0-9+]/g, '')}`}
+                >
+                  {INFO.whatsapp}
+                </a>
+              </div>
+            )}
+            {INFO.email && (
+              <div>
+                <span className="font-semibold block text-slate-900">Email</span>
+                <a className="text-blue-600 hover:underline" href={`mailto:${INFO.email}`}>{INFO.email}</a>
+              </div>
+            )}
+          </div>
+
+          {(cfg?.social || {}).instagram || (cfg?.social || {}).facebook || (cfg?.social || {}).tiktok || (cfg?.social || {}).web ? (
+            <div className="mt-4 space-y-2 text-sm text-slate-700">
+              <div className="font-semibold text-slate-900">Síguenos</div>
+              <div className="flex flex-col gap-2">
+                {cfg?.social?.instagram && (
+                  <a href={cfg.social.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
+                    <span className="text-lg">📸</span> Instagram
+                  </a>
+                )}
+                {cfg?.social?.facebook && (
+                  <a href={cfg.social.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
+                    <span className="text-lg">👍</span> Facebook
+                  </a>
+                )}
+                {cfg?.social?.tiktok && (
+                  <a href={cfg.social.tiktok} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
+                    <span className="text-lg">🎵</span> TikTok
+                  </a>
+                )}
+                {cfg?.social?.web && (
+                  <a href={cfg.social.web} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
+                    <span className="text-lg">🌐</span> Web
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </article>
       </section>
 
       {/* Mapa */}
