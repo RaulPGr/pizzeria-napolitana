@@ -36,6 +36,8 @@ export default function BusinessSettingsClient() {
   const [hours, setHours] = useState<any>({});
   const [notifyOrders, setNotifyOrders] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
+  const [reservationsEnabled, setReservationsEnabled] = useState(false);
+  const [reservationsEmail, setReservationsEmail] = useState('');
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
   const [tiktok, setTiktok] = useState('');
@@ -62,17 +64,19 @@ export default function BusinessSettingsClient() {
         if (j.data.lng != null) setLng(String(j.data.lng));
         setAbout(j.data.description || '');
         try {
-          setHours(j.data.opening_hours || {});
-        } catch {
-          setHours({});
-        }
-        setNotifyOrders(Boolean(j.data.notify_orders_enabled));
-        setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
-        setInstagram(j.data.social?.instagram || '');
-        setFacebook(j.data.social?.facebook || '');
-        setTiktok(j.data.social?.tiktok || '');
-        setWeb(j.data.social?.web || '');
-        setMenuMode((j.data.menu_mode as 'fixed' | 'daily') || 'fixed');
+        setHours(j.data.opening_hours || {});
+      } catch {
+        setHours({});
+      }
+      setNotifyOrders(Boolean(j.data.notify_orders_enabled));
+      setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
+      setReservationsEnabled(Boolean(j.data.reservations?.enabled));
+      setReservationsEmail(j.data.reservations?.email || j.data.email || '');
+      setInstagram(j.data.social?.instagram || '');
+      setFacebook(j.data.social?.facebook || '');
+      setTiktok(j.data.social?.tiktok || '');
+      setWeb(j.data.social?.web || '');
+      setMenuMode((j.data.menu_mode as 'fixed' | 'daily') || 'fixed');
       } else {
         setMsg(j?.error || 'No se pudo cargar la configuración');
       }
@@ -97,6 +101,8 @@ export default function BusinessSettingsClient() {
         email,
         notify_orders_enabled: notifyOrders,
         notify_orders_email: notifyEmail || null,
+        reservations_enabled: reservationsEnabled,
+        reservations_email: reservationsEmail || null,
         address_line: address,
         lat: lat !== '' ? Number(lat) : null,
         lng: lng !== '' ? Number(lng) : null,
@@ -281,6 +287,37 @@ export default function BusinessSettingsClient() {
               />
               <p className="mt-1 text-xs text-gray-500">
                 Si lo dejas vacío usaremos el email del negocio.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 border rounded-lg p-4 bg-slate-50">
+          <h3 className="text-lg font-semibold text-gray-800">Reservas de mesa</h3>
+          <p className="text-sm text-gray-600">
+            Permite a tus clientes solicitar una reserva desde la web.
+          </p>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={reservationsEnabled}
+              onChange={(e) => setReservationsEnabled(e.target.checked)}
+            />
+            <span>Activar formulario de reservas</span>
+          </label>
+          {reservationsEnabled && (
+            <div>
+              <label className="text-sm text-gray-700">Email para recibir reservas</label>
+              <input
+                className="border rounded px-3 py-2 w-full"
+                type="email"
+                value={reservationsEmail}
+                onChange={(e) => setReservationsEmail(e.target.value)}
+                placeholder="reservas@negocio.com"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Si lo dejas vacío usaremos el email principal del negocio.
               </p>
             </div>
           )}

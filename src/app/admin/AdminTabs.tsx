@@ -9,6 +9,7 @@ import { useAdminAccess } from "@/context/AdminAccessContext";
 export default function AdminTabs() {
   const pathname = usePathname();
   const isOrders = pathname?.startsWith("/admin/orders");
+  const isReservations = pathname?.startsWith("/admin/reservations");
   const isSettings = pathname?.startsWith("/admin/settings");
   const isStats = pathname?.startsWith("/admin/stats");
   const { plan, isSuper } = useAdminAccess();
@@ -36,6 +37,17 @@ export default function AdminTabs() {
             )}
           >
             Pedidos
+          </Link>
+        )}
+        {!limited && (
+          <Link
+            href="/admin/reservations"
+            className={clsx(
+              "inline-flex items-center rounded-full border px-4 py-2 text-sm",
+              isReservations ? "bg-black text-white" : "bg-white"
+            )}
+          >
+            Reservas
           </Link>
         )}
 
@@ -66,4 +78,3 @@ export default function AdminTabs() {
     </div>
   );
 }
-

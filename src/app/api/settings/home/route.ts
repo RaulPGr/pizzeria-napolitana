@@ -60,6 +60,10 @@ export async function GET(req: Request) {
       images: { logo: biz.logo_url || null, hero: biz.hero_url || null },
       coords: biz.lat != null && biz.lng != null ? { lat: Number(biz.lat), lng: Number(biz.lng) } : null,
       social: biz.social || null,
+      reservations: {
+        enabled: !!(biz.social as any)?.reservations_enabled,
+        email: (biz.social as any)?.reservations_email || biz.email || null,
+      },
       theme: biz.theme_config || null,
       subscription,
     };

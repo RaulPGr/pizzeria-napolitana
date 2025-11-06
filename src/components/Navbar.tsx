@@ -11,6 +11,7 @@ export default function NavBar() {
   const plan = useSubscriptionPlan();
   const allowOrdering = plan === "premium";
   const [count, setCount] = useState(0);
+  const [reservationsEnabled, setReservationsEnabled] = useState(false);
 
   useEffect(() => {
     if (!allowOrdering) {
@@ -20,6 +21,31 @@ export default function NavBar() {
     const unsub = subscribe(() => setCount(getCount()));
     return () => unsub();
   }, [allowOrdering]);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+        const tenant = params.get("tenant")?.trim();
+        const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
+        const resp = await fetch(url, { cache: "no-store" });
+        const j = await resp.json();
+        if (!active) return;
+        if (resp.ok && j?.data?.reservations?.enabled) {
+          setReservationsEnabled(true);
+        } else {
+          setReservationsEnabled(false);
+        }
+      } catch {
+        if (active) setReservationsEnabled(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const Item = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Link href={href} className="text-white hover:text-gray-300">
@@ -33,6 +59,7 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>
+          {reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
           {/* Admin link intentionally removed */}
         </div>
         {allowOrdering && (
