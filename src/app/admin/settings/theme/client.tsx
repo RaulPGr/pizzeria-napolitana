@@ -184,6 +184,11 @@ export default function ThemeSettingsClient() {
   const [memberRole, setMemberRole] = useState<"staff" | "manager">("staff");
   const [memberMsg, setMemberMsg] = useState<string | null>(null);
   const [memberSaving, setMemberSaving] = useState(false);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+  const [members, setMembers] = useState<
+    Array<{ userId: string; email: string | null; role: string; createdAt: string | null }>
+  >([]);
 
   const merged = useMemo(
     () => ({
@@ -248,10 +253,48 @@ export default function ThemeSettingsClient() {
       setMemberEmail("");
       setMemberPassword("");
       setMemberRole("staff");
+      void loadMembers();
     } catch (e: any) {
       setMemberMsg(e?.message || "No se pudo crear el usuario");
     } finally {
       setMemberSaving(false);
+    }
+  }
+
+  async function loadMembers() {
+    setMembersLoading(true);
+    setMembersError(null);
+    try {
+      const tenant = getTenantFromUrl();
+      const url = tenant ? `/api/admin/members?tenant=${encodeURIComponent(tenant)}` : "/api/admin/members";
+      const resp = await fetch(url, { cache: "no-store" });
+      const j = await resp.json();
+      if (!resp.ok || !j?.ok) throw new Error(j?.error || "No se pudieron cargar los usuarios");
+      setMembers(Array.isArray(j.members) ? j.members : []);
+    } catch (e: any) {
+      setMembersError(e?.message || "No se pudieron cargar los usuarios");
+    } finally {
+      setMembersLoading(false);
+    }
+  }
+
+  async function removeMember(userId: string, email?: string | null) {
+    const label = email || userId;
+    if (!window.confirm(`Eliminar acceso de ${label}?`)) return;
+    try {
+      const tenant = getTenantFromUrl();
+      const url = tenant ? `/api/admin/members?tenant=${encodeURIComponent(tenant)}` : "/api/admin/members";
+      const resp = await fetch(url, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const j = await resp.json();
+      if (!resp.ok || !j?.ok) throw new Error(j?.error || "No se pudo eliminar el usuario");
+      setMemberMsg(`Acceso eliminado para ${label}`);
+      void loadMembers();
+    } catch (e: any) {
+      setMemberMsg(e?.message || "No se pudo eliminar el usuario");
     }
   }
 
@@ -270,6 +313,11 @@ export default function ThemeSettingsClient() {
     if (merged.fonts.body) r.style.setProperty("--font-body", merged.fonts.body ?? "");
     if (merged.fonts.headings) r.style.setProperty("--font-headings", merged.fonts.headings ?? "");
   }, [merged]);
+
+  useEffect(() => {
+    void loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cargar tema actual
   useEffect(() => {
@@ -429,6 +477,54 @@ export default function ThemeSettingsClient() {
             {memberSaving ? "Creando..." : "Agregar usuario"}
           </button>
         </div>
+      </div>
+
+      <div className="rounded border bg-white p-4">
+        <h4 className="text-sm font-medium text-slate-700 mb-2">Usuarios actuales</h4>
+        {membersLoading ? (
+          <div className="text-sm text-slate-500">Cargando usuarios...</div>
+        ) : membersError ? (
+          <div className="rounded border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+            {membersError}
+          </div>
+        ) : members.length === 0 ? (
+          <div className="text-sm text-slate-500">No hay usuarios vinculados todavia.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500">
+                  <th className="border-b px-3 py-2">Email</th>
+                  <th className="border-b px-3 py-2">Rol</th>
+                  <th className="border-b px-3 py-2">Alta</th>
+                  <th className="border-b px-3 py-2 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => {
+                  const date = m.createdAt ? new Date(m.createdAt) : null;
+                  const formatted = date ? date.toLocaleString() : "-";
+                  return (
+                    <tr key={m.userId} className="hover:bg-slate-50">
+                      <td className="border-b px-3 py-2">{m.email || "(sin email)"}</td>
+                      <td className="border-b px-3 py-2 capitalize">{m.role}</td>
+                      <td className="border-b px-3 py-2">{formatted}</td>
+                      <td className="border-b px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          className="text-sm text-red-600 hover:underline"
+                          onClick={() => void removeMember(m.userId, m.email)}
+                        >
+                          Quitar acceso
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Vista previa barra superior */}

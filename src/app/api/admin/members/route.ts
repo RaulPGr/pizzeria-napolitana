@@ -104,7 +104,88 @@ export async function POST(req: Request) {
       body = await req.json();
     } catch {
       return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
+}
+
+export async function GET(req: Request) {
+  try {
+    const slug = await getTenantSlug(req);
+    if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
+    const bizId = await getBusinessId(slug);
+    if (!bizId) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
+
+    const { data: members, error } = await supabaseAdmin
+      .from('business_members')
+      .select('user_id, role, created_at')
+      .eq('business_id', bizId)
+      .order('created_at', { ascending: true });
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+
+    const results: Array<{ userId: string; email: string | null; role: MemberRole; createdAt: string }> = [];
+    for (const m of members || []) {
+      const userId = (m as any)?.user_id as string | undefined;
+      const role = (m as any)?.role as MemberRole;
+      if (!userId) continue;
+      try {
+        const { data: userData, error: userErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (userErr) throw userErr;
+        const email = userData.user?.email ?? null;
+        results.push({
+          userId,
+          email,
+          role,
+          createdAt: (m as any)?.created_at || null,
+        });
+      } catch {
+        results.push({
+          userId,
+          email: null,
+          role,
+          createdAt: (m as any)?.created_at || null,
+        });
+      }
     }
+
+    return NextResponse.json({ ok: true, members: results });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || 'Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const slug = await getTenantSlug(req);
+    if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
+    const bizId = await getBusinessId(slug);
+    if (!bizId) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
+
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {}
+    const emailRaw = typeof body?.email === 'string' ? body.email : '';
+    const userIdRaw = typeof body?.userId === 'string' ? body.userId : '';
+    let targetUserId = userIdRaw.trim() || '';
+    if (!targetUserId && emailRaw) {
+      const normalized = normalizeEmail(emailRaw);
+      const user = await getUserByEmail(normalized).catch(() => null);
+      if (user?.id) targetUserId = user.id as string;
+    }
+    if (!targetUserId) {
+      return NextResponse.json({ ok: false, error: 'Faltan datos del usuario' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('business_members')
+      .delete()
+      .eq('business_id', bizId)
+      .eq('user_id', targetUserId);
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || 'Error' }, { status: 500 });
+  }
+}
 
     const email = normalizeEmail(String(body?.email || ''));
     if (!email || !isValidEmail(email)) {
