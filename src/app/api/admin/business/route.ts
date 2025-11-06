@@ -65,6 +65,7 @@ export async function GET(req: Request) {
     const biz = await getBusinessBySlug(slug);
     if (!biz) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
     const social = (biz as any)?.social || {};
+    const reservationsCapacity = Number(social?.reservations_capacity ?? 0);
     return NextResponse.json({
       ok: true,
       data: {
@@ -73,6 +74,7 @@ export async function GET(req: Request) {
         notify_orders_email: social.notify_orders_email || (biz as any)?.email || null,
         reservations_enabled: !!social.reservations_enabled,
         reservations_email: social.reservations_email || (biz as any)?.email || null,
+        reservations_capacity: Number.isFinite(reservationsCapacity) && reservationsCapacity > 0 ? Math.floor(reservationsCapacity) : 0,
       },
     });
   } catch (e: any) {
@@ -126,6 +128,12 @@ export async function PATCH(req: Request) {
       if (!socialUpdates) socialUpdates = { ...socialBase };
       const val = typeof body.reservations_email === 'string' ? body.reservations_email.trim() : null;
       socialUpdates.reservations_email = val ? val : null;
+    }
+    if (body.reservations_capacity !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      let cap = Number(body.reservations_capacity);
+      if (!Number.isFinite(cap) || cap < 0) cap = 0;
+      socialUpdates.reservations_capacity = Math.floor(cap);
     }
     if (socialUpdates) {
       updates.social = socialUpdates;

@@ -108,3 +108,54 @@ export async function sendReservationBusinessEmail({
   });
 }
 
+export async function sendReservationStatusEmail({
+  businessName,
+  businessAddress,
+  businessLogoUrl,
+  customerName,
+  customerEmail,
+  customerPhone,
+  partySize,
+  reservedFor,
+  notes,
+  status,
+}: CommonParams & { customerEmail: string; status: 'confirmed' | 'cancelled' }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    console.warn("[email] Falta RESEND_API_KEY o EMAIL_FROM; omito envio (estado reserva).");
+    return;
+  }
+  const resend = new Resend(apiKey);
+
+  const title =
+    status === 'confirmed'
+      ? '🥂 ¡Tu reserva ha sido confirmada!'
+      : '📬 Actualización sobre tu reserva';
+  const message =
+    status === 'confirmed'
+      ? 'Tu mesa está lista, te esperamos.'
+      : 'Lamentamos informarte de que la reserva ha sido cancelada.';
+
+  const html = `
+    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto;line-height:1.5">
+      ${buildHeaderHtml(businessName, businessLogoUrl)}
+      <h3 style="margin-bottom:8px">${title}</h3>
+      <p>${message}</p>
+      <p><strong>Cliente:</strong> ${customerName}</p>
+      <p><strong>Teléfono:</strong> ${customerPhone}</p>
+      <p><strong>Fecha y hora:</strong> ${reservedFor}</p>
+      <p><strong>Comensales:</strong> ${partySize}</p>
+      ${businessAddress ? `<p><strong>Dirección:</strong> ${businessAddress}</p>` : ''}
+      ${notes ? `<p><strong>Notas que enviaste:</strong> ${notes}</p>` : ''}
+      <p style="margin-top:24px;font-size:12px;color:#666">Este email se envió automáticamente desde pedidos.pidelocal.es</p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from,
+    to: [customerEmail],
+    subject: `${businessName} - Actualización de reserva`,
+    html,
+  });
+}

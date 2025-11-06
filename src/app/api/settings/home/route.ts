@@ -63,6 +63,7 @@ export async function GET(req: Request) {
       reservations: {
         enabled: !!(biz.social as any)?.reservations_enabled,
         email: (biz.social as any)?.reservations_email || biz.email || null,
+        capacity: Number((biz.social as any)?.reservations_capacity ?? 0),
       },
       theme: biz.theme_config || null,
       subscription,

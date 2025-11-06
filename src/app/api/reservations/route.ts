@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     if (!social?.reservations_enabled) {
       return NextResponse.json({ ok: false, message: 'Las reservas no estan activadas' }, { status: 400 });
     }
+    const capacity = Number(social?.reservations_capacity ?? 0);
 
     const name = (body?.name || '').trim();
     const phone = (body?.phone || '').trim();
@@ -88,6 +89,19 @@ export async function POST(req: NextRequest) {
     }
     if (!isWithinSchedule(date, time, tenant.opening_hours)) {
       return NextResponse.json({ ok: false, message: 'La reserva debe estar dentro del horario de apertura' }, { status: 400 });
+    }
+
+    if (capacity && capacity > 0) {
+      const { count, error: countErr } = await supabaseAdmin
+        .from('reservations')
+        .select('*', { head: true, count: 'exact' })
+        .eq('business_id', tenant.id)
+        .eq('reserved_at', reservedAt.toISOString())
+        .neq('status', 'cancelled');
+      if (countErr) throw countErr;
+      if ((count ?? 0) >= capacity) {
+        return NextResponse.json({ ok: false, message: 'La franja horaria ya no tiene disponibilidad. Elige otra hora.' }, { status: 409 });
+      }
     }
 
     const { data: inserted, error } = await supabaseAdmin
@@ -144,4 +158,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: e?.message || 'No se pudo crear la reserva' }, { status: 400 });
   }
 }
-

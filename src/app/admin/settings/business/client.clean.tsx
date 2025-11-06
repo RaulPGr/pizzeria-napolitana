@@ -38,6 +38,7 @@ export default function BusinessSettingsClient() {
   const [notifyEmail, setNotifyEmail] = useState('');
   const [reservationsEnabled, setReservationsEnabled] = useState(false);
   const [reservationsEmail, setReservationsEmail] = useState('');
+  const [reservationsCapacity, setReservationsCapacity] = useState<number>(0);
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
   const [tiktok, setTiktok] = useState('');
@@ -72,6 +73,8 @@ export default function BusinessSettingsClient() {
         setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
         setReservationsEnabled(Boolean(j.data.reservations_enabled));
         setReservationsEmail(j.data.reservations_email || j.data.email || '');
+        const cap = Number(j.data.reservations_capacity ?? 0);
+        setReservationsCapacity(Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0);
       setInstagram(j.data.social?.instagram || '');
       setFacebook(j.data.social?.facebook || '');
       setTiktok(j.data.social?.tiktok || '');
@@ -103,6 +106,7 @@ export default function BusinessSettingsClient() {
         notify_orders_email: notifyEmail || null,
         reservations_enabled: reservationsEnabled,
         reservations_email: reservationsEmail || null,
+        reservations_capacity: reservationsCapacity,
         address_line: address,
         lat: lat !== '' ? Number(lat) : null,
         lng: lng !== '' ? Number(lng) : null,
@@ -308,6 +312,16 @@ export default function BusinessSettingsClient() {
           </label>
           {reservationsEnabled && (
             <div>
+              <label className="text-sm text-gray-700">Capacidad por franja</label>
+              <input
+                className="border rounded px-3 py-2 w-full mb-3"
+                type="number"
+                min={0}
+                max={50}
+                value={reservationsCapacity}
+                onChange={(e) => setReservationsCapacity(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+              />
+              <p className="mt-1 text-xs text-gray-500">Pon 0 para ilimitadas.</p>
               <label className="text-sm text-gray-700">Email para recibir reservas</label>
               <input
                 className="border rounded px-3 py-2 w-full"
