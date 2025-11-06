@@ -68,10 +68,10 @@ export default function BusinessSettingsClient() {
       } catch {
         setHours({});
       }
-      setNotifyOrders(Boolean(j.data.notify_orders_enabled));
-      setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
-      setReservationsEnabled(Boolean(j.data.reservations?.enabled));
-      setReservationsEmail(j.data.reservations?.email || j.data.email || '');
+        setNotifyOrders(Boolean(j.data.notify_orders_enabled));
+        setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
+        setReservationsEnabled(Boolean(j.data.reservations_enabled));
+        setReservationsEmail(j.data.reservations_email || j.data.email || '');
       setInstagram(j.data.social?.instagram || '');
       setFacebook(j.data.social?.facebook || '');
       setTiktok(j.data.social?.tiktok || '');

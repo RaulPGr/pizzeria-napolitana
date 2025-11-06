@@ -65,14 +65,14 @@ export async function GET(req: Request) {
     const biz = await getBusinessBySlug(slug);
     if (!biz) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
     const social = (biz as any)?.social || {};
-    const notifyEnabled = Boolean((social as any)?.notify_orders_enabled);
-    const notifyEmail = (social as any)?.notify_orders_email || (biz as any)?.email || null;
     return NextResponse.json({
       ok: true,
       data: {
         ...biz,
-        notify_orders_enabled: notifyEnabled,
-        notify_orders_email: notifyEmail,
+        notify_orders_enabled: !!social.notify_orders_enabled,
+        notify_orders_email: social.notify_orders_email || (biz as any)?.email || null,
+        reservations_enabled: !!social.reservations_enabled,
+        reservations_email: social.reservations_email || (biz as any)?.email || null,
       },
     });
   } catch (e: any) {
@@ -117,6 +117,15 @@ export async function PATCH(req: Request) {
       if (!socialUpdates) socialUpdates = { ...socialBase };
       const val = typeof body.notify_orders_email === 'string' ? body.notify_orders_email.trim() : null;
       socialUpdates.notify_orders_email = val ? val : null;
+    }
+    if (body.reservations_enabled !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      socialUpdates.reservations_enabled = !!body.reservations_enabled;
+    }
+    if (body.reservations_email !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const val = typeof body.reservations_email === 'string' ? body.reservations_email.trim() : null;
+      socialUpdates.reservations_email = val ? val : null;
     }
     if (socialUpdates) {
       updates.social = socialUpdates;
