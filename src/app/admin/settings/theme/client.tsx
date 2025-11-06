@@ -167,10 +167,23 @@ function FontSelect({
 }
 
 export default function ThemeSettingsClient() {
+  function getTenantFromUrl(): string {
+    if (typeof window === "undefined") return "";
+    try {
+      return new URLSearchParams(window.location.search).get("tenant") || "";
+    } catch {
+      return "";
+    }
+  }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeConfig>({});
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberPassword, setMemberPassword] = useState("");
+  const [memberRole, setMemberRole] = useState<"staff" | "manager">("staff");
+  const [memberMsg, setMemberMsg] = useState<string | null>(null);
+  const [memberSaving, setMemberSaving] = useState(false);
 
   const merged = useMemo(
     () => ({
@@ -198,6 +211,49 @@ export default function ThemeSettingsClient() {
       subscription: plan,
     }));
   };
+
+  function generateMemberPassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@$%";
+    let out = "";
+    for (let i = 0; i < 12; i += 1) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    setMemberPassword(out);
+    setMemberMsg(null);
+  }
+
+  async function addMember() {
+    const email = memberEmail.trim().toLowerCase();
+    if (!email) {
+      setMemberMsg("Introduce un email valido.");
+      return;
+    }
+    setMemberSaving(true);
+    setMemberMsg(null);
+    try {
+      const payload: Record<string, string> = { email, role: memberRole };
+      if (memberPassword.trim()) payload.password = memberPassword.trim();
+      const tenant = getTenantFromUrl();
+      const url = tenant ? `/api/admin/members?tenant=${encodeURIComponent(tenant)}` : "/api/admin/members";
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const j = await resp.json();
+      if (!resp.ok || !j?.ok) throw new Error(j?.error || "No se pudo crear el usuario");
+      if (j?.password) {
+        setMemberMsg(`Usuario creado. Entrega esta contrasena temporal: ${j.password}`);
+      } else {
+        setMemberMsg(j?.info || "Usuario vinculado al negocio.");
+      }
+      setMemberEmail("");
+      setMemberPassword("");
+      setMemberRole("staff");
+    } catch (e: any) {
+      setMemberMsg(e?.message || "No se pudo crear el usuario");
+    } finally {
+      setMemberSaving(false);
+    }
+  }
 
   // Live preview: actualiza variables CSS usadas por el sitio
   useEffect(() => {
@@ -311,6 +367,67 @@ export default function ThemeSettingsClient() {
               </span>
             </span>
           </label>
+        </div>
+      </div>
+
+      <div className="rounded border bg-white p-4">
+        <h3 className="text-lg font-semibold">Usuarios del negocio</h3>
+        <p className="text-xs text-slate-500 mb-3">
+          Crea o vincula usuarios internos (roles staff o manager). Esto no afecta a superadmins.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="text-sm text-slate-700">Email</label>
+            <input
+              className="border rounded px-3 py-2 w-full"
+              value={memberEmail}
+              onChange={(e) => setMemberEmail(e.target.value)}
+              type="email"
+              placeholder="usuario@correo.com"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-slate-700">Rol</label>
+            <select
+              className="border rounded px-3 py-2 w-full"
+              value={memberRole}
+              onChange={(e) => setMemberRole(e.target.value === "manager" ? "manager" : "staff")}
+            >
+              <option value="staff">Staff (solo productos y configuracion)</option>
+              <option value="manager">Manager (puede gestionar personal)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-slate-700">Contrasena (opcional)</label>
+            <input
+              className="border rounded px-3 py-2 w-full"
+              value={memberPassword}
+              onChange={(e) => setMemberPassword(e.target.value)}
+              type="text"
+              placeholder="Deja vacio para generar una"
+            />
+            <button
+              type="button"
+              className="mt-2 text-xs text-blue-600"
+              onClick={generateMemberPassword}
+            >
+              Generar contrasena segura
+            </button>
+          </div>
+        </div>
+        {memberMsg && (
+          <div className="mt-3 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {memberMsg}
+          </div>
+        )}
+        <div className="mt-4">
+          <button
+            onClick={() => void addMember()}
+            disabled={memberSaving}
+            className="rounded bg-emerald-600 px-4 py-2 text-white disabled:opacity-60"
+          >
+            {memberSaving ? "Creando..." : "Agregar usuario"}
+          </button>
         </div>
       </div>
 
