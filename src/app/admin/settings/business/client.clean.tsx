@@ -157,8 +157,8 @@ export default function BusinessSettingsClient() {
         </div>
       )}
  
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="space-y-6">
+      <div className="grid gap-6 items-start lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           <Section
             title="Datos generales"
             description="Edita la informacion principal que veran tus clientes."
@@ -372,7 +372,7 @@ export default function BusinessSettingsClient() {
           </Section>
         </div>
  
-        <div className="space-y-6">
+        <div className="space-y-6 lg:col-span-1">
           <Section
             title="Imagenes"
             description="Sube el logotipo y la imagen de cabecera."
