@@ -71,15 +71,24 @@ function randomPassword(): string {
 }
 
 async function getUserByEmail(email: string) {
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-    page: 1,
-    perPage: 50,
-    email,
-  });
-  if (error) throw new Error(error.message);
-  const users = Array.isArray(data?.users) ? data.users : [];
-  const match = users.find((u) => (u.email || '').toLowerCase() === email.toLowerCase());
-  return match ?? null;
+  const normalized = email.toLowerCase();
+  let page = 1;
+  const perPage = 200;
+  while (true) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+    if (error) throw new Error(error.message);
+    const users = Array.isArray(data?.users) ? data.users : [];
+    const match = users.find((u) => (u.email || '').toLowerCase() === normalized);
+    if (match) return match;
+    if (!data || !Array.isArray(data.users) || data.users.length < perPage) {
+      break;
+    }
+    page += 1;
+  }
+  return null;
 }
 
 export async function POST(req: Request) {
