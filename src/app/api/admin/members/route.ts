@@ -91,21 +91,6 @@ async function getUserByEmail(email: string) {
   return null;
 }
 
-export async function POST(req: Request) {
-  try {
-    const slug = await getTenantSlug(req);
-    if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
-
-    const bizId = await getBusinessId(slug);
-    if (!bizId) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
-
-    let body: any = {};
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
-}
-
 export async function GET(req: Request) {
   try {
     const slug = await getTenantSlug(req);
@@ -187,6 +172,20 @@ export async function DELETE(req: Request) {
   }
 }
 
+export async function POST(req: Request) {
+  try {
+    const slug = await getTenantSlug(req);
+    if (!slug) return NextResponse.json({ ok: false, error: 'Missing tenant' }, { status: 400 });
+
+    const bizId = await getBusinessId(slug);
+    if (!bizId) return NextResponse.json({ ok: false, error: 'Business not found' }, { status: 404 });
+
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ ok: false, error: 'Invalid body' }, { status: 400 });
+    }
     const email = normalizeEmail(String(body?.email || ''));
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ ok: false, error: 'Email invalido' }, { status: 400 });
