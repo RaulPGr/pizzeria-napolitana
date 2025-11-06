@@ -24,19 +24,26 @@ export default function NavBar() {
 
   useEffect(() => {
     let active = true;
+    const resolveTenant = () => {
+      if (typeof window === "undefined") return "";
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("tenant")?.trim();
+      if (fromQuery) return fromQuery;
+      const cookie = document.cookie.split(";").find((c) => c.trim().startsWith("x-tenant-slug="));
+      if (cookie) return cookie.split("=")[1];
+      const host = window.location.hostname;
+      const parts = host.split(".");
+      if (parts.length >= 3) return parts[0];
+      return "";
+    };
     const load = async () => {
       try {
-        const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-        const tenant = params.get("tenant")?.trim();
-        const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
+        const slug = resolveTenant();
+        const url = slug ? `/api/settings/home?tenant=${encodeURIComponent(slug)}` : "/api/settings/home";
         const resp = await fetch(url, { cache: "no-store" });
         const j = await resp.json();
         if (!active) return;
-        if (resp.ok && j?.data?.reservations?.enabled) {
-          setReservationsEnabled(true);
-        } else {
-          setReservationsEnabled(false);
-        }
+        setReservationsEnabled(Boolean(j?.data?.reservations?.enabled));
       } catch {
         if (active) setReservationsEnabled(false);
       }

@@ -73,10 +73,21 @@ export default function ReservationsClient() {
 
   useEffect(() => {
     let active = true;
+    const resolveTenant = () => {
+      if (typeof window === "undefined") return "";
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("tenant")?.trim();
+      if (fromQuery) return fromQuery;
+      const cookie = document.cookie.split(";").find((c) => c.trim().startsWith("x-tenant-slug="));
+      if (cookie) return cookie.split("=")[1];
+      const host = window.location.hostname;
+      const parts = host.split(".");
+      if (parts.length >= 3) return parts[0];
+      return "";
+    };
     (async () => {
       try {
-        const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-        const tenant = params.get("tenant")?.trim();
+        const tenant = resolveTenant();
         const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
         const resp = await fetch(url, { cache: "no-store" });
         const j = await resp.json();
