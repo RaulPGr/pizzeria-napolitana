@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
+import { normalizeSubscriptionPlan } from '@/lib/subscription';
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -46,6 +47,7 @@ export async function GET(req: Request) {
     if (!biz) return NextResponse.json({ ok: true, data: null });
 
     const hours = biz.opening_hours || null;
+    const subscription = normalizeSubscriptionPlan((biz as any)?.theme_config?.subscription);
     const out = {
       business: { name: biz.name || null, slogan: biz.slogan || null, description: biz.description || null },
       contact: {
@@ -59,6 +61,7 @@ export async function GET(req: Request) {
       coords: biz.lat != null && biz.lng != null ? { lat: Number(biz.lat), lng: Number(biz.lng) } : null,
       social: biz.social || null,
       theme: biz.theme_config || null,
+      subscription,
     };
     return NextResponse.json({ ok: true, data: out });
   } catch (e: any) {

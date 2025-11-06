@@ -2,11 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAdminAccess } from "@/context/AdminAccessContext";
 
 
 type Methods = { cash: boolean; card: boolean; bizum: boolean };
 
 export default function AdminPaymentsPage() {
+  const { plan, isSuper } = useAdminAccess();
+  const limited = plan === "starter" && !isSuper;
+  if (limited) {
+    return (
+      <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+        La configuración de métodos de pago solo está disponible en el plan Premium.
+      </div>
+    );
+  }
+
   const [loading, setLoading] = useState(true);
   const [m, setM] = useState<Methods>({ cash: true, card: false, bizum: false });
 

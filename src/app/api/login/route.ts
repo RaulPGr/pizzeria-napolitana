@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { getSubscriptionForSlug } from '@/lib/subscription-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,27 +31,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   }
 
-  // Comprobamos plan y permisos
-  const PLAN = (process.env.NEXT_PUBLIC_PLAN || '').toLowerCase();
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
     .split(',')
-    .map(s => s.trim().toLowerCase())
+    .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
   const { data: userRes } = await supabase.auth.getUser();
   const signedEmail = userRes.user?.email?.toLowerCase() || '';
+  const isSuper = adminEmails.includes(signedEmail);
 
-  const isAdmin = adminEmails.includes(signedEmail);
-
-  if (PLAN === 'starter' && !isAdmin) {
-    // No se permite login en Starter si no es admin: cerramos sesión inmediatamente
-    await supabase.auth.signOut();
-    return NextResponse.json(
-      { ok: false, error: 'Este plan no permite acceso al panel.' },
-      { status: 403, headers: { 'Cache-Control': 'no-store' } }
-    );
-  }
+  const slug = cookieStore.get('x-tenant-slug')?.value || '';
+  // Precargamos el plan para forzar su caché; la autorización fina se maneja en el panel
+  try { await getSubscriptionForSlug(slug); } catch {}
 
   // OK
-  return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ ok: true, superuser: isSuper }, { headers: { 'Cache-Control': 'no-store' } });
 }
+

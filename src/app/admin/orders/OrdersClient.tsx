@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAdminAccess } from "@/context/AdminAccessContext";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
 
@@ -52,8 +53,19 @@ function eur(cents: number) {
   return (cents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 }
 
+const NEW_WINDOW_MS = 120000; // 2 minutos para considerar "reciente"
+
 export default function OrdersClient() {
-  const NEW_WINDOW_MS = 120000; // 2 minutos para considerar "reciente"
+  const { plan, isSuper } = useAdminAccess();
+  const limited = plan === "starter" && !isSuper;
+  if (limited) {
+    return (
+      <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+        Tu suscripción Starter/Medium no incluye la sección de pedidos. Cambia a Premium para recibir pedidos online.
+      </div>
+    );
+  }
+
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [activeSort, setActiveSort] = useState<"pickup" | "created">("pickup");

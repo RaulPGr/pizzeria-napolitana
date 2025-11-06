@@ -1,15 +1,13 @@
-// src/components/AdminCTA.tsx
+"use client";
 
-'use client';
-
-import Link from 'next/link';
-import { PLAN } from '@/utils/plan';
+import Link from "next/link";
+import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 
 export default function AdminCTA() {
-  // En Starter NO mostramos nada
-  if (PLAN === 'starter') return null;
+  const plan = useSubscriptionPlan();
+  const allowAccess = plan === "premium" || plan === "starter";
+  if (!allowAccess) return null;
 
-  // En Medium/Premium sí se muestra
   return (
     <Link
       href="/admin"
@@ -19,3 +17,4 @@ export default function AdminCTA() {
     </Link>
   );
 }
+

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AddToCartButton from "@/components/AddToCartButton";
 import CartQtyActions from "@/components/CartQtyActions";
+import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 
 function normalizeDays(arr: any): number[] {
   if (!Array.isArray(arr)) return [];
@@ -23,6 +24,8 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
   const [cats, setCats] = useState<any[] | null>(Array.isArray(initialCats) ? initialCats : null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const plan = useSubscriptionPlan();
+  const allowOrdering = plan === "premium";
 
   useEffect(() => {
     let alive = true;
@@ -108,7 +111,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                       {p.available === false && (
                         <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                       )}
-                      <CartQtyActions productId={p.id} allowAdd={!out} />
+                      {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
                       {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                       <div className="p-3">
                         <div className="flex items-baseline justify-between gap-4">
@@ -118,7 +121,13 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                           </span>
                         </div>
                         {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                        <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
+                        {allowOrdering && (
+                          <AddToCartButton
+                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                            disabled={out}
+                            disabledLabel={disabledLabel}
+                          />
+                        )}
                       </div>
                     </li>
                   );
@@ -162,7 +171,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                     {p.available === false && (
                       <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                     )}
-                    <CartQtyActions productId={p.id} allowAdd={!out} />
+                    {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
                     {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                     <div className="p-3">
                       <div className="flex items-baseline justify-between gap-4">
@@ -172,7 +181,13 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                         </span>
                       </div>
                       {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                      <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
+                      {allowOrdering && (
+                        <AddToCartButton
+                          product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                          disabled={out}
+                          disabledLabel={disabledLabel}
+                        />
+                      )}
                     </div>
                   </li>
                 );

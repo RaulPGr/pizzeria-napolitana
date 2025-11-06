@@ -3,10 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
-import MenuClient from '@/components/MenuClient';
+import { getSubscriptionForSlug } from '@/lib/subscription-server';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -55,6 +55,15 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const proto = (hdrs.get('x-forwarded-proto') || 'https').split(',')[0].trim();
   const host = (hdrs.get('host') || '').trim();
   const origin = host ? `${proto}://${host}` : '';
+  const cookieStore = await cookies();
+  let slug = '';
+  try { slug = cookieStore.get('x-tenant-slug')?.value || ''; } catch {}
+  if (!slug && host) {
+    const parts = host.split('.');
+    if (parts.length >= 3) slug = parts[0].toLowerCase();
+  }
+  const subscription = await getSubscriptionForSlug(slug);
+  const allowOrdering = subscription === 'premium';
   const qps = new URLSearchParams();
   qps.set('day', String(selectedDaySafe));
   if (host) {
@@ -111,6 +120,12 @@ export default async function MenuPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-6xl p-4 md:p-6">
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
+      {!allowOrdering && (
+        <div className="mb-6 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Los pedidos online estan desactivados para este plan.
+        </div>
+      )}
+
       {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} availableDays={(Array.isArray((payload as any)?.available_days) ? (payload as any).available_days : undefined) as any} />
       )}
@@ -159,7 +174,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                       {p.available === false && (
                         <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                       )}
-                      <CartQtyActions productId={p.id} allowAdd={!out} />
+                      {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
                       {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                       <div className="p-3">
                         <div className="flex items-baseline justify-between gap-4">
@@ -169,7 +184,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
                           </span>
                         </div>
                         {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                        <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
+                        {allowOrdering && (
+                          <AddToCartButton
+                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                            disabled={out}
+                            disabledLabel={disabledLabel}
+                          />
+                        )}
                       </div>
                     </li>
                   );
@@ -217,7 +238,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                     {p.available === false && (
                       <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                     )}
-                    <CartQtyActions productId={p.id} allowAdd={!out} />
+                    {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
                     {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                     <div className="p-3">
                       <div className="flex items-baseline justify-between gap-4">
@@ -227,7 +248,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
                         </span>
                       </div>
                       {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                      <AddToCartButton product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }} disabled={out} disabledLabel={disabledLabel} />
+                      {allowOrdering && (
+                        <AddToCartButton
+                          product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                          disabled={out}
+                          disabledLabel={disabledLabel}
+                        />
+                      )}
                     </div>
                   </li>
                 );

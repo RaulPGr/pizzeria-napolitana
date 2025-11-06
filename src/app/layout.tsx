@@ -8,6 +8,8 @@ import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import AuthHashRedirect from '@/components/AuthHashRedirect';
 import Script from 'next/script';
+import { SubscriptionPlanProvider } from "@/context/SubscriptionPlanContext";
+import { normalizeSubscriptionPlan, type SubscriptionPlan } from "@/lib/subscription";
 
 export const metadata: Metadata = {
   title: "Comida para llevar",
@@ -18,6 +20,7 @@ type ThemeConfig = {
   colors?: Record<string, string | undefined>;
   fonts?: Record<string, string | undefined>;
   home?: { heroOverlay?: boolean };
+  subscription?: SubscriptionPlan;
 };
 
 function primaryFontName(stack?: string): string | null {
@@ -39,18 +42,18 @@ function googleFontHrefFor(name: string): string | null {
   return null;
 }
 
-async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[] }> {
+async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan }> {
   try {
     const cookieStore = await cookies();
     const slug = cookieStore.get('x-tenant-slug')?.value || '';
-    if (!slug) return { css: '', fontHrefs: [] };
+    if (!slug) return { css: '', fontHrefs: [], subscription: "premium" };
     const { data } = await supabaseAdmin
       .from('businesses')
       .select('theme_config')
       .eq('slug', slug)
       .maybeSingle();
     const theme = (data as any)?.theme_config as ThemeConfig | null;
-    if (!theme) return { css: '', fontHrefs: [] };
+    if (!theme) return { css: '', fontHrefs: [], subscription: "premium" };
     const colors = theme.colors || {};
     const fonts = theme.fonts || {};
     const vars: Record<string, string | undefined> = {
@@ -75,9 +78,10 @@ async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[] }> {
       .filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i)
       .map((n) => googleFontHrefFor(n))
       .filter((x): x is string => !!x);
-    return { css: `${cssVars ? `:root{${cssVars}}` : ''}`, fontHrefs: hrefs };
+    const subscription = normalizeSubscriptionPlan(theme.subscription);
+    return { css: `${cssVars ? `:root{${cssVars}}` : ''}`, fontHrefs: hrefs, subscription };
   } catch {
-    return { css: '', fontHrefs: [] };
+    return { css: '', fontHrefs: [], subscription: "premium" };
   }
 }
 
@@ -163,7 +167,8 @@ export default async function RootLayout({
           `}
         </Script>
         {themeAssets.css && <style suppressHydrationWarning>{themeAssets.css}</style>}
-        <CartProvider>
+        <SubscriptionPlanProvider plan={themeAssets.subscription}>
+          <CartProvider>
           {/* Header fijo en todas las páginas */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-transparent">
             <Navbar />
@@ -192,7 +197,8 @@ export default async function RootLayout({
               </div>
             </footer>
           </main>
-        </CartProvider>
+          </CartProvider>
+        </SubscriptionPlanProvider>
       </body>
     </html>
   );

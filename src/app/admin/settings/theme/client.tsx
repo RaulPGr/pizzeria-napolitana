@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { SubscriptionPlan } from "@/lib/subscription";
+import { normalizeSubscriptionPlan } from "@/lib/subscription";
 
 type ThemeColors = {
   background?: string;
@@ -27,9 +29,15 @@ type ThemeConfig = {
   colors?: ThemeColors;
   fonts?: ThemeFonts;
   home?: ThemeHome;
+  subscription?: SubscriptionPlan;
 };
 
-const DEFAULTS: { colors: Required<ThemeColors>; fonts: Required<ThemeFonts>; home: Required<ThemeHome> } = {
+const DEFAULTS: {
+  colors: Required<ThemeColors>;
+  fonts: Required<ThemeFonts>;
+  home: Required<ThemeHome>;
+  subscription: SubscriptionPlan;
+} = {
   colors: {
     background: "#DAD6D1",
     text: "#333333",
@@ -49,6 +57,7 @@ const DEFAULTS: { colors: Required<ThemeColors>; fonts: Required<ThemeFonts>; ho
   home: {
     heroOverlay: true,
   },
+  subscription: "premium",
 };
 
 function ColorInput({
@@ -168,16 +177,25 @@ export default function ThemeSettingsClient() {
       colors: { ...DEFAULTS.colors, ...(theme.colors || {}) },
       fonts: { ...DEFAULTS.fonts, ...(theme.fonts || {}) },
       home: { heroOverlay: theme.home?.heroOverlay !== false },
+      subscription: normalizeSubscriptionPlan(theme.subscription),
     }),
     [theme]
   );
 
   const heroOverlayEnabled = merged.home.heroOverlay;
+  const subscription = merged.subscription;
 
   const handleHeroOverlayChange = (checked: boolean) => {
     setTheme((prev) => ({
       ...prev,
       home: { ...(prev.home || {}), heroOverlay: checked },
+    }));
+  };
+
+  const handleSubscriptionChange = (plan: SubscriptionPlan) => {
+    setTheme((prev) => ({
+      ...prev,
+      subscription: plan,
     }));
   };
 
@@ -247,6 +265,53 @@ export default function ThemeSettingsClient() {
           Ajusta colores, tipografías y la barra superior. Cada campo tiene una breve descripción. Los cambios se aplican
           de inmediato tras guardar.
         </p>
+      </div>
+
+      <div className="rounded border bg-white p-4">
+        <h2 className="text-sm font-medium text-slate-700">Suscripci�n del negocio</h2>
+        <p className="mt-1 text-xs text-slate-500">Controla qu� funcionalidades est�n disponibles para el comercio.</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <label
+            className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+              subscription === "starter" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name="subscription"
+              value="starter"
+              checked={subscription === "starter"}
+              onChange={() => handleSubscriptionChange("starter")}
+              className="mt-1"
+            />
+            <span>
+              <span className="block font-medium">Starter/Medium</span>
+              <span className="text-xs text-slate-500">
+                Acceso b�sico: panel con productos y configuraci�n. No admite pedidos online.
+              </span>
+            </span>
+          </label>
+          <label
+            className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+              subscription === "premium" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name="subscription"
+              value="premium"
+              checked={subscription === "premium"}
+              onChange={() => handleSubscriptionChange("premium")}
+              className="mt-1"
+            />
+            <span>
+              <span className="block font-medium">Premium</span>
+              <span className="text-xs text-slate-500">
+                Incluye pedidos online, carrito y todas las secciones del panel.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* Vista previa barra superior */}
@@ -430,6 +495,7 @@ export default function ThemeSettingsClient() {
               colors: { ...DEFAULTS.colors },
               fonts: { ...DEFAULTS.fonts },
               home: { ...DEFAULTS.home },
+              subscription: DEFAULTS.subscription,
             })
           }
           className="rounded border px-3 py-1 text-sm"

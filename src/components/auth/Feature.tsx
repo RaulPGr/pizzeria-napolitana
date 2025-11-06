@@ -1,9 +1,9 @@
-// src/components/auth/Feature.tsx
-'use client';
+"use client";
 
-import type { FeatureName } from '@/lib/plan';
-import { hasFeature, PLAN } from '@/lib/plan';
-import UpgradeCTA from '@/components/billing/UpgradeCTA';
+import type { FeatureName } from "@/lib/plan";
+import { hasFeature } from "@/lib/plan";
+import UpgradeCTA from "@/components/billing/UpgradeCTA";
+import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 
 export default function Feature({
   name,
@@ -12,14 +12,14 @@ export default function Feature({
   name: FeatureName;
   children: React.ReactNode;
 }) {
-  if (hasFeature(name, PLAN)) return <>{children}</>;
+  const plan = useSubscriptionPlan();
+  if (hasFeature(name, plan)) return <>{children}</>;
 
   return (
     <div className="p-6 border rounded bg-white">
-      <p className="mb-3">
-        Esta sección pertenece a un plan superior.
-      </p>
+      <p className="mb-3">Esta sección pertenece a un plan superior.</p>
       <UpgradeCTA />
     </div>
   );
 }
+

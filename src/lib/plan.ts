@@ -1,14 +1,14 @@
 // src/lib/plan.ts
-export type Plan = 'starter' | 'medium' | 'pro';
+export type Plan = 'starter' | 'premium';
 
 export const PLAN: Plan =
-  (process.env.NEXT_PUBLIC_PLAN as Plan) || 'starter';
+  (process.env.NEXT_PUBLIC_PLAN as Plan) || 'premium';
 
 export const FEATURES = {
-  products: ['starter', 'medium', 'pro'],
-  orders:   ['medium', 'pro'],
-  stats:    ['medium', 'pro'],
-  payments: ['pro'],
+  products: ['starter', 'premium'],
+  orders:   ['premium'],
+  stats:    ['premium'],
+  payments: ['premium'],
 } as const;
 
 export type FeatureName = keyof typeof FEATURES;

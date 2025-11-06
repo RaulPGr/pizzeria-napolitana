@@ -4,6 +4,7 @@
 // Implementación ligera (sin librerías externas) con gráficos básicos usando CSS
 
 import { useEffect, useMemo, useState } from "react";
+import { useAdminAccess } from "@/context/AdminAccessContext";
 
 type RangeKey = "today" | "7d" | "30d" | "month" | "all";
 const RANGES: { key: RangeKey; label: string }[] = [
@@ -45,6 +46,16 @@ type Dataset = {
 };
 
 export default function AdminStatsPage() {
+  const { plan, isSuper } = useAdminAccess();
+  const limited = plan === "starter" && !isSuper;
+  if (limited) {
+    return (
+      <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+        Tu suscripción Starter/Medium no incluye estadísticas. Actualiza a Premium para ver estos reportes.
+      </div>
+    );
+  }
+
   const [range, setRange] = useState<RangeKey>('7d');
   const [{ start, end }, setDates] = useState(() => startEndForRange('7d'));
   const [data, setData] = useState<Dataset | null>(null);
