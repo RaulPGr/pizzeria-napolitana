@@ -71,24 +71,15 @@ function randomPassword(): string {
 }
 
 async function getUserByEmail(email: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const endpoint = `${baseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}&per_page=1`;
-  const res = await fetch(endpoint, {
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-    },
-    cache: 'no-store',
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 50,
+    email,
   });
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    const text = await res.text();
-    throw new Error(`Admin users error: ${text || res.statusText}`);
-  }
-  const data = await res.json();
-  const users = (data && Array.isArray(data.users)) ? data.users : [];
-  return users.length > 0 ? users[0] : null;
+  if (error) throw new Error(error.message);
+  const users = Array.isArray(data?.users) ? data.users : [];
+  const match = users.find((u) => (u.email || '').toLowerCase() === email.toLowerCase());
+  return match ?? null;
 }
 
 export async function POST(req: Request) {
