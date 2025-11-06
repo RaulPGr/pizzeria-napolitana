@@ -70,6 +70,27 @@ function randomPassword(): string {
   return out;
 }
 
+async function getUserByEmail(email: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const endpoint = `${baseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}&per_page=1`;
+  const res = await fetch(endpoint, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    const text = await res.text();
+    throw new Error(`Admin users error: ${text || res.statusText}`);
+  }
+  const data = await res.json();
+  const users = (data && Array.isArray(data.users)) ? data.users : [];
+  return users.length > 0 ? users[0] : null;
+}
+
 export async function POST(req: Request) {
   try {
     const slug = await getTenantSlug(req);
@@ -95,12 +116,9 @@ export async function POST(req: Request) {
     let generatedPassword: string | null = null;
 
     let userId: string | null = null;
-    const existing = await supabaseAdmin.auth.admin.getUserByEmail(email);
-    if (existing.error) {
-      return NextResponse.json({ ok: false, error: existing.error.message }, { status: 400 });
-    }
-    if (existing.data?.user) {
-      userId = existing.data.user.id;
+    const existingUser = await getUserByEmail(email).catch(() => null);
+    if (existingUser?.id) {
+      userId = existingUser.id as string;
     } else {
       const password = requestedPassword || randomPassword();
       const created = await supabaseAdmin.auth.admin.createUser({
@@ -137,7 +155,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
 
-    const isExistingUser = !!existing.data?.user;
+    const isExistingUser = !!existingUser?.id;
     const wasAlreadyMember = !!existingMembership;
 
     if (wasAlreadyMember) {
