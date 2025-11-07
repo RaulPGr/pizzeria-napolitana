@@ -60,24 +60,27 @@ export default function NavBar() {
   }, [allowReservations]);
 
   const Item = ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <Link href={href} className="text-white hover:text-gray-300">
+    <Link
+      href={href}
+      className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+    >
       {children}
     </Link>
   );
 
   return (
-    <header className="bg-slate-900 text-white border-b border-brand-crust">
-      <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4">
-        <div className="flex items-center gap-4">
+    <header className="bg-gradient-to-r from-[#2f2536] via-[#4d1f59] to-[#6f1d75] text-white shadow-lg shadow-black/10">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:py-4">
+        <div className="flex items-center gap-2 md:gap-3 bg-white/10 rounded-full px-2 py-1 backdrop-blur-sm border border-white/10 shadow-sm">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>
           {allowReservations && reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
           {/* Admin link intentionally removed */}
         </div>
         {allowOrdering && (
-          <div className="relative">
-            <Link href="/cart" className="text-white hover:text-gray-300">
-              <span className="inline-flex items-center gap-1.5">
+          <div className="group relative inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/20">
+            <Link href="/cart" className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center rounded-full bg-white/20 p-1.5 transition group-hover:bg-white/30">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -93,11 +96,11 @@ export default function NavBar() {
                   <circle cx="9" cy="20" r="1.5" />
                   <circle cx="17" cy="20" r="1.5" />
                 </svg>
-                <span>Carrito</span>
               </span>
+              <span>Carrito</span>
             </Link>
             {count > 0 && (
-              <span className="absolute -right-3 -top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white">
+              <span className="absolute -right-3 -top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white shadow-md">
                 {count}
               </span>
             )}
