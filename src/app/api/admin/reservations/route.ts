@@ -37,9 +37,12 @@ async function getTenantSlug(req?: Request) {
   return slug;
 }
 
-function formatReservationTimestamp(value: string) {
+function formatReservationTimestamp(value: string, tzOffsetMinutes?: number | null) {
   try {
     const d = new Date(value);
+    if (typeof tzOffsetMinutes === 'number' && Number.isFinite(tzOffsetMinutes)) {
+      d.setMinutes(d.getMinutes() - tzOffsetMinutes);
+    }
     return d.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
   } catch {
     return value;
@@ -61,7 +64,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from('reservations')
-      .select('id, customer_name, customer_email, customer_phone, party_size, reserved_at, notes, status, created_at')
+      .select('id, customer_name, customer_email, customer_phone, party_size, reserved_at, notes, status, created_at, timezone_offset_minutes')
       .eq('business_id', (biz as any)?.id)
       .order('reserved_at', { ascending: true });
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
@@ -94,7 +97,7 @@ export async function PATCH(req: Request) {
 
     const { data: reservation, error: resErr } = await supabaseAdmin
       .from('reservations')
-      .select('id, customer_name, customer_email, customer_phone, party_size, reserved_at, notes, status')
+      .select('id, customer_name, customer_email, customer_phone, party_size, reserved_at, notes, status, timezone_offset_minutes')
       .eq('business_id', (biz as any)?.id)
       .eq('id', id)
       .maybeSingle();
@@ -121,7 +124,7 @@ export async function PATCH(req: Request) {
         customerName: reservation.customer_name,
         customerEmail: reservation.customer_email,
         partySize: reservation.party_size,
-        reservedFor: formatReservationTimestamp(reservation.reserved_at),
+        reservedFor: formatReservationTimestamp(reservation.reserved_at, reservation.timezone_offset_minutes ?? null),
         notes: reservation.notes,
         status: status as 'confirmed' | 'cancelled',
         customerPhone: reservation.customer_phone,

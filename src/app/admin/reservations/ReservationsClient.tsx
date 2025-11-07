@@ -9,6 +9,7 @@ type AdminReservation = {
   customer_phone: string;
   party_size: number;
   reserved_at: string;
+  timezone_offset_minutes?: number | null;
   notes: string | null;
   status: string;
   created_at: string;
@@ -26,23 +27,29 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: "bg-rose-100 text-rose-700",
 };
 
-function formatDate(value: string) {
+function formatDate(value: string, tzOffsetMinutes?: number | null) {
   try {
     const d = new Date(value);
+    if (typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)) {
+      d.setMinutes(d.getMinutes() - tzOffsetMinutes);
+    }
     return d.toLocaleString("es-ES", { dateStyle: "full", timeStyle: "short" });
   } catch {
     return value;
   }
 }
 
-function toDateKey(value: string) {
+function toDateKey(value: string, tzOffsetMinutes?: number | null) {
   if (!value) return "";
-  const [datePart] = value.split("T");
-  if (datePart) return datePart;
   try {
-    return new Date(value).toISOString().slice(0, 10);
+    const d = new Date(value);
+    if (typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)) {
+      d.setMinutes(d.getMinutes() - tzOffsetMinutes);
+    }
+    return d.toISOString().slice(0, 10);
   } catch {
-    return "";
+    const [datePart] = value.split("T");
+    return datePart || "";
   }
 }
 
@@ -110,7 +117,9 @@ export default function ReservationsClient() {
 
   const filteredItems = useMemo(() => {
     if (!selectedDate) return items;
-    return items.filter((item) => toDateKey(item.reserved_at) === selectedDate);
+    return items.filter(
+      (item) => toDateKey(item.reserved_at, item.timezone_offset_minutes) === selectedDate
+    );
   }, [items, selectedDate]);
 
   return (
@@ -179,7 +188,7 @@ export default function ReservationsClient() {
             ) : null}
             {filteredItems.map((res) => (
               <tr key={res.id} className="border-t hover:bg-slate-50">
-                <td className="px-4 py-3">{formatDate(res.reserved_at)}</td>
+                <td className="px-4 py-3">{formatDate(res.reserved_at, res.timezone_offset_minutes)}</td>
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-800">{res.customer_name}</div>
                 </td>

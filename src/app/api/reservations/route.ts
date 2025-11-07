@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendReservationBusinessEmail, sendReservationCustomerEmail } from '@/lib/email/sendReservationEmails';
 
 type OpeningTramo = { abre?: string; cierra?: string; open?: string; close?: string };
-const DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'] as const;
+const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 
 function parseTramos(list: any): Array<{ start: number; end: number }> {
   if (!Array.isArray(list)) return [];
@@ -40,9 +40,13 @@ function isWithinSchedule(dateISO: string, timeHHMM: string, openingHours: any):
   return tramos.some((t) => minutes >= t.start && minutes < t.end);
 }
 
-function formatReservationTimestamp(date: Date): string {
+function formatReservationTimestamp(date: Date, tzOffsetMinutes?: number | null): string {
   try {
-    return date.toLocaleString('es-ES', {
+    const displayDate = new Date(date);
+    if (typeof tzOffsetMinutes === 'number' && Number.isFinite(tzOffsetMinutes)) {
+      displayDate.setMinutes(displayDate.getMinutes() - tzOffsetMinutes);
+    }
+    return displayDate.toLocaleString('es-ES', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -75,14 +79,20 @@ export async function POST(req: NextRequest) {
     const date = String(body?.date || '').trim();
     const time = String(body?.time || '').trim();
     const notes = (body?.notes || '').trim() || null;
+    const tzOffsetRaw = Number(body?.tzOffsetMinutes);
+    const tzOffsetMinutes =
+      Number.isFinite(tzOffsetRaw) && Math.abs(tzOffsetRaw) <= 14 * 60 ? Math.trunc(tzOffsetRaw) : null;
 
     if (!name || !phone || !date || !time || Number.isNaN(people) || people <= 0) {
       return NextResponse.json({ ok: false, message: 'Faltan datos de la reserva' }, { status: 400 });
     }
 
-    const reservedAt = new Date(`${date}T${time}:00`);
+    let reservedAt = new Date(`${date}T${time}:00`);
     if (Number.isNaN(reservedAt.getTime())) {
-      return NextResponse.json({ ok: false, message: 'Fecha u hora inválida' }, { status: 400 });
+      return NextResponse.json({ ok: false, message: 'Fecha u hora invalida' }, { status: 400 });
+    }
+    if (typeof tzOffsetMinutes === 'number') {
+      reservedAt = new Date(reservedAt.getTime() + tzOffsetMinutes * 60_000);
     }
     if (reservedAt.getTime() < Date.now()) {
       return NextResponse.json({ ok: false, message: 'No puedes reservar en el pasado' }, { status: 400 });
@@ -114,12 +124,13 @@ export async function POST(req: NextRequest) {
         party_size: people,
         reserved_at: reservedAt.toISOString(),
         notes,
+        timezone_offset_minutes: tzOffsetMinutes,
       })
       .select('id')
       .maybeSingle();
     if (error) throw error;
 
-    const reservedFor = formatReservationTimestamp(reservedAt);
+    const reservedFor = formatReservationTimestamp(reservedAt, tzOffsetMinutes);
     const businessEmail = social?.reservations_email || (tenant as any)?.email || null;
     const businessAddress = [tenant.address_line, tenant.postal_code, tenant.city].filter(Boolean).join(', ') || undefined;
 

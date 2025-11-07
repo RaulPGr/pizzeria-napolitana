@@ -179,6 +179,7 @@ export default function ReservationsClient() {
           email: customerEmail,
           people,
           notes,
+          tzOffsetMinutes: new Date().getTimezoneOffset(),
         }),
       });
       const j = await resp.json();
