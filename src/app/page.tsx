@@ -55,7 +55,14 @@ function estaAbiertoAhora(date: Date, horarios: Horarios) {
     if (!abre || !cierra) return false;
     const [ha, ma] = String(abre).split(":").map(Number);
     const [hc, mc] = String(cierra).split(":").map(Number);
-    return minutos >= ha * 60 + ma && minutos <= hc * 60 + mc;
+    let start = ha * 60 + ma;
+    let end = hc * 60 + mc;
+    let current = minutos;
+    if (end <= start) {
+      end += 24 * 60;
+      if (current < start) current += 24 * 60;
+    }
+    return current >= start && current <= end;
   });
 }
 function formatearTramos(tramos: Tramo[]) {
