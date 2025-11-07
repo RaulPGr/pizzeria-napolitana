@@ -87,8 +87,7 @@ async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; sub
       colors.topbarEnd || colors.secondary || "#6f1d75",
     ];
     const gradientCss = `
-      body .app-navbar-bg,
-      body .app-navbar-nav {
+      body .app-navbar-bg {
         background: linear-gradient(90deg, ${gradientVars[0]}, ${gradientVars[1]});
       }
     `;
