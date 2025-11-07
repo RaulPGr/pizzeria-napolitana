@@ -70,7 +70,7 @@ export default function NavBar() {
 
   return (
     <header className="text-white">
-      <nav className="app-nav-gradient mx-auto flex max-w-6xl items-center justify-between rounded-b-3xl px-4 py-4 shadow-lg shadow-black/10">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <div className="flex items-center gap-2 md:gap-3 bg-white/10 rounded-full px-3 py-2 backdrop-blur-sm border border-white/10 shadow-sm">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>

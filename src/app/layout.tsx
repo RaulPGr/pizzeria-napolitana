@@ -179,12 +179,12 @@ export default async function RootLayout({
           <OrdersEnabledProvider value={themeAssets.ordersEnabled}>
             <CartProvider>
           {/* Header fijo en todas las páginas */}
-          <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-transparent">
+          <div className="fixed top-0 left-0 right-0 z-50 app-navbar-bg text-white shadow-lg shadow-black/10">
             <Navbar />
           </div>
 
           {/* Compensación de la altura del header fijo (ajusta si tu Navbar es más alto/bajo) */}
-          <main className="min-h-screen pt-[88px] md:pt-[104px]">
+          <main className="min-h-screen pt-[104px] md:pt-[120px]">
             <DayTabsClientAdjust />
             <div className="pt-0 md:pt-0">
               {children}
