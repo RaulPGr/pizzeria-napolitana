@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
 
     const reservedFor = formatReservationTimestamp(reservedAt, tzOffsetMinutes);
     const businessEmail = social?.reservations_email || (tenant as any)?.email || null;
+    const businessPhone = (tenant as any)?.phone || (tenant as any)?.whatsapp || null;
     const businessAddress = [tenant.address_line, tenant.postal_code, tenant.city].filter(Boolean).join(', ') || undefined;
 
     if (email) {
@@ -149,6 +150,7 @@ export async function POST(req: NextRequest) {
         customerName: name,
         customerEmail: email,
         customerPhone: phone,
+        businessPhone,
         partySize: people,
         reservedFor,
         notes,

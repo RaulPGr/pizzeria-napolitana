@@ -27,26 +27,23 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: "bg-rose-100 text-rose-700",
 };
 
-function formatDate(value: string, tzOffsetMinutes?: number | null) {
+function formatDate(value: string) {
   try {
     const d = new Date(value);
-    if (typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)) {
-      d.setMinutes(d.getMinutes() - tzOffsetMinutes);
-    }
     return d.toLocaleString("es-ES", { dateStyle: "full", timeStyle: "short" });
   } catch {
     return value;
   }
 }
 
-function toDateKey(value: string, tzOffsetMinutes?: number | null) {
+function toDateKey(value: string) {
   if (!value) return "";
   try {
     const d = new Date(value);
-    if (typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)) {
-      d.setMinutes(d.getMinutes() - tzOffsetMinutes);
-    }
-    return d.toISOString().slice(0, 10);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   } catch {
     const [datePart] = value.split("T");
     return datePart || "";
@@ -117,9 +114,7 @@ export default function ReservationsClient() {
 
   const filteredItems = useMemo(() => {
     if (!selectedDate) return items;
-    return items.filter(
-      (item) => toDateKey(item.reserved_at, item.timezone_offset_minutes) === selectedDate
-    );
+    return items.filter((item) => toDateKey(item.reserved_at) === selectedDate);
   }, [items, selectedDate]);
 
   return (
@@ -188,7 +183,7 @@ export default function ReservationsClient() {
             ) : null}
             {filteredItems.map((res) => (
               <tr key={res.id} className="border-t hover:bg-slate-50">
-                <td className="px-4 py-3">{formatDate(res.reserved_at, res.timezone_offset_minutes)}</td>
+                <td className="px-4 py-3">{formatDate(res.reserved_at)}</td>
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-800">{res.customer_name}</div>
                 </td>
