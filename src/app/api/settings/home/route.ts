@@ -48,6 +48,8 @@ export async function GET(req: Request) {
 
     const hours = biz.opening_hours || null;
     const subscription = normalizeSubscriptionPlan((biz as any)?.theme_config?.subscription);
+    const social = (biz.social as any) || {};
+    const ordersEnabled = social.orders_enabled !== false;
     const out = {
       business: { name: biz.name || null, slogan: biz.slogan || null, description: biz.description || null },
       contact: {
@@ -61,9 +63,12 @@ export async function GET(req: Request) {
       coords: biz.lat != null && biz.lng != null ? { lat: Number(biz.lat), lng: Number(biz.lng) } : null,
       social: biz.social || null,
       reservations: {
-        enabled: !!(biz.social as any)?.reservations_enabled,
-        email: (biz.social as any)?.reservations_email || biz.email || null,
-        capacity: Number((biz.social as any)?.reservations_capacity ?? 0),
+        enabled: !!social.reservations_enabled,
+        email: social.reservations_email || biz.email || null,
+        capacity: Number(social.reservations_capacity ?? 0),
+      },
+      orders: {
+        enabled: ordersEnabled,
       },
       theme: biz.theme_config || null,
       subscription,

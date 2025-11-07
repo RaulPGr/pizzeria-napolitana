@@ -1,4 +1,4 @@
-﻿// src/app/api/orders/route.ts
+// src/app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
@@ -16,8 +16,21 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BodyInput;
 
-    // 0) Cargar tenant (para asociar negocio). La validaciÃ³n estricta del horario se realiza en cliente.
+    // 0) Cargar tenant (para asociar negocio). La validación estricta del horario se realiza en cliente.
     const tenant = await getTenant();
+    if (!tenant) {
+      return NextResponse.json(
+        { ok: false, message: 'Negocio no encontrado' },
+        { status: 400 }
+      );
+    }
+    const ordersEnabled = ((tenant as any)?.social?.orders_enabled ?? true) !== false;
+    if (!ordersEnabled) {
+      return NextResponse.json(
+        { ok: false, message: 'Los pedidos online estan desactivados' },
+        { status: 403 }
+      );
+    }
 
     if (!body.customer?.name || !body.customer?.phone)
       return NextResponse.json(
@@ -31,7 +44,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
 
-    // Traer precios de productos y calcular totales en cÃ©ntimos
+    // Traer precios de productos y calcular totales en céntimos
     const productIds = [...new Set(body.items.map((i) => i.productId))];
     const { data: products, error: prodErr } = await supabaseAdmin
       .from('products')
@@ -59,7 +72,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Decidir estado inicial segÃºn mÃ©todo de pago
+    // Decidir estado inicial según método de pago
     const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
 
     // Insertar pedido
@@ -161,4 +174,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 

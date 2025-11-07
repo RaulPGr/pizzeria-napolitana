@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import AddToCartButton from "@/components/AddToCartButton";
 import CartQtyActions from "@/components/CartQtyActions";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
+import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
+import { subscriptionAllowsOrders } from "@/lib/subscription";
 
 function normalizeDays(arr: any): number[] {
   if (!Array.isArray(arr)) return [];
@@ -25,7 +27,8 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const plan = useSubscriptionPlan();
-  const allowOrdering = plan === "premium";
+  const ordersEnabled = useOrdersEnabled();
+  const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
 
   useEffect(() => {
     let alive = true;

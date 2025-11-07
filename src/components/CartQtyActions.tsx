@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { addItem, removeItem, setQty, subscribe, CartItem } from "@/lib/cart-storage";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
+import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
+import { subscriptionAllowsOrders } from "@/lib/subscription";
 
 type Props = {
   productId: number | string;
@@ -11,7 +13,8 @@ type Props = {
 
 export default function CartQtyActions({ productId, allowAdd = true }: Props) {
   const plan = useSubscriptionPlan();
-  const allowOrdering = plan === "premium";
+  const ordersEnabled = useOrdersEnabled();
+  const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
   const [qty, setLocalQty] = useState(0);
   const [pulse, setPulse] = useState(false);
 

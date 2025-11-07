@@ -42,18 +42,19 @@ function googleFontHrefFor(name: string): string | null {
   return null;
 }
 
-async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan }> {
+async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan; ordersEnabled: boolean }> {
   try {
     const cookieStore = await cookies();
     const slug = cookieStore.get('x-tenant-slug')?.value || '';
-    if (!slug) return { css: '', fontHrefs: [], subscription: "premium" };
+    if (!slug) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
     const { data } = await supabaseAdmin
       .from('businesses')
-      .select('theme_config')
+      .select('theme_config, social')
       .eq('slug', slug)
       .maybeSingle();
     const theme = (data as any)?.theme_config as ThemeConfig | null;
-    if (!theme) return { css: '', fontHrefs: [], subscription: "premium" };
+    const social = (data as any)?.social || {};
+    if (!theme) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: social?.orders_enabled !== false };
     const colors = theme.colors || {};
     const fonts = theme.fonts || {};
     const vars: Record<string, string | undefined> = {
@@ -79,9 +80,10 @@ async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; sub
       .map((n) => googleFontHrefFor(n))
       .filter((x): x is string => !!x);
     const subscription = normalizeSubscriptionPlan(theme.subscription);
-    return { css: `${cssVars ? `:root{${cssVars}}` : ''}`, fontHrefs: hrefs, subscription };
+    const ordersEnabled = social?.orders_enabled !== false;
+    return { css: `${cssVars ? `:root{${cssVars}}` : ''}`, fontHrefs: hrefs, subscription, ordersEnabled };
   } catch {
-    return { css: '', fontHrefs: [], subscription: "premium" };
+    return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
   }
 }
 
@@ -168,7 +170,8 @@ export default async function RootLayout({
         </Script>
         {themeAssets.css && <style suppressHydrationWarning>{themeAssets.css}</style>}
         <SubscriptionPlanProvider plan={themeAssets.subscription}>
-          <CartProvider>
+          <OrdersEnabledProvider value={themeAssets.ordersEnabled}>
+            <CartProvider>
           {/* Header fijo en todas las páginas */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-transparent">
             <Navbar />
@@ -197,7 +200,8 @@ export default async function RootLayout({
               </div>
             </footer>
           </main>
-          </CartProvider>
+            </CartProvider>
+          </OrdersEnabledProvider>
         </SubscriptionPlanProvider>
       </body>
     </html>

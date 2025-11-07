@@ -40,7 +40,10 @@ async function getAdminAccess(): Promise<AdminAccessState> {
   try {
     const cookieStore = await cookies();
     const slug = cookieStore.get("x-tenant-slug")?.value || "";
-    if (slug) plan = await getSubscriptionForSlug(slug);
+    if (slug) {
+      const info = await getSubscriptionForSlug(slug);
+      plan = info.plan;
+    }
   } catch {}
 
   return { allowed, isSuper, plan };

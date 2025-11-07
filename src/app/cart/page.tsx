@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CartItem, subscribe, setQty, removeItem, clearCart } from "@/lib/cart-storage";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
+import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
 import { subscriptionAllowsOrders, type SubscriptionPlan } from "@/lib/subscription";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
@@ -433,8 +434,13 @@ function CartPageContent() {
   );
 }
 
-function CartDisabledNotice({ plan }: { plan: SubscriptionPlan }) {
-  const label = plan === "starter" ? "Starter" : "Medium";
+function CartDisabledNotice({ plan, ordersEnabled }: { plan: SubscriptionPlan; ordersEnabled: boolean }) {
+  let label = "";
+  if (!subscriptionAllowsOrders(plan)) {
+    label = plan === "starter" ? "Starter" : "Medium";
+  } else if (!ordersEnabled) {
+    label = "Premium (pedidos desactivados)";
+  }
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="rounded border border-amber-200 bg-amber-50 p-6 text-amber-800 shadow-sm">
@@ -449,8 +455,9 @@ function CartDisabledNotice({ plan }: { plan: SubscriptionPlan }) {
 
 export default function CartPage() {
   const plan = useSubscriptionPlan();
-  if (!subscriptionAllowsOrders(plan)) {
-    return <CartDisabledNotice plan={plan} />;
+  const ordersEnabled = useOrdersEnabled();
+  if (!subscriptionAllowsOrders(plan) || !ordersEnabled) {
+    return <CartDisabledNotice plan={plan} ordersEnabled={ordersEnabled} />;
   }
   return <CartPageContent />;
 }

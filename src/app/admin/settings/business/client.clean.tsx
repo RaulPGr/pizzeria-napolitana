@@ -44,8 +44,9 @@ export default function BusinessSettingsClient() {
    const [lat, setLat] = useState<string>('');
    const [lng, setLng] = useState<string>('');
    const [hours, setHours] = useState<any>({});
-   const [notifyOrders, setNotifyOrders] = useState(false);
-   const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyOrders, setNotifyOrders] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [ordersEnabled, setOrdersEnabled] = useState(true);
    const [reservationsEnabled, setReservationsEnabled] = useState(false);
    const [reservationsEmail, setReservationsEmail] = useState('');
    const [reservationsCapacity, setReservationsCapacity] = useState<number>(0);
@@ -80,6 +81,7 @@ export default function BusinessSettingsClient() {
           setHours({});
         }
         setNotifyOrders(Boolean(j.data.notify_orders_enabled));
+        setOrdersEnabled(j.data.orders_enabled !== false);
         setNotifyEmail(j.data.notify_orders_email || j.data.email || '');
         setReservationsEnabled(Boolean(j.data.reservations_enabled));
         setReservationsEmail(j.data.reservations_email || j.data.email || '');
@@ -112,9 +114,10 @@ export default function BusinessSettingsClient() {
           phone,
           whatsapp,
           email,
-          notify_orders_enabled: notifyOrders,
-          notify_orders_email: notifyEmail || null,
-          reservations_enabled: reservationsEnabled,
+        notify_orders_enabled: notifyOrders,
+        notify_orders_email: notifyEmail || null,
+        orders_enabled: ordersEnabled,
+        reservations_enabled: reservationsEnabled,
           reservations_email: reservationsEmail || null,
           reservations_capacity: reservationsCapacity,
           address_line: address,
@@ -298,6 +301,28 @@ export default function BusinessSettingsClient() {
         >
           <HoursEditor value={hours} onChange={setHours} />
         </Section>
+
+        {canManageOrders && (
+          <Section
+            title="Pedidos online"
+            description="Activa o desactiva temporalmente la recepción de pedidos en la web."
+          >
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={ordersEnabled}
+                onChange={(e) => setOrdersEnabled(e.target.checked)}
+              />
+              <span>Permitir pedidos online</span>
+            </label>
+            {!ordersEnabled && (
+              <p className="text-xs text-slate-500">
+                Mientras esté desactivado ocultaremos el carrito y los botones “Añadir” aunque sigas en plan Premium.
+              </p>
+            )}
+          </Section>
+        )}
 
         {canManageOrders && (
           <Section

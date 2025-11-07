@@ -7,6 +7,7 @@ import { headers, cookies } from 'next/headers';
 import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 import { getSubscriptionForSlug } from '@/lib/subscription-server';
+import { subscriptionAllowsOrders } from '@/lib/subscription';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -62,8 +63,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
     const parts = host.split('.');
     if (parts.length >= 3) slug = parts[0].toLowerCase();
   }
-  const subscription = await getSubscriptionForSlug(slug);
-  const allowOrdering = subscription === 'premium';
+  const { plan, ordersEnabled } = await getSubscriptionForSlug(slug);
+  const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
   const qps = new URLSearchParams();
   qps.set('day', String(selectedDaySafe));
   if (host) {

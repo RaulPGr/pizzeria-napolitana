@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { addItem } from "@/lib/cart-storage";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
+import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
+import { subscriptionAllowsOrders } from "@/lib/subscription";
 
 type Props = {
   product: { id: number | string; name: string; price: number; image_url?: string };
@@ -12,7 +14,9 @@ type Props = {
 
 export default function AddToCartButton({ product, disabled, disabledLabel }: Props) {
   const plan = useSubscriptionPlan();
-  const allowOrdering = plan === "premium";
+  const ordersEnabled = useOrdersEnabled();
+  const planAllows = subscriptionAllowsOrders(plan);
+  const allowOrdering = planAllows && ordersEnabled;
   const [busy, setBusy] = useState(false);
 
   async function onAdd() {
@@ -25,9 +29,10 @@ export default function AddToCartButton({ product, disabled, disabledLabel }: Pr
     }
   }
 
+  const planAllows = subscriptionAllowsOrders(plan);
   const buttonDisabled = !!disabled || busy || !allowOrdering;
   const label = !allowOrdering
-    ? "No disponible en tu plan"
+    ? (planAllows ? "Pedidos desactivados" : "No disponible en tu plan")
     : disabled
     ? (disabledLabel || "Agotado")
     : busy
