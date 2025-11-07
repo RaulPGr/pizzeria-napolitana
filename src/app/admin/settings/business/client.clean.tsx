@@ -157,17 +157,16 @@ export default function BusinessSettingsClient() {
         </div>
       )}
  
-      <div className="grid gap-6 items-start lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Section
-            title="Datos generales"
-            description="Edita la informacion principal que veran tus clientes."
-          >
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Nombre comercial</label>
-              <input
-                className="w-full rounded border border-slate-200 px-3 py-2"
-                placeholder="Pizzeria napolitana"
+      <div className="space-y-6">
+        <Section
+          title="Datos generales"
+          description="Edita la informacion principal que veran tus clientes."
+        >
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Nombre comercial</label>
+            <input
+              className="w-full rounded border border-slate-200 px-3 py-2"
+              placeholder="Pizzeria napolitana"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -223,17 +222,17 @@ export default function BusinessSettingsClient() {
                 disponibles y el menu publico mostrara pestanas L-D.
               </p>
             </fieldset>
-          </Section>
- 
-          <Section
-            title="Contacto y ubicacion"
-            description="Datos de contacto y coordenadas para el mapa."
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Telefono</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
+        </Section>
+
+        <Section
+          title="Contacto y ubicacion"
+          description="Datos de contacto y coordenadas para el mapa."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Telefono</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
                   placeholder="+34 600 000 000"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -286,19 +285,19 @@ export default function BusinessSettingsClient() {
                 />
               </div>
             </div>
-          </Section>
- 
-          <Section
-            title="Horarios"
-            description="Configura aperturas y cierres para cada dia."
-          >
-            <HoursEditor value={hours} onChange={setHours} />
-          </Section>
- 
-          <Section
-            title="Notificaciones por correo"
-            description="Recibe avisos cuando entre un pedido nuevo."
-          >
+        </Section>
+
+        <Section
+          title="Horarios"
+          description="Configura aperturas y cierres para cada dia."
+        >
+          <HoursEditor value={hours} onChange={setHours} />
+        </Section>
+
+        <Section
+          title="Notificaciones por correo"
+          description="Recibe avisos cuando entre un pedido nuevo."
+        >
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
@@ -323,12 +322,12 @@ export default function BusinessSettingsClient() {
                 </p>
               </div>
             )}
-          </Section>
- 
-          <Section
-            title="Reservas de mesa"
-            description="Permite que tus clientes soliciten una reserva desde la web."
-          >
+        </Section>
+
+        <Section
+          title="Reservas de mesa"
+          description="Permite que tus clientes soliciten una reserva desde la web."
+        >
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
@@ -369,94 +368,91 @@ export default function BusinessSettingsClient() {
                 </div>
               </div>
             )}
-          </Section>
-        </div>
- 
-        <div className="space-y-6 lg:col-span-1">
-          <Section
-            title="Imagenes"
-            description="Sube el logotipo y la imagen de cabecera."
-          >
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Logo</p>
-                {biz?.logo_url && (
-                  <img src={biz.logo_url} alt="logo" className="h-16 w-auto rounded border border-slate-200" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) upload('logo', f).catch((err) => setMsg(err.message));
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Imagen de cabecera</p>
-                {biz?.hero_url && (
-                  <img
-                    src={biz.hero_url}
-                    alt="hero"
-                    className="h-24 w-full rounded border border-slate-200 object-cover"
-                  />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) upload('hero', f).catch((err) => setMsg(err.message));
-                  }}
-                />
-              </div>
+        </Section>
+
+        <Section
+          title="Imagenes"
+          description="Sube el logotipo y la imagen de cabecera."
+        >
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-slate-700">Logo</p>
+              {biz?.logo_url && (
+                <img src={biz.logo_url} alt="logo" className="h-16 w-auto rounded border border-slate-200" />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) upload('logo', f).catch((err) => setMsg(err.message));
+                }}
+              />
             </div>
-          </Section>
- 
-          <Section
-            title="Redes sociales"
-            description="Enlaza tus perfiles para que los clientes puedan seguirte."
-          >
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Instagram</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  value={instagram}
-                  onChange={(e) => setInstagram(e.target.value)}
-                  placeholder="https://instagram.com/tu_negocio"
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-slate-700">Imagen de cabecera</p>
+              {biz?.hero_url && (
+                <img
+                  src={biz.hero_url}
+                  alt="hero"
+                  className="h-24 w-full rounded border border-slate-200 object-cover"
                 />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Facebook</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  value={facebook}
-                  onChange={(e) => setFacebook(e.target.value)}
-                  placeholder="https://facebook.com/tu_negocio"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">TikTok</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  value={tiktok}
-                  onChange={(e) => setTiktok(e.target.value)}
-                  placeholder="https://www.tiktok.com/@tu_negocio"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Web</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  value={web}
-                  onChange={(e) => setWeb(e.target.value)}
-                  placeholder="https://www.tuweb.com"
-                />
-              </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) upload('hero', f).catch((err) => setMsg(err.message));
+                }}
+              />
             </div>
-          </Section>
-        </div>
+          </div>
+        </Section>
+
+        <Section
+          title="Redes sociales"
+          description="Enlaza tus perfiles para que los clientes puedan seguirte."
+        >
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Instagram</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="https://instagram.com/tu_negocio"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Facebook</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={facebook}
+                onChange={(e) => setFacebook(e.target.value)}
+                placeholder="https://facebook.com/tu_negocio"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">TikTok</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={tiktok}
+                onChange={(e) => setTiktok(e.target.value)}
+                placeholder="https://www.tiktok.com/@tu_negocio"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Web</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={web}
+                onChange={(e) => setWeb(e.target.value)}
+                placeholder="https://www.tuweb.com"
+              />
+            </div>
+          </div>
+        </Section>
       </div>
  
       <div className="flex justify-end">
