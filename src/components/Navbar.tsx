@@ -70,8 +70,8 @@ export default function NavBar() {
 
   return (
     <header className="text-white">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-2 md:gap-3 bg-white/10 rounded-full px-3 py-2 backdrop-blur-sm border border-white/10 shadow-sm">
+      <nav className="app-navbar-nav mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
+        <div className="flex items-center gap-2 md:gap-3 rounded-full px-3 py-2">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>
           {allowReservations && reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
