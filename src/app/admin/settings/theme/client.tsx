@@ -374,7 +374,7 @@ export default function ThemeSettingsClient() {
       <div className="rounded border bg-white p-4">
         <h2 className="text-sm font-medium text-slate-700">Suscripcion del negocio</h2>
         <p className="mt-1 text-xs text-slate-500">Controla que funcionalidades estan disponibles para el comercio.</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <label
             className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
               subscription === "starter" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
@@ -389,9 +389,29 @@ export default function ThemeSettingsClient() {
               className="mt-1"
             />
             <span>
-              <span className="block font-medium">Starter/Medium</span>
+              <span className="block font-medium">Starter</span>
               <span className="text-xs text-slate-500">
-                Acceso basico: panel con productos y configuracion. No admite pedidos online.
+                Acceso basico: productos y configuracion del negocio. Sin reservas ni pedidos online.
+              </span>
+            </span>
+          </label>
+          <label
+            className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+              subscription === "medium" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name="subscription"
+              value="medium"
+              checked={subscription === "medium"}
+              onChange={() => handleSubscriptionChange("medium")}
+              className="mt-1"
+            />
+            <span>
+              <span className="block font-medium">Medium</span>
+              <span className="text-xs text-slate-500">
+                Todo lo anterior e incluye gestion de reservas online (formulario publico y panel).
               </span>
             </span>
           </label>

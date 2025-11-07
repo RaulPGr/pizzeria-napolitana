@@ -47,11 +47,11 @@ type Dataset = {
 
 export default function AdminStatsPage() {
   const { plan, isSuper } = useAdminAccess();
-  const limited = plan === "starter" && !isSuper;
+  const limited = plan !== "premium" && !isSuper;
   if (limited) {
     return (
       <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
-        Tu suscripción Starter/Medium no incluye estadísticas. Actualiza a Premium para ver estos reportes.
+        Tu suscripción actual no incluye estadísticas. Actualiza a Premium para ver estos reportes.
       </div>
     );
   }

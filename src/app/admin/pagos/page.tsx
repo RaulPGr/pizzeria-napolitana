@@ -4,16 +4,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/context/AdminAccessContext";
 
-
 type Methods = { cash: boolean; card: boolean; bizum: boolean };
 
 export default function AdminPaymentsPage() {
   const { plan, isSuper } = useAdminAccess();
-  const limited = plan === "starter" && !isSuper;
+  const limited = plan !== "premium" && !isSuper;
   if (limited) {
     return (
       <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
-        La configuración de métodos de pago solo está disponible en el plan Premium.
+        La configuracion de metodos de pago solo esta disponible en el plan Premium.
       </div>
     );
   }
@@ -41,41 +40,49 @@ export default function AdminPaymentsPage() {
       .eq("id", 1);
     setLoading(false);
     if (error) alert("No se pudo guardar");
-    else alert("Guardado ✅");
+    else alert("Guardado ok.");
   };
 
   return (
-    <div className="max-w-xl mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">Métodos de pago</h1>
+    <div className="mx-auto max-w-xl py-8">
+      <h1 className="mb-6 text-2xl font-bold">Metodos de pago</h1>
       {loading ? (
         <p>Cargando...</p>
       ) : (
         <div className="space-y-4">
           <label className="flex items-center gap-3">
-            <input type="checkbox" checked={m.cash}
-              onChange={(e) => setM((v) => ({ ...v, cash: e.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={m.cash}
+              onChange={(e) => setM((v) => ({ ...v, cash: e.target.checked }))}
+            />
             <span>Efectivo en tienda</span>
           </label>
           <label className="flex items-center gap-3">
-            <input type="checkbox" checked={m.card}
-              onChange={(e) => setM((v) => ({ ...v, card: e.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={m.card}
+              onChange={(e) => setM((v) => ({ ...v, card: e.target.checked }))}
+            />
             <span>Tarjeta (Stripe)</span>
           </label>
           <label className="flex items-center gap-3">
-            <input type="checkbox" checked={m.bizum}
-              onChange={(e) => setM((v) => ({ ...v, bizum: e.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={m.bizum}
+              onChange={(e) => setM((v) => ({ ...v, bizum: e.target.checked }))}
+            />
             <span>Bizum (Stripe)</span>
           </label>
 
-          <button onClick={save}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          <button
+            onClick={save}
+            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             disabled={loading}
           >
             Guardar cambios
           </button>
-          <p className="text-sm text-gray-500 mt-4">
-            Nota: Bizum debe estar activado en tu cuenta de Stripe.
-          </p>
+          <p className="mt-4 text-sm text-gray-500">Nota: Bizum debe estar activado en tu cuenta de Stripe.</p>
         </div>
       )}
     </div>

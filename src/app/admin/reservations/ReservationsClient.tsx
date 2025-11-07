@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useAdminAccess } from "@/context/AdminAccessContext";
+import { subscriptionAllowsReservations } from "@/lib/subscription";
 
 type AdminReservation = {
   id: string;
@@ -57,6 +59,8 @@ function todayKey() {
 }
 
 export default function ReservationsClient() {
+  const { plan, isSuper } = useAdminAccess();
+  const reservationsBlocked = !subscriptionAllowsReservations(plan) && !isSuper;
   const [items, setItems] = useState<AdminReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,14 +112,27 @@ export default function ReservationsClient() {
   }
 
   useEffect(() => {
+    if (reservationsBlocked) {
+      setLoading(false);
+      setItems([]);
+      return;
+    }
     load().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reservationsBlocked]);
 
   const filteredItems = useMemo(() => {
     if (!selectedDate) return items;
     return items.filter((item) => toDateKey(item.reserved_at) === selectedDate);
   }, [items, selectedDate]);
+
+  if (reservationsBlocked) {
+    return (
+      <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+        Tu suscripcion Starter no incluye la gestion de reservas. Actualiza a Medium o Premium para activarla.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

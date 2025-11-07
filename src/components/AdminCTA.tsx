@@ -5,9 +5,7 @@ import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 
 export default function AdminCTA() {
   const plan = useSubscriptionPlan();
-  const allowAccess = plan === "premium" || plan === "starter";
-  if (!allowAccess) return null;
-
+  if (!plan) return null;
   return (
     <Link
       href="/admin"
@@ -17,4 +15,3 @@ export default function AdminCTA() {
     </Link>
   );
 }
-

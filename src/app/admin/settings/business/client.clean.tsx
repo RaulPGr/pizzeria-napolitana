@@ -1,6 +1,8 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from 'react';
+import { useAdminAccess } from "@/context/AdminAccessContext";
+import { subscriptionAllowsReservations } from "@/lib/subscription";
 
 type Biz = {
   id: string;
@@ -19,6 +21,8 @@ type Biz = {
 };
 
 export default function BusinessSettingsClient() {
+  const { plan } = useAdminAccess();
+  const canManageReservations = subscriptionAllowsReservations(plan);
   function getTenantFromUrl(): string {
      if (typeof window === 'undefined') return '';
      try {
@@ -324,10 +328,11 @@ export default function BusinessSettingsClient() {
             )}
         </Section>
 
-        <Section
-          title="Reservas de mesa"
-          description="Permite que tus clientes soliciten una reserva desde la web."
-        >
+        {canManageReservations && (
+          <Section
+            title="Reservas de mesa"
+            description="Permite que tus clientes soliciten una reserva desde la web."
+          >
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
@@ -368,7 +373,8 @@ export default function BusinessSettingsClient() {
                 </div>
               </div>
             )}
-        </Section>
+          </Section>
+        )}
 
         <Section
           title="Imagenes"

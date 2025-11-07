@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import LogoutButton from "@/components/LogoutButton";
 import { useAdminAccess } from "@/context/AdminAccessContext";
+import { subscriptionAllowsOrders, subscriptionAllowsReservations } from "@/lib/subscription";
 
 export default function AdminTabs() {
   const pathname = usePathname();
@@ -13,7 +14,9 @@ export default function AdminTabs() {
   const isSettings = pathname?.startsWith("/admin/settings");
   const isStats = pathname?.startsWith("/admin/stats");
   const { plan, isSuper } = useAdminAccess();
-  const limited = plan === "starter" && !isSuper;
+  const canSeeOrders = subscriptionAllowsOrders(plan) || isSuper;
+  const canSeeReservations = subscriptionAllowsReservations(plan) || isSuper;
+  const canSeeStats = plan === "premium" || isSuper;
 
   return (
     <div className="mb-6 flex items-center justify-between gap-3">
@@ -28,7 +31,7 @@ export default function AdminTabs() {
           Productos
         </Link>
 
-        {!limited && (
+        {canSeeOrders && (
           <Link
             href="/admin/orders"
             className={clsx(
@@ -39,7 +42,7 @@ export default function AdminTabs() {
             Pedidos
           </Link>
         )}
-        {!limited && (
+        {canSeeReservations && (
           <Link
             href="/admin/reservations"
             className={clsx(
@@ -61,7 +64,7 @@ export default function AdminTabs() {
           Configuracion
         </Link>
 
-        {!limited && (
+        {canSeeStats && (
           <Link
             href="/admin/stats"
             className={clsx(

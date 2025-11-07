@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/context/AdminAccessContext";
+import { subscriptionAllowsOrders } from "@/lib/subscription";
 
 type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
 
@@ -57,11 +58,11 @@ const NEW_WINDOW_MS = 120000; // 2 minutos para considerar "reciente"
 
 export default function OrdersClient() {
   const { plan, isSuper } = useAdminAccess();
-  const limited = plan === "starter" && !isSuper;
+  const limited = !subscriptionAllowsOrders(plan) && !isSuper;
   if (limited) {
     return (
       <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
-        Tu suscripción Starter/Medium no incluye la sección de pedidos. Cambia a Premium para recibir pedidos online.
+        Tu suscripción actual no incluye la sección de pedidos. Cambia a Premium para recibir pedidos online.
       </div>
     );
   }

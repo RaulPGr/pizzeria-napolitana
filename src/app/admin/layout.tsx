@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { adminEmails } from "@/utils/plan";
 import { AdminAccessProvider } from "@/context/AdminAccessContext";
 import { getSubscriptionForSlug } from "@/lib/subscription-server";
-import type { SubscriptionPlan } from "@/lib/subscription";
+import { subscriptionAllowsOrders, type SubscriptionPlan } from "@/lib/subscription";
 
 type AdminAccessState = {
   allowed: boolean;
@@ -49,17 +49,16 @@ async function getAdminAccess(): Promise<AdminAccessState> {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const access = await getAdminAccess();
   if (!access.allowed) redirect("/login");
-  const limited = access.plan === "starter" && !access.isSuper;
+  const ordersRestricted = !subscriptionAllowsOrders(access.plan) && !access.isSuper;
   return (
     <AdminAccessProvider plan={access.plan} isSuper={access.isSuper}>
       <div className="mx-auto max-w-5xl px-4 py-6">
         <h1 className="mb-2 text-2xl font-semibold">Panel de Administracion</h1>
         <AdminTabs />
         {/* Boton flotante para activar sonido de nuevos pedidos */}
-        {!limited && <NewOrderSound />}
+        {!ordersRestricted && <NewOrderSound />}
         {children}
       </div>
     </AdminAccessProvider>
   );
 }
-

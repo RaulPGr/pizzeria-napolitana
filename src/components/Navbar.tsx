@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCount, subscribe } from "@/lib/cart-storage";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
+import { subscriptionAllowsOrders, subscriptionAllowsReservations } from "@/lib/subscription";
 // Admin entry removed from navbar
 
 export default function NavBar() {
   const plan = useSubscriptionPlan();
-  const allowOrdering = plan === "premium";
+  const allowOrdering = subscriptionAllowsOrders(plan);
+  const allowReservations = subscriptionAllowsReservations(plan);
   const [count, setCount] = useState(0);
   const [reservationsEnabled, setReservationsEnabled] = useState(false);
 
@@ -48,11 +50,12 @@ export default function NavBar() {
         if (active) setReservationsEnabled(false);
       }
     };
-    load();
+    if (allowReservations) load();
+    else setReservationsEnabled(false);
     return () => {
       active = false;
     };
-  }, []);
+  }, [allowReservations]);
 
   const Item = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Link href={href} className="text-white hover:text-gray-300">
@@ -66,7 +69,7 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Menú</Item>
-          {reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
+          {allowReservations && reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
           {/* Admin link intentionally removed */}
         </div>
         {allowOrdering && (

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CartItem, subscribe, setQty, removeItem, clearCart } from "@/lib/cart-storage";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
+import { subscriptionAllowsOrders, type SubscriptionPlan } from "@/lib/subscription";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type PaymentMethod = "cash" | "card";
@@ -432,13 +433,14 @@ function CartPageContent() {
   );
 }
 
-function CartDisabledNotice() {
+function CartDisabledNotice({ plan }: { plan: SubscriptionPlan }) {
+  const label = plan === "starter" ? "Starter" : "Medium";
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="rounded border border-amber-200 bg-amber-50 p-6 text-amber-800 shadow-sm">
-        <h1 className="text-xl font-semibold mb-2">Pedidos online desactivados</h1>
+        <h1 className="mb-2 text-xl font-semibold">Pedidos online desactivados</h1>
         <p className="text-sm">
-          Este comercio usa el plan Starter/Medium, por lo que el carrito y la recepción de pedidos no están disponibles en esta web.
+          Este comercio usa el plan {label}, por lo que el carrito y la recepcion de pedidos no esta disponible en esta web.
         </p>
       </div>
     </div>
@@ -447,16 +449,8 @@ function CartDisabledNotice() {
 
 export default function CartPage() {
   const plan = useSubscriptionPlan();
-  if (plan !== "premium") {
-    return <CartDisabledNotice />;
+  if (!subscriptionAllowsOrders(plan)) {
+    return <CartDisabledNotice plan={plan} />;
   }
   return <CartPageContent />;
 }
-
-
-
-
-
-
-
-

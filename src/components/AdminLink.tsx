@@ -5,13 +5,10 @@ import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 
 export default function AdminLink() {
   const plan = useSubscriptionPlan();
-  const allowAccess = plan === "premium" || plan === "starter";
-  if (!allowAccess) return null;
-
+  if (!plan) return null;
   return (
     <Link href="/admin" className="px-3 py-2 rounded hover:opacity-80">
       Admin
     </Link>
   );
 }
-
