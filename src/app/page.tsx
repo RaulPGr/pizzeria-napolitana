@@ -175,8 +175,8 @@ export default function HomePage() {
         <Script id="ld-localbusiness" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldData) }} />
       ) : null}
 
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-transparent -mt-[64px] md:-mt-[72px]">
-        <div className="max-w-6xl mx-auto px-4 pt-[60px] pb-3 flex items-center justify-between">
+      <header className="sticky top-[64px] md:top-[72px] z-30 bg-white/95 backdrop-blur border-b border-white/50 shadow-sm">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             {INFO.logoUrl && <img src={INFO.logoUrl} alt={`${INFO.nombre} logo`} className="h-9 w-auto rounded" />}
             <div>
