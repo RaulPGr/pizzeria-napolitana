@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { useAdminAccess } from "@/context/AdminAccessContext";
-import { subscriptionAllowsReservations } from "@/lib/subscription";
+import { subscriptionAllowsReservations, subscriptionAllowsOrders } from "@/lib/subscription";
 
 type Biz = {
   id: string;
@@ -23,6 +23,7 @@ type Biz = {
 export default function BusinessSettingsClient() {
   const { plan } = useAdminAccess();
   const canManageReservations = subscriptionAllowsReservations(plan);
+  const canManageOrders = subscriptionAllowsOrders(plan);
   function getTenantFromUrl(): string {
      if (typeof window === 'undefined') return '';
      try {
@@ -298,10 +299,11 @@ export default function BusinessSettingsClient() {
           <HoursEditor value={hours} onChange={setHours} />
         </Section>
 
-        <Section
-          title="Notificaciones por correo"
-          description="Recibe avisos cuando entre un pedido nuevo."
-        >
+        {canManageOrders && (
+          <Section
+            title="Notificaciones por correo"
+            description="Recibe avisos cuando entre un pedido nuevo."
+          >
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
@@ -326,7 +328,8 @@ export default function BusinessSettingsClient() {
                 </p>
               </div>
             )}
-        </Section>
+          </Section>
+        )}
 
         {canManageReservations && (
           <Section
