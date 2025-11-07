@@ -87,13 +87,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, message: 'Faltan datos de la reserva' }, { status: 400 });
     }
 
-    let reservedAt = new Date(`${date}T${time}:00`);
-    if (Number.isNaN(reservedAt.getTime())) {
+    const [yyyy, mm, dd] = date.split('-').map((part) => Number(part));
+    const [hh, min] = time.split(':').map((part) => Number(part));
+    if (
+      !Number.isInteger(yyyy) ||
+      !Number.isInteger(mm) ||
+      !Number.isInteger(dd) ||
+      !Number.isInteger(hh) ||
+      !Number.isInteger(min)
+    ) {
       return NextResponse.json({ ok: false, message: 'Fecha u hora invalida' }, { status: 400 });
     }
-    if (typeof tzOffsetMinutes === 'number') {
-      reservedAt = new Date(reservedAt.getTime() + tzOffsetMinutes * 60_000);
-    }
+    const utcMillis = Date.UTC(yyyy, (mm || 1) - 1, dd || 1, hh || 0, min || 0);
+    const offsetToUse = typeof tzOffsetMinutes === 'number' ? tzOffsetMinutes : 0;
+    const reservedAt = new Date(utcMillis + offsetToUse * 60_000);
     if (reservedAt.getTime() < Date.now()) {
       return NextResponse.json({ ok: false, message: 'No puedes reservar en el pasado' }, { status: 400 });
     }
