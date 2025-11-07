@@ -82,7 +82,12 @@ async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; sub
       .filter((x): x is string => !!x);
     const subscription = normalizeSubscriptionPlan(theme.subscription);
     const ordersEnabled = social?.orders_enabled !== false;
-    return { css: `${cssVars ? `:root{${cssVars}}` : ''}`, fontHrefs: hrefs, subscription, ordersEnabled };
+    const gradientVars = [
+      colors.topbarStart || colors.accent || "#2f2536",
+      colors.topbarEnd || colors.secondary || "#6f1d75",
+    ];
+    const gradientCss = `body .app-nav-gradient{background:linear-gradient(90deg, ${gradientVars[0]}, ${gradientVars[1]});}`;
+    return { css: `${cssVars ? `:root{${cssVars}}` : ''} ${gradientCss}`, fontHrefs: hrefs, subscription, ordersEnabled };
   } catch {
     return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
   }
