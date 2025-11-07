@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AdminReservation = {
   id: string;
@@ -35,12 +35,30 @@ function formatDate(value: string) {
   }
 }
 
+function toDateKey(value: string) {
+  if (!value) return "";
+  const [datePart] = value.split("T");
+  if (datePart) return datePart;
+  try {
+    return new Date(value).toISOString().slice(0, 10);
+  } catch {
+    return "";
+  }
+}
+
+function todayKey() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 10);
+}
+
 export default function ReservationsClient() {
   const [items, setItems] = useState<AdminReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(() => todayKey());
 
   async function load() {
     setLoading(true);
@@ -90,17 +108,43 @@ export default function ReservationsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const filteredItems = useMemo(() => {
+    if (!selectedDate) return items;
+    return items.filter((item) => toDateKey(item.reserved_at) === selectedDate);
+  }, [items, selectedDate]);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Reservas</h2>
-        <button
-          onClick={() => load().catch(() => {})}
-          className="rounded bg-slate-800 px-3 py-1 text-sm text-white hover:bg-slate-900"
-          disabled={loading}
-        >
-          {loading ? "Actualizando…" : "Actualizar"}
-        </button>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Reservas</h2>
+          <p className="text-sm text-slate-500">Selecciona un día para revisar únicamente sus reservas.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm font-medium text-slate-700">
+            Ver día
+            <input
+              type="date"
+              className="ml-2 rounded border border-slate-300 px-2 py-1 text-sm"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-100"
+            onClick={() => setSelectedDate(todayKey())}
+          >
+            Hoy
+          </button>
+          <button
+            onClick={() => load().catch(() => {})}
+            className="rounded bg-slate-800 px-3 py-1 text-sm text-white hover:bg-slate-900 disabled:opacity-50"
+            disabled={loading}
+          >
+            {loading ? "Actualizando..." : "Actualizar"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -126,14 +170,14 @@ export default function ReservationsClient() {
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 && !loading ? (
+            {filteredItems.length === 0 && !loading ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                  Aún no hay reservas registradas.
+                  {selectedDate ? "No hay reservas para la fecha seleccionada." : "Aun no hay reservas registradas."}
                 </td>
               </tr>
             ) : null}
-            {items.map((res) => (
+            {filteredItems.map((res) => (
               <tr key={res.id} className="border-t hover:bg-slate-50">
                 <td className="px-4 py-3">{formatDate(res.reserved_at)}</td>
                 <td className="px-4 py-3">
@@ -156,13 +200,14 @@ export default function ReservationsClient() {
                 <td className="px-4 py-3 text-center">{res.party_size}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLE[res.status] || "bg-slate-100 text-slate-700"
-                      }`}
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                      STATUS_STYLE[res.status] || "bg-slate-100 text-slate-700"
+                    }`}
                   >
                     {STATUS_LABEL[res.status] || res.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-600">{res.notes || "—"}</td>
+                <td className="px-4 py-3 text-slate-600">{res.notes || "-"}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
                     <button
