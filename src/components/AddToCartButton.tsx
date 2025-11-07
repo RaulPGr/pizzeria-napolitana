@@ -29,7 +29,6 @@ export default function AddToCartButton({ product, disabled, disabledLabel }: Pr
     }
   }
 
-  const planAllows = subscriptionAllowsOrders(plan);
   const buttonDisabled = !!disabled || busy || !allowOrdering;
   const label = !allowOrdering
     ? (planAllows ? "Pedidos desactivados" : "No disponible en tu plan")
