@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import AuthHashRedirect from '@/components/AuthHashRedirect';
 import Script from 'next/script';
 import { SubscriptionPlanProvider } from "@/context/SubscriptionPlanContext";
+import { OrdersEnabledProvider } from "@/context/OrdersEnabledContext";
 import { normalizeSubscriptionPlan, type SubscriptionPlan } from "@/lib/subscription";
 
 export const metadata: Metadata = {
