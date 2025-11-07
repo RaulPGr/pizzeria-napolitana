@@ -442,15 +442,6 @@ export default function BusinessSettingsClient() {
                 placeholder="https://www.tiktok.com/@tu_negocio"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Web</label>
-              <input
-                className="w-full rounded border border-slate-200 px-3 py-2"
-                value={web}
-                onChange={(e) => setWeb(e.target.value)}
-                placeholder="https://www.tuweb.com"
-              />
-            </div>
           </div>
         </Section>
       </div>
