@@ -120,13 +120,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-6xl p-4 md:p-6">
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
 
-      {!allowOrdering && (
-        <div className="mb-6 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Los pedidos online estan desactivados para este plan.
-        </div>
-      )}
-
-      {menuMode === 'daily' && (
+     {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} availableDays={(Array.isArray((payload as any)?.available_days) ? (payload as any).available_days : undefined) as any} />
       )}
 
