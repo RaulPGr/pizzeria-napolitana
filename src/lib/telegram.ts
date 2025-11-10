@@ -1,7 +1,10 @@
+import { createHmac } from "crypto";
+
 type TelegramSendParams = {
   token: string;
   chatId: string;
   text: string;
+  replyMarkup?: any;
 };
 
 type OrderTelegramPayload = {
@@ -28,6 +31,19 @@ function formatCurrency(value: number | undefined) {
 
 function sanitize(text: string) {
   return text.replace(/\s+/g, " ").trim();
+}
+
+const SIGN_SECRET = process.env.TELEGRAM_SIGN_SECRET || "";
+
+export function createTelegramSignature(slug: string, orderId: string, ts: string) {
+  if (!SIGN_SECRET) return null;
+  return createHmac("sha256", SIGN_SECRET).update(`${slug}:${orderId}:${ts}`).digest("hex");
+}
+
+export function verifyTelegramSignature(slug: string, orderId: string, ts: string, sig: string) {
+  if (!SIGN_SECRET) return false;
+  const expected = createTelegramSignature(slug, orderId, ts);
+  return !!expected && expected === sig;
 }
 
 export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string {
@@ -83,7 +99,7 @@ export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string
   return parts.join("\n").trim();
 }
 
-export async function sendTelegramMessage({ token, chatId, text }: TelegramSendParams) {
+export async function sendTelegramMessage({ token, chatId, text, replyMarkup }: TelegramSendParams) {
   if (!token || !chatId || !text) return;
   try {
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -94,6 +110,7 @@ export async function sendTelegramMessage({ token, chatId, text }: TelegramSendP
         chat_id: chatId,
         text,
         disable_web_page_preview: true,
+        reply_markup: replyMarkup,
       }),
     });
   } catch (error) {

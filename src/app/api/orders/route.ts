@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
-import { buildOrderTelegramMessage, sendTelegramMessage } from '@/lib/telegram';
+import { buildOrderTelegramMessage, createTelegramSignature, sendTelegramMessage } from '@/lib/telegram';
 
 type ItemInput = { productId: number; quantity: number };
 type BodyInput = {
@@ -171,6 +171,23 @@ export async function POST(req: NextRequest) {
           ? String(notifySettings.telegram_chat_id).trim()
           : '';
         if (telegramEnabled && telegramToken && telegramChatId) {
+          const slug = ((tenant as any)?.slug || "").toLowerCase();
+          const baseUrl =
+            process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+          let replyMarkup: any;
+          if (slug && baseUrl) {
+            const ts = Date.now().toString();
+            const sig = createTelegramSignature(slug, orderId, ts);
+            if (sig) {
+              const actionUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
+                slug
+              )}&order=${encodeURIComponent(orderId)}&ts=${ts}&sig=${sig}`;
+              replyMarkup = {
+                inline_keyboard: [[{ text: "✅ Marcar entregado", url: actionUrl }]],
+              };
+            }
+          }
           const text = buildOrderTelegramMessage({
             businessName: (business as any)?.name || undefined,
             code,
@@ -184,7 +201,7 @@ export async function POST(req: NextRequest) {
             notes: body.notes || null,
           });
           if (text) {
-            await sendTelegramMessage({ token: telegramToken, chatId: telegramChatId, text });
+            await sendTelegramMessage({ token: telegramToken, chatId: telegramChatId, text, replyMarkup });
           }
         }
       } catch (e) {
