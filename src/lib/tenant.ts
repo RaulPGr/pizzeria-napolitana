@@ -1,10 +1,29 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+
+function normalizeSlug(value: string | null | undefined) {
+  const slug = (value || '').trim().toLowerCase();
+  return slug && /^[a-z0-9-_.]{1,120}$/.test(slug) ? slug : '';
+}
 
 // Lee el slug de cookie (seteada por middleware) y resuelve el negocio
 export async function getTenant() {
   const cookieStore = await cookies();
-  const slug = cookieStore.get('x-tenant-slug')?.value || '';
+  let slug = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
+
+  if (!slug) {
+    try {
+      const hdrs = await headers();
+      const host = (hdrs.get('host') || '').split(':')[0]?.toLowerCase() || '';
+      const parts = host.split('.');
+      if (parts.length >= 3) {
+        slug = normalizeSlug(parts[0]);
+      }
+    } catch {
+      // ignore header errors
+    }
+  }
+
   if (!slug) return null;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
