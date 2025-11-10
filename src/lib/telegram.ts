@@ -1,5 +1,3 @@
-"use server";
-
 type TelegramSendParams = {
   token: string;
   chatId: string;
