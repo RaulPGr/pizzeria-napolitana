@@ -8,9 +8,13 @@ export function middleware(req: NextRequest) {
 
   // 1) Intentar subdominio: negocio.pidelocal.es -> negocio
   let slug = '';
-  const parts = host.split(':')[0].split('.');
+  const hostname = host.split(':')[0];
+  const parts = hostname.split('.');
   if (parts.length >= 3) {
     slug = parts[0].toLowerCase();
+    if (slug === 'www' && parts.length >= 4) {
+      slug = parts[1].toLowerCase();
+    }
   }
   // 2) Si no hay subdominio (p.ej. previews de Vercel), aceptar ?tenant=
   if (!slug) {

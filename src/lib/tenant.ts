@@ -17,7 +17,11 @@ export async function getTenant() {
       const host = (hdrs.get('host') || '').split(':')[0]?.toLowerCase() || '';
       const parts = host.split('.');
       if (parts.length >= 3) {
-        slug = normalizeSlug(parts[0]);
+        let candidate = parts[0];
+        if (candidate === 'www' && parts.length >= 4) {
+          candidate = parts[1];
+        }
+        slug = normalizeSlug(candidate);
       }
     } catch {
       // ignore header errors
