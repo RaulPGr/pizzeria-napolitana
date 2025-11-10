@@ -36,6 +36,7 @@ export async function GET(req: Request) {
   const orderId = url.searchParams.get("order") || "";
   const ts = url.searchParams.get("ts") || "";
   const sig = url.searchParams.get("sig") || "";
+  const action = (url.searchParams.get("action") || "delivered").toLowerCase();
 
   if (!slug || !orderId || !ts || !sig) {
     return htmlResponse('<h1 class="error">Enlace inválido</h1><p>Faltan parámetros.</p>', 400);
@@ -46,13 +47,13 @@ export async function GET(req: Request) {
     return htmlResponse('<h1 class="error">Enlace caducado</h1><p>Solicita un pedido nuevo.</p>', 400);
   }
 
-  if (!verifyTelegramSignature(slug, orderId, ts, sig)) {
+  if (!verifyTelegramSignature(slug, orderId, ts, sig, action)) {
     return htmlResponse('<h1 class="error">Firma inválida</h1><p>No podemos validar este enlace.</p>', 400);
   }
 
   const { data: biz } = await supabaseAdmin
     .from("businesses")
-    .select("id, name")
+    .select("id, name, address_line, city, postal_code, logo_url, email")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -60,9 +61,26 @@ export async function GET(req: Request) {
     return htmlResponse('<h1 class="error">Negocio no encontrado</h1>', 404);
   }
 
+  const { data: order } = await supabaseAdmin
+    .from("orders")
+    .select("status, code, customer_name, customer_phone, customer_email, total_cents, notes")
+    .eq("id", orderId)
+    .eq("business_id", biz.id)
+    .maybeSingle();
+
+  if (!order) {
+    return htmlResponse('<h1 class="error">Pedido no encontrado</h1>', 404);
+  }
+
+  if (order.status === action) {
+    return htmlResponse(
+      `<h1 class="ok">Pedido ya estaba ${action === "cancelled" ? "cancelado" : "entregado"}</h1><p>No era necesario repetir la acción.</p>`
+    );
+  }
+
   const { error } = await supabaseAdmin
     .from("orders")
-    .update({ status: "delivered" })
+    .update({ status: action === "cancelled" ? "cancelled" : "delivered" })
     .eq("id", orderId)
     .eq("business_id", biz.id);
 
@@ -70,8 +88,26 @@ export async function GET(req: Request) {
     return htmlResponse('<h1 class="error">No se pudo actualizar el pedido</h1><p>Inténtalo de nuevo.</p>', 500);
   }
 
+  if (biz.email) {
+    await sendOrderBusinessNotificationEmail({
+      orderId,
+      orderCode: order.code,
+      businessName: biz.name || "PideLocal",
+      businessAddress: [biz.address_line, biz.postal_code, biz.city].filter(Boolean).join(", ") || undefined,
+      businessLogoUrl: biz.logo_url || undefined,
+      businessEmail: biz.email,
+      items: [],
+      total: (order.total_cents ?? 0) / 100,
+      customerName: order.customer_name,
+      customerPhone: order.customer_phone,
+      customerEmail: order.customer_email || undefined,
+      pickupTime: undefined,
+      notes: order.notes || undefined,
+    });
+  }
+
   return htmlResponse(
-    `<h1 class="ok">Pedido marcado como entregado</h1>
+    `<h1 class="ok">Pedido ${action === "cancelled" ? "cancelado" : "entregado"}</h1>
     <p>El pedido se actualizó correctamente en ${biz.name || "el negocio"}.</p>
     <p class="small">Ya puedes cerrar esta pestaña.</p>`
   );

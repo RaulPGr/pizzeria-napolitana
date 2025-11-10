@@ -178,15 +178,22 @@ export async function POST(req: NextRequest) {
           let replyMarkup: any;
           if (slug && baseUrl) {
             const ts = Date.now().toString();
-            const sig = createTelegramSignature(slug, orderId, ts);
-            if (sig) {
-              const actionUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
+            const confirmSig = createTelegramSignature(slug, orderId, ts, "delivered");
+            const cancelSig = createTelegramSignature(slug, orderId, ts, "cancelled");
+            const buttons: Array<Array<{ text: string; url: string }>> = [];
+            if (confirmSig) {
+              const confirmUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
                 slug
-              )}&order=${encodeURIComponent(orderId)}&ts=${ts}&sig=${sig}`;
-              replyMarkup = {
-                inline_keyboard: [[{ text: "✅ Marcar entregado", url: actionUrl }]],
-              };
+              )}&order=${encodeURIComponent(orderId)}&ts=${ts}&sig=${confirmSig}&action=delivered`;
+              buttons.push([{ text: "✅ Marcar entregado", url: confirmUrl }]);
             }
+            if (cancelSig) {
+              const cancelUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
+                slug
+              )}&order=${encodeURIComponent(orderId)}&ts=${ts}&sig=${cancelSig}&action=cancelled`;
+              buttons.push([{ text: "❌ Cancelar pedido", url: cancelUrl }]);
+            }
+            if (buttons.length) replyMarkup = { inline_keyboard: buttons };
           }
           const text = buildOrderTelegramMessage({
             businessName: (business as any)?.name || undefined,
