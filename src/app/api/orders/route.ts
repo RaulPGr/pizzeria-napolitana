@@ -122,22 +122,24 @@ export async function POST(req: NextRequest) {
         const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
         const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
         const { sendOrderReceiptEmail, sendOrderBusinessNotificationEmail } = await import('@/lib/email/sendOrderReceipt');
-        await sendOrderReceiptEmail({
-          orderId,
-          orderCode: code,
-          businessName: (business as any)?.name || 'PideLocal',
-          businessAddress: [ (business as any)?.address_line, (business as any)?.postal_code, (business as any)?.city ]
-            .filter(Boolean)
-            .join(', ') || undefined,
-          businessLogoUrl: (business as any)?.logo_url || undefined,
-          customerEmail: body.customer.email!,
-          customerName: body.customer.name,
-          items: itemsSimple,
-          subtotal,
-          total: totalCents/100,
-          pickupTime: body.pickupAt,
-          notes: body.notes || undefined,
-        });
+        if (body.customer?.email) {
+          await sendOrderReceiptEmail({
+            orderId,
+            orderCode: code,
+            businessName: (business as any)?.name || 'PideLocal',
+            businessAddress: [ (business as any)?.address_line, (business as any)?.postal_code, (business as any)?.city ]
+              .filter(Boolean)
+              .join(', ') || undefined,
+            businessLogoUrl: (business as any)?.logo_url || undefined,
+            customerEmail: body.customer.email,
+            customerName: body.customer.name,
+            items: itemsSimple,
+            subtotal,
+            total: totalCents/100,
+            pickupTime: body.pickupAt,
+            notes: body.notes || undefined,
+          });
+        }
         const notifySettings = (business as any)?.social || {};
         const notifyEnabled = !!notifySettings?.notify_orders_enabled;
         const notifyTarget =
