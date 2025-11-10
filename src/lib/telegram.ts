@@ -130,19 +130,30 @@ export function buildReservationTelegramMessage(payload: ReservationTelegramPayl
 
 export async function sendTelegramMessage({ token, chatId, text, replyMarkup }: TelegramSendParams) {
   if (!token || !chatId || !text) return;
-  try {
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        disable_web_page_preview: true,
-        reply_markup: replyMarkup,
-      }),
-    });
-  } catch (error) {
-    console.error("[telegram] sendMessage error:", error);
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  const payload = {
+    chat_id: chatId,
+    text,
+    disable_web_page_preview: true,
+    reply_markup: replyMarkup,
+  };
+  let lastError: any = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        continue;
+      }
+      console.error("[telegram] sendMessage error:", error);
+    }
   }
+  if (lastError) throw lastError;
 }
