@@ -14,15 +14,10 @@ import { normalizeSubscriptionPlan, type SubscriptionPlan } from "@/lib/subscrip
 
 const BASE_TITLE = "Comida para llevar";
 
-export const metadata: Metadata = {
-  title: BASE_TITLE,
-  description: "Pedidos online",
-};
-
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();
   const slug = cookieStore.get('x-tenant-slug')?.value || '';
-  if (!slug) return metadata;
+  if (!slug) return { title: BASE_TITLE, description: "Pedidos online" };
   try {
     const { data } = await supabaseAdmin
       .from('businesses')
@@ -30,10 +25,10 @@ export async function generateMetadata(): Promise<Metadata> {
       .eq('slug', slug)
       .maybeSingle();
     const name = (data as any)?.name;
-    if (!name) return metadata;
-    return { ...metadata, title: name };
+    if (!name) return { title: BASE_TITLE, description: "Pedidos online" };
+    return { title: name, description: "Pedidos online" };
   } catch {
-    return metadata;
+    return { title: BASE_TITLE, description: "Pedidos online" };
   }
 }
 
