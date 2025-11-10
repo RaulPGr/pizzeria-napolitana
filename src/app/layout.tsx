@@ -43,19 +43,19 @@ function googleFontHrefFor(name: string): string | null {
   return null;
 }
 
-async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan; ordersEnabled: boolean }> {
+async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan; ordersEnabled: boolean; businessName: string }> {
   try {
     const cookieStore = await cookies();
     const slug = cookieStore.get('x-tenant-slug')?.value || '';
-    if (!slug) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
+    if (!slug) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true, businessName: "Comida para llevar" };
     const { data } = await supabaseAdmin
       .from('businesses')
-      .select('theme_config, social')
+      .select('name, theme_config, social')
       .eq('slug', slug)
       .maybeSingle();
     const theme = (data as any)?.theme_config as ThemeConfig | null;
     const social = (data as any)?.social || {};
-    if (!theme) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: social?.orders_enabled !== false };
+    if (!theme) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: social?.orders_enabled !== false, businessName: (data as any)?.name || "Comida para llevar" };
     const colors = theme.colors || {};
     const fonts = theme.fonts || {};
     const vars: Record<string, string | undefined> = {
@@ -91,9 +91,10 @@ async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; sub
         background: linear-gradient(90deg, ${gradientVars[0]}, ${gradientVars[1]});
       }
     `;
-    return { css: `${cssVars ? `:root{${cssVars}}` : ''} ${gradientCss}`, fontHrefs: hrefs, subscription, ordersEnabled };
+    const businessName = (data as any)?.name || "Comida para llevar";
+    return { css: `${cssVars ? `:root{${cssVars}}` : ''} ${gradientCss}`, fontHrefs: hrefs, subscription, ordersEnabled, businessName };
   } catch {
-    return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
+    return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true, businessName: "Comida para llevar" };
   }
 }
 
@@ -117,6 +118,7 @@ export default async function RootLayout({
             ))}
           </>
         )}
+        <title>{themeAssets.businessName || "Comida para llevar"}</title>
       </head>
       <body className="bg-brand-chalk">
 

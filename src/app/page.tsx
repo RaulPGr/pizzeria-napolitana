@@ -111,12 +111,6 @@ export default function HomePage() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (cfg?.business?.name && typeof document !== "undefined") {
-      document.title = cfg.business.name;
-    }
-  }, [cfg?.business?.name]);
-
     const INFO = useMemo(() => ({
     nombre: cfg?.business?.name || INFO_DEFAULT.nombre,
     slogan: cfg?.business?.slogan || INFO_DEFAULT.slogan,
