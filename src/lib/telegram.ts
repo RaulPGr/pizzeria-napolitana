@@ -34,12 +34,19 @@ export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string
   const parts: string[] = [];
   const title = payload.businessName ? `🍕 Nuevo pedido en ${payload.businessName}` : "🍕 Nuevo pedido";
   parts.push(title);
-  if (payload.code) parts.push(`Código: #${payload.code}`);
+  if (payload.code) {
+    const masked = payload.code.length > 1 ? payload.code.slice(0, -1) : payload.code;
+    parts.push(`Código: #${masked}`);
+  }
   if (payload.pickupTime) {
     const when = new Date(payload.pickupTime);
     const formatted = Number.isNaN(when.getTime())
       ? payload.pickupTime
-      : when.toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" });
+      : when.toLocaleString("es-ES", {
+          dateStyle: "short",
+          timeStyle: "short",
+          timeZone: process.env.NEXT_PUBLIC_TIMEZONE || "Europe/Madrid",
+        });
     parts.push(`Entrega: ${formatted}`);
   }
   if (payload.paymentMethod) {
