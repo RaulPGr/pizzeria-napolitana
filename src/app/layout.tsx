@@ -12,10 +12,30 @@ import { SubscriptionPlanProvider } from "@/context/SubscriptionPlanContext";
 import { OrdersEnabledProvider } from "@/context/OrdersEnabledContext";
 import { normalizeSubscriptionPlan, type SubscriptionPlan } from "@/lib/subscription";
 
+const BASE_TITLE = "Comida para llevar";
+
 export const metadata: Metadata = {
-  title: "Comida para llevar",
+  title: BASE_TITLE,
   description: "Pedidos online",
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies();
+  const slug = cookieStore.get('x-tenant-slug')?.value || '';
+  if (!slug) return metadata;
+  try {
+    const { data } = await supabaseAdmin
+      .from('businesses')
+      .select('name')
+      .eq('slug', slug)
+      .maybeSingle();
+    const name = (data as any)?.name;
+    if (!name) return metadata;
+    return { ...metadata, title: name };
+  } catch {
+    return metadata;
+  }
+}
 
 type ThemeConfig = {
   colors?: Record<string, string | undefined>;
@@ -43,19 +63,19 @@ function googleFontHrefFor(name: string): string | null {
   return null;
 }
 
-async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan; ordersEnabled: boolean; businessName: string }> {
+async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; subscription: SubscriptionPlan; ordersEnabled: boolean }> {
   try {
     const cookieStore = await cookies();
     const slug = cookieStore.get('x-tenant-slug')?.value || '';
-    if (!slug) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true, businessName: "Comida para llevar" };
+    if (!slug) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
     const { data } = await supabaseAdmin
       .from('businesses')
-      .select('name, theme_config, social')
+      .select('theme_config, social')
       .eq('slug', slug)
       .maybeSingle();
     const theme = (data as any)?.theme_config as ThemeConfig | null;
     const social = (data as any)?.social || {};
-    if (!theme) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: social?.orders_enabled !== false, businessName: (data as any)?.name || "Comida para llevar" };
+    if (!theme) return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: social?.orders_enabled !== false };
     const colors = theme.colors || {};
     const fonts = theme.fonts || {};
     const vars: Record<string, string | undefined> = {
@@ -91,10 +111,9 @@ async function getThemeAssets(): Promise<{ css: string; fontHrefs: string[]; sub
         background: linear-gradient(90deg, ${gradientVars[0]}, ${gradientVars[1]});
       }
     `;
-    const businessName = (data as any)?.name || "Comida para llevar";
-    return { css: `${cssVars ? `:root{${cssVars}}` : ''} ${gradientCss}`, fontHrefs: hrefs, subscription, ordersEnabled, businessName };
+    return { css: `${cssVars ? `:root{${cssVars}}` : ''} ${gradientCss}`, fontHrefs: hrefs, subscription, ordersEnabled };
   } catch {
-    return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true, businessName: "Comida para llevar" };
+    return { css: '', fontHrefs: [], subscription: "premium", ordersEnabled: true };
   }
 }
 
@@ -118,7 +137,6 @@ export default async function RootLayout({
             ))}
           </>
         )}
-        <title>{themeAssets.businessName || "Comida para llevar"}</title>
       </head>
       <body className="bg-brand-chalk">
 
