@@ -1,8 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { verifyTelegramSignature } from "@/lib/telegram";
+import { sendReservationStatusEmail } from "@/lib/email/sendReservationEmails";
 
 const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 2;
+
+function formatReservationTimestamp(dateISO: string, tzOffsetMinutes?: number | null) {
+  try {
+    const dt = new Date(dateISO);
+    if (typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)) {
+      dt.setMinutes(dt.getMinutes() - tzOffsetMinutes);
+    }
+    return dt.toLocaleString("es-ES", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return dateISO;
+  }
+}
 
 function render(body: string, status = 200) {
   return new NextResponse(
@@ -49,7 +69,7 @@ export async function GET(req: Request) {
 
   const { data: business } = await supabaseAdmin
     .from("businesses")
-    .select("id, name")
+    .select("id, name, address_line, city, postal_code, logo_url")
     .eq("slug", slug)
     .maybeSingle();
   if (!business?.id) {
@@ -58,7 +78,9 @@ export async function GET(req: Request) {
 
   const { data: reservation } = await supabaseAdmin
     .from("reservations")
-    .select("status")
+    .select(
+      "id, status, customer_name, customer_email, customer_phone, party_size, reserved_at, notes, timezone_offset_minutes"
+    )
     .eq("id", reservationId)
     .eq("business_id", business.id)
     .maybeSingle();
@@ -77,6 +99,22 @@ export async function GET(req: Request) {
     .eq("business_id", business.id);
   if (error) {
     return render('<h1 class="error">No se pudo actualizar</h1><p>Inténtalo de nuevo.</p>', 500);
+  }
+
+  if (reservation.customer_email) {
+    const address = [business.address_line, business.postal_code, business.city].filter(Boolean).join(", ") || undefined;
+    await sendReservationStatusEmail({
+      businessName: business.name || "PideLocal",
+      businessAddress: address,
+      businessLogoUrl: business.logo_url || undefined,
+      customerName: reservation.customer_name,
+      customerEmail: reservation.customer_email,
+      partySize: reservation.party_size,
+      reservedFor: formatReservationTimestamp(reservation.reserved_at, reservation.timezone_offset_minutes ?? null),
+      notes: reservation.notes,
+      status: "confirmed",
+      customerPhone: reservation.customer_phone,
+    });
   }
 
   return render(
