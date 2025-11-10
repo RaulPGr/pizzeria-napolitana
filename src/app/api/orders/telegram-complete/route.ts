@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { verifyTelegramSignature } from "@/lib/telegram";
+import { sendOrderBusinessNotificationEmail } from "@/lib/email/sendOrderReceipt";
 
 const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 2; // 2 días
 
