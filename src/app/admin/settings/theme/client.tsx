@@ -25,10 +25,15 @@ type ThemeHome = {
   heroOverlay?: boolean;
 };
 
+type ThemeMenu = {
+  layout?: "cards" | "list";
+};
+
 type ThemeConfig = {
   colors?: ThemeColors;
   fonts?: ThemeFonts;
   home?: ThemeHome;
+  menu?: ThemeMenu;
   subscription?: SubscriptionPlan;
 };
 
@@ -36,6 +41,7 @@ const DEFAULTS: {
   colors: Required<ThemeColors>;
   fonts: Required<ThemeFonts>;
   home: Required<ThemeHome>;
+  menu: Required<ThemeMenu>;
   subscription: SubscriptionPlan;
 } = {
   colors: {
@@ -56,6 +62,9 @@ const DEFAULTS: {
   },
   home: {
     heroOverlay: true,
+  },
+  menu: {
+    layout: "cards",
   },
   subscription: "premium",
 };
@@ -195,12 +204,20 @@ export default function ThemeSettingsClient() {
       colors: { ...DEFAULTS.colors, ...(theme.colors || {}) },
       fonts: { ...DEFAULTS.fonts, ...(theme.fonts || {}) },
       home: { heroOverlay: theme.home?.heroOverlay !== false },
+      menu: { layout: theme.menu?.layout === "list" ? "list" : DEFAULTS.menu.layout },
       subscription: normalizeSubscriptionPlan(theme.subscription),
     }),
     [theme]
   );
 
   const heroOverlayEnabled = merged.home.heroOverlay;
+  const handleMenuLayoutChange = (layout: "cards" | "list") => {
+    setTheme((prev) => ({
+      ...prev,
+      menu: { ...(prev.menu || {}), layout },
+    }));
+  };
+  const menuLayout = merged.menu.layout;
   const subscription = merged.subscription;
 
   const handleHeroOverlayChange = (checked: boolean) => {
@@ -717,6 +734,53 @@ export default function ThemeSettingsClient() {
         </p>
       </div>
 
+      <div className="rounded border bg-white p-4">
+        <h2 className="text-sm font-medium text-slate-700">Diseño de la carta</h2>
+        <p className="mt-1 text-xs text-slate-500">Define cómo se muestran los productos en la página /menu.</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <label
+            className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+              menuLayout === "cards" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name="menu_layout"
+              value="cards"
+              checked={menuLayout === "cards"}
+              onChange={() => handleMenuLayoutChange("cards")}
+              className="mt-1"
+            />
+            <span>
+              <span className="block font-medium">Con imágenes</span>
+              <span className="text-xs text-slate-500">
+                Diseño actual basado en tarjetas con foto destacada de cada producto.
+              </span>
+            </span>
+          </label>
+          <label
+            className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+              menuLayout === "list" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name="menu_layout"
+              value="list"
+              checked={menuLayout === "list"}
+              onChange={() => handleMenuLayoutChange("list")}
+              className="mt-1"
+            />
+            <span>
+              <span className="block font-medium">Listado compacto</span>
+              <span className="text-xs text-slate-500">
+                Muestra cada categoría en un recuadro y los productos en filas sin imagen, ideal para cartas extensas.
+              </span>
+            </span>
+          </label>
+        </div>
+      </div>
+
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={saving} className="btn-brand">
           {saving ? "Guardando..." : "Guardar cambios"}
@@ -728,6 +792,7 @@ export default function ThemeSettingsClient() {
               colors: { ...DEFAULTS.colors },
               fonts: { ...DEFAULTS.fonts },
               home: { ...DEFAULTS.home },
+              menu: { ...DEFAULTS.menu },
               subscription: DEFAULTS.subscription,
             })
           }

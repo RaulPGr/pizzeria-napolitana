@@ -8,6 +8,7 @@ import AddToCartButton from '@/components/AddToCartButton';
 import CartQtyActions from '@/components/CartQtyActions';
 import { getSubscriptionForSlug } from '@/lib/subscription-server';
 import { subscriptionAllowsOrders } from '@/lib/subscription';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -65,6 +66,19 @@ export default async function MenuPage({ searchParams }: PageProps) {
   }
   const { plan, ordersEnabled } = await getSubscriptionForSlug(slug);
   const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
+
+  let menuLayout: "cards" | "list" = "cards";
+  if (slug) {
+    try {
+      const { data: themeRow } = await supabaseAdmin
+        .from("businesses")
+        .select("theme_config")
+        .eq("slug", slug)
+        .maybeSingle();
+      const layout = (themeRow as any)?.theme_config?.menu?.layout;
+      if (layout === "list") menuLayout = "list";
+    } catch {}
+  }
   const qps = new URLSearchParams();
   qps.set('day', String(selectedDaySafe));
   if (host) {
@@ -117,6 +131,108 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return String(s.id) === selectedCat;
   });
 
+  const isListLayout = menuLayout === "list";
+  const dayNames = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const currentIsoDay = ((new Date().getDay() + 6) % 7) + 1;
+
+  function availabilityFor(p: any) {
+    if (p.available === false) {
+      return { out: true, disabledLabel: "Agotado" as string | undefined };
+    }
+    if (menuMode !== "daily") {
+      return { out: false, disabledLabel: undefined as string | undefined };
+    }
+    const pDays = normalizeDays(p?.product_weekdays);
+    if (!pDays.length || pDays.length === 7) {
+      return { out: false, disabledLabel: undefined as string | undefined };
+    }
+    const targetDay = selectedDaySafe >= 1 && selectedDaySafe <= 7 ? selectedDaySafe : currentIsoDay;
+    const canAdd = pDays.includes(targetDay);
+    let disabledLabel: string | undefined;
+    if (!canAdd) {
+      const sorted = [...pDays].sort((a, b) => a - b);
+      disabledLabel =
+        sorted.length === 1
+          ? `Solo disponible ${dayNames[sorted[0]]}`
+          : `Solo disponible: ${sorted.map((d) => dayNames[d]).join(", ")}`;
+    }
+    return { out: !canAdd, disabledLabel };
+  }
+
+  function renderProductCard(p: any) {
+    const { out, disabledLabel } = availabilityFor(p);
+    return (
+      <li key={p.id} className={['relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}>
+        {p.available === false && (
+          <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+        )}
+        {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
+        {p.image_url && (
+          <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
+        )}
+        <div className="p-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <h3 className="text-base font-medium">{p.name}</h3>
+            <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+              {formatPrice(Number(p.price || 0))}
+            </span>
+          </div>
+          {p.description && (
+            <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{p.description}</p>
+          )}
+          {allowOrdering && (
+            <AddToCartButton
+              product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+              disabled={out}
+              disabledLabel={disabledLabel}
+            />
+          )}
+        </div>
+      </li>
+    );
+  }
+
+  function renderProductListRow(p: any) {
+    const { out, disabledLabel } = availabilityFor(p);
+    return (
+      <li
+        key={p.id}
+        className={[
+          'relative px-4 py-3',
+          out ? 'opacity-60' : '',
+          allowOrdering ? 'pr-24' : '',
+        ].join(' ')}
+      >
+        {p.available === false && (
+          <span className="absolute left-4 top-3 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+        )}
+        {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div className="flex flex-col">
+              <h3 className="text-base font-medium">{p.name}</h3>
+              {p.description && (
+                <p className="text-sm text-slate-600">{p.description}</p>
+              )}
+            </div>
+            <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+              {formatPrice(Number(p.price || 0))}
+            </span>
+          </div>
+          {allowOrdering && (
+            <div className="max-w-xs">
+              <AddToCartButton
+                product={{ id: p.id, name: p.name, price: Number(p.price || 0) }}
+                disabled={out}
+                disabledLabel={disabledLabel}
+              />
+            </div>
+          )}
+        </div>
+      </li>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
       <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
@@ -142,55 +258,24 @@ export default async function MenuPage({ searchParams }: PageProps) {
       </div>
 
       {(() => {
-        const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length>0);
-        if (!hasAny && (viewProducts && viewProducts.length>0)) {
+        const hasAny = Array.from(groups.values()).some((a) => Array.isArray(a) && a.length > 0);
+        if (!hasAny && viewProducts && viewProducts.length > 0) {
           return (
             <section className="mb-10">
-              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">Productos</h2>
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {viewProducts.map((p: any) => {
-                  const pDays = normalizeDays(p.product_weekdays);
-                  const todayIso = todayIsoTZ();
-                  const canAddToday = (menuMode !== 'daily')
-                    ? (p.available !== false)
-                    : (p.available !== false && (pDays.includes(todayIso) || pDays.length === 7));
-                  const out = !canAddToday;
-                  const disabledLabel = p.available === false
-                    ? 'Agotado'
-                    : (menuMode === 'daily' && !canAddToday ? (() => {
-                        const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                        const sorted = [...pDays].sort((a, b) => a - b);
-                        if (sorted.length === 7) return undefined;
-                        if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
-                        return `Solo disponible: ${sorted.map((d) => names[d]).join(', ')}`;
-                      })() : undefined);
-                  return (
-                    <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
-                      {p.available === false && (
-                        <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
-                      )}
-                      {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
-                      {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
-                      <div className="p-3">
-                        <div className="flex items-baseline justify-between gap-4">
-                          <h3 className="text-base font-medium">{p.name}</h3>
-                          <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
-                            {formatPrice(Number(p.price || 0))}
-                          </span>
-                        </div>
-                        {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                        {allowOrdering && (
-                          <AddToCartButton
-                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
-                            disabled={out}
-                            disabledLabel={disabledLabel}
-                          />
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide text-slate-900 md:text-3xl">
+                Productos
+              </h2>
+              {isListLayout ? (
+                <div className="rounded border bg-white shadow-sm">
+                  <ul className="divide-y divide-slate-100">
+                    {viewProducts.map((p: any) => renderProductListRow(p))}
+                  </ul>
+                </div>
+              ) : (
+                <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {viewProducts.map((p: any) => renderProductCard(p))}
+                </ul>
+              )}
             </section>
           );
         }
@@ -198,63 +283,32 @@ export default async function MenuPage({ searchParams }: PageProps) {
       })()}
 
       {visibleSections.map((section) => {
-        const list = section.id === 'nocat'
-          ? (groups.get('nocat') || [])
-          : (groups.get(Number(section.id)) || []);
+        const list = section.id === 'nocat' ? groups.get('nocat') || [] : groups.get(Number(section.id)) || [];
         if (!list || list.length === 0) return null;
 
         return (
           <section key={String(section.id)} className="mb-10">
             {!selectedCat && (
-              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">
+              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide text-slate-900 md:text-3xl">
                 {section.name}
               </h2>
             )}
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {list.map((p: any) => {
-                const pDays = normalizeDays(p.product_weekdays);
-                const todayIso = todayIsoTZ();
-                const canAddToday = (menuMode !== 'daily')
-                  ? (p.available !== false)
-                  : (p.available !== false && (pDays.includes(todayIso) || pDays.length === 7));
-                const out = !canAddToday;
-                const disabledLabel = p.available === false
-                  ? 'Agotado'
-                  : (menuMode === 'daily' && !canAddToday ? (() => {
-                      const names = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                      const sorted = [...pDays].sort((a, b) => a - b);
-                      if (sorted.length === 7) return undefined;
-                      if (sorted.length === 1) return `Solo disponible ${names[sorted[0]]}`;
-                      return `Solo disponible: ${sorted.map((d) => names[d]).join(', ')}`;
-                    })() : undefined);
-
-                return (
-                  <li key={p.id} className={[ 'relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : '' ].join(' ')}>
-                    {p.available === false && (
-                      <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
-                    )}
-                    {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
-                    {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
-                    <div className="p-3">
-                      <div className="flex items-baseline justify-between gap-4">
-                        <h3 className="text-base font-medium">{p.name}</h3>
-                        <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
-                          {formatPrice(Number(p.price || 0))}
-                        </span>
-                      </div>
-                      {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                      {allowOrdering && (
-                        <AddToCartButton
-                          product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
-                          disabled={out}
-                          disabledLabel={disabledLabel}
-                        />
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            {isListLayout ? (
+              <div className="rounded border bg-white shadow-sm">
+                {selectedCat && (
+                  <div className="border-b border-slate-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+                    {section.name}
+                  </div>
+                )}
+                <ul className="divide-y divide-slate-100">
+                  {list.map((p: any) => renderProductListRow(p))}
+                </ul>
+              </div>
+            ) : (
+              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {list.map((p: any) => renderProductCard(p))}
+              </ul>
+            )}
           </section>
         );
       })}
