@@ -20,6 +20,16 @@ type OrderTelegramPayload = {
   notes?: string | null;
 };
 
+type ReservationTelegramPayload = {
+  businessName?: string;
+  reservedFor: string;
+  partySize: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  notes?: string | null;
+};
+
 function formatCurrency(value: number | undefined) {
   if (typeof value !== "number" || Number.isNaN(value)) return "";
   try {
@@ -96,6 +106,25 @@ export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string
     parts.push(`Notas: ${payload.notes}`);
   }
 
+  return parts.join("\n").trim();
+}
+
+export function buildReservationTelegramMessage(payload: ReservationTelegramPayload): string {
+  const parts: string[] = [];
+  const title = payload.businessName ? `📅 Nueva reserva en ${payload.businessName}` : "📅 Nueva reserva";
+  parts.push(title);
+  parts.push(`Cuando: ${payload.reservedFor}`);
+  parts.push(`Comensales: ${payload.partySize}`);
+  const customerBits = [payload.customerName, payload.customerPhone, payload.customerEmail]
+    .filter((val) => !!val)
+    .map((val) => sanitize(String(val)));
+  if (customerBits.length) {
+    parts.push(`Cliente: ${customerBits.join(" · ")}`);
+  }
+  if (payload.notes) {
+    parts.push("");
+    parts.push(`Notas: ${payload.notes}`);
+  }
   return parts.join("\n").trim();
 }
 

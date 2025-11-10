@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTenant } from '@/lib/tenant';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendReservationBusinessEmail, sendReservationCustomerEmail } from '@/lib/email/sendReservationEmails';
+import { buildReservationTelegramMessage, createTelegramSignature, sendTelegramMessage } from '@/lib/telegram';
 
 type OpeningTramo = { abre?: string; cierra?: string; open?: string; close?: string };
 const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
@@ -170,6 +171,48 @@ export async function POST(req: NextRequest) {
         reservedFor,
         notes,
       });
+    }
+
+    const telegramResEnabled = !!social?.telegram_reservations_enabled;
+    const telegramResToken =
+      social?.telegram_reservations_bot_token || social?.telegram_bot_token || '';
+    const telegramResChatId =
+      social?.telegram_reservations_chat_id || social?.telegram_chat_id || '';
+    if (telegramResEnabled && telegramResToken && telegramResChatId) {
+      const slug = (tenant as any)?.slug || '';
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+      let replyMarkup: any;
+      if (slug && baseUrl && inserted?.id) {
+        const ts = Date.now().toString();
+        const sig = createTelegramSignature(String(slug), String(inserted.id), ts);
+        if (sig) {
+          const actionUrl = `${baseUrl}/api/reservations/telegram-status?tenant=${encodeURIComponent(
+            slug
+          )}&reservation=${encodeURIComponent(String(inserted.id))}&ts=${ts}&sig=${sig}`;
+          replyMarkup = {
+            inline_keyboard: [[{ text: '✅ Marcar confirmada', url: actionUrl }]],
+          };
+        }
+      }
+      const text = buildReservationTelegramMessage({
+        businessName: tenant.name || undefined,
+        reservedFor,
+        partySize: people,
+        customerName: name,
+        customerPhone: phone,
+        customerEmail: email || null,
+        notes,
+      });
+      if (text) {
+        await sendTelegramMessage({
+          token: telegramResToken,
+          chatId: telegramResChatId,
+          text,
+          replyMarkup,
+        });
+      }
     }
 
     return NextResponse.json({ ok: true, id: inserted?.id, message: 'Reserva enviada correctamente' });

@@ -72,6 +72,9 @@ export async function GET(req: Request) {
     const telegramEnabled = !!social?.telegram_notifications_enabled;
     const telegramToken = social?.telegram_bot_token || null;
     const telegramChatId = social?.telegram_chat_id || null;
+    const telegramReservationsEnabled = !!social?.telegram_reservations_enabled;
+    const telegramReservationsToken = social?.telegram_reservations_bot_token || null;
+    const telegramReservationsChatId = social?.telegram_reservations_chat_id || null;
     return NextResponse.json({
       ok: true,
       data: {
@@ -86,6 +89,9 @@ export async function GET(req: Request) {
         telegram_notifications_enabled: telegramEnabled,
         telegram_bot_token: telegramToken,
         telegram_chat_id: telegramChatId,
+        telegram_reservations_enabled: telegramReservationsEnabled,
+        telegram_reservations_bot_token: telegramReservationsToken,
+        telegram_reservations_chat_id: telegramReservationsChatId,
       },
     });
   } catch (e: any) {
@@ -148,6 +154,25 @@ export async function PATCH(req: Request) {
           ? String(body.telegram_chat_id).trim()
           : null;
       socialUpdates.telegram_chat_id = val || null;
+    }
+    if (body.telegram_reservations_enabled !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      socialUpdates.telegram_reservations_enabled = !!body.telegram_reservations_enabled;
+    }
+    if (body.telegram_reservations_bot_token !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const val = typeof body.telegram_reservations_bot_token === 'string'
+        ? body.telegram_reservations_bot_token.trim()
+        : null;
+      socialUpdates.telegram_reservations_bot_token = val || null;
+    }
+    if (body.telegram_reservations_chat_id !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const val =
+        typeof body.telegram_reservations_chat_id === 'string' || typeof body.telegram_reservations_chat_id === 'number'
+          ? String(body.telegram_reservations_chat_id).trim()
+          : null;
+      socialUpdates.telegram_reservations_chat_id = val || null;
     }
     if (body.orders_enabled !== undefined) {
       if (!socialUpdates) socialUpdates = { ...socialBase };
