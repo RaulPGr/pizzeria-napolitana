@@ -55,6 +55,7 @@ export async function GET(req: Request) {
   const reservationId = url.searchParams.get("reservation") || "";
   const ts = url.searchParams.get("ts") || "";
   const sig = url.searchParams.get("sig") || "";
+  const action = (url.searchParams.get("action") || "confirm").toLowerCase();
 
   if (!slug || !reservationId || !ts || !sig) {
     return render('<h1 class="error">Enlace inválido</h1><p>Faltan datos para actualizar la reserva.</p>', 400);
@@ -63,7 +64,7 @@ export async function GET(req: Request) {
   if (!Number.isFinite(tsNumber) || Date.now() - tsNumber > MAX_AGE_MS) {
     return render('<h1 class="error">Enlace caducado</h1><p>Solicita una nueva reserva.</p>', 400);
   }
-  if (!verifyTelegramSignature(slug, reservationId, ts, sig)) {
+  if (!verifyTelegramSignature(slug, reservationId, ts, sig, action === "cancel" ? "cancel" : "confirm")) {
     return render('<h1 class="error">Firma inválida</h1><p>No podemos validar este enlace.</p>', 400);
   }
 
@@ -88,13 +89,15 @@ export async function GET(req: Request) {
     return render('<h1 class="error">Reserva no encontrada</h1>', 404);
   }
 
-  if (reservation.status === "confirmed") {
-    return render('<h1 class="ok">Ya estaba confirmada</h1><p>No era necesario repetir la acción.</p>');
+  if (reservation.status === (action === "cancel" ? "cancelled" : "confirmed")) {
+    return render(
+      `<h1 class="ok">Ya estaba ${action === "cancel" ? "cancelada" : "confirmada"}</h1><p>No era necesario repetir la acción.</p>`
+    );
   }
 
   const { error } = await supabaseAdmin
     .from("reservations")
-    .update({ status: "confirmed" })
+    .update({ status: action === "cancel" ? "cancelled" : "confirmed" })
     .eq("id", reservationId)
     .eq("business_id", business.id);
   if (error) {
@@ -112,14 +115,14 @@ export async function GET(req: Request) {
       partySize: reservation.party_size,
       reservedFor: formatReservationTimestamp(reservation.reserved_at, reservation.timezone_offset_minutes ?? null),
       notes: reservation.notes,
-      status: "confirmed",
+      status: action === "cancel" ? "cancelled" : "confirmed",
       customerPhone: reservation.customer_phone,
     });
   }
 
   return render(
-    `<h1 class="ok">Reserva confirmada</h1>
-     <p>La reserva ha quedado confirmada en ${business.name || "el negocio"}.</p>
+    `<h1 class="ok">Reserva ${action === "cancel" ? "cancelada" : "confirmada"}</h1>
+     <p>La reserva ha quedado ${action === "cancel" ? "cancelada" : "confirmada"} en ${business.name || "el negocio"}.</p>
      <p class="small">Puedes cerrar esta pestaña.</p>`
   );
 }

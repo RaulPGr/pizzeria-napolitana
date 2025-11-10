@@ -184,16 +184,25 @@ export async function POST(req: NextRequest) {
         process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
         (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
       let replyMarkup: any;
+      const inlineButtons: Array<Array<{ text: string; url: string }>> = [];
       if (slug && baseUrl && inserted?.id) {
         const ts = Date.now().toString();
-        const sig = createTelegramSignature(String(slug), String(inserted.id), ts);
-        if (sig) {
-          const actionUrl = `${baseUrl}/api/reservations/telegram-status?tenant=${encodeURIComponent(
+        const confirmSig = createTelegramSignature(String(slug), String(inserted.id), ts, "confirm");
+        const cancelSig = createTelegramSignature(String(slug), String(inserted.id), ts, "cancel");
+        if (confirmSig) {
+          const confirmUrl = `${baseUrl}/api/reservations/telegram-status?tenant=${encodeURIComponent(
             slug
-          )}&reservation=${encodeURIComponent(String(inserted.id))}&ts=${ts}&sig=${sig}`;
-          replyMarkup = {
-            inline_keyboard: [[{ text: '✅ Marcar confirmada', url: actionUrl }]],
-          };
+          )}&reservation=${encodeURIComponent(String(inserted.id))}&ts=${ts}&sig=${confirmSig}&action=confirm`;
+          inlineButtons.push([{ text: '✅ Confirmar', url: confirmUrl }]);
+        }
+        if (cancelSig) {
+          const cancelUrl = `${baseUrl}/api/reservations/telegram-status?tenant=${encodeURIComponent(
+            slug
+          )}&reservation=${encodeURIComponent(String(inserted.id))}&ts=${ts}&sig=${cancelSig}&action=cancel`;
+          inlineButtons.push([{ text: '❌ Cancelar', url: cancelUrl }]);
+        }
+        if (inlineButtons.length) {
+          replyMarkup = { inline_keyboard: inlineButtons };
         }
       }
       const text = buildReservationTelegramMessage({

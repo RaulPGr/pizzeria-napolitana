@@ -45,14 +45,14 @@ function sanitize(text: string) {
 
 const SIGN_SECRET = process.env.TELEGRAM_SIGN_SECRET || "";
 
-export function createTelegramSignature(slug: string, orderId: string, ts: string) {
+export function createTelegramSignature(slug: string, entityId: string, ts: string, action = "confirm") {
   if (!SIGN_SECRET) return null;
-  return createHmac("sha256", SIGN_SECRET).update(`${slug}:${orderId}:${ts}`).digest("hex");
+  return createHmac("sha256", SIGN_SECRET).update(`${slug}:${entityId}:${ts}:${action}`).digest("hex");
 }
 
-export function verifyTelegramSignature(slug: string, orderId: string, ts: string, sig: string) {
+export function verifyTelegramSignature(slug: string, entityId: string, ts: string, sig: string, action = "confirm") {
   if (!SIGN_SECRET) return false;
-  const expected = createTelegramSignature(slug, orderId, ts);
+  const expected = createTelegramSignature(slug, entityId, ts, action);
   return !!expected && expected === sig;
 }
 
