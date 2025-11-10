@@ -26,7 +26,7 @@ async function getBusinessBySlug(slug: string) {
   const supa = await getAdminClient();
   const { data, error } = await supa
     .from('businesses')
-    .select('id, slug, name, slogan, description, logo_url, hero_url, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, ordering_hours, social, menu_mode')
+    .select('id, slug, name, slogan, description, logo_url, hero_url, phone, whatsapp, email, address_line, city, postal_code, lat, lng, opening_hours, ordering_hours, social, menu_mode, theme_config')
     .eq('slug', slug)
     .maybeSingle();
   if (error) throw error;
@@ -67,6 +67,8 @@ export async function GET(req: Request) {
     const social = (biz as any)?.social || {};
     const ordersEnabled = social?.orders_enabled !== false;
     const reservationsCapacity = Number(social?.reservations_capacity ?? 0);
+    const theme = (biz as any)?.theme_config || {};
+    const menuLayout = theme?.menu?.layout === 'list' ? 'list' : 'cards';
     return NextResponse.json({
       ok: true,
       data: {
@@ -77,6 +79,7 @@ export async function GET(req: Request) {
         reservations_enabled: !!social.reservations_enabled,
         reservations_email: social.reservations_email || (biz as any)?.email || null,
         reservations_capacity: Number.isFinite(reservationsCapacity) && reservationsCapacity > 0 ? Math.floor(reservationsCapacity) : 0,
+        menu_layout: menuLayout,
       },
     });
   } catch (e: any) {
@@ -109,6 +112,7 @@ export async function PATCH(req: Request) {
     }
     let socialUpdates: any | null = null;
     let socialBase = (biz as any)?.social ? { ...(biz as any).social } : {};
+    let themeUpdates: any | null = null;
     if (body.social && typeof body.social === 'object') {
       socialBase = { ...socialBase, ...body.social };
       socialUpdates = socialBase;
@@ -141,8 +145,26 @@ export async function PATCH(req: Request) {
       if (!Number.isFinite(cap) || cap < 0) cap = 0;
       socialUpdates.reservations_capacity = Math.floor(cap);
     }
+    if (body.menu_layout !== undefined) {
+      const raw = typeof body.menu_layout === 'string' ? body.menu_layout.trim().toLowerCase() : '';
+      let layout: 'cards' | 'list';
+      if (raw === 'list') layout = 'list';
+      else if (raw === 'cards' || raw === '') layout = 'cards';
+      else return NextResponse.json({ ok: false, error: 'menu_layout invalido' }, { status: 400 });
+      const currentTheme =
+        (biz as any)?.theme_config && typeof (biz as any).theme_config === 'object'
+          ? { ...(biz as any).theme_config }
+          : {};
+      const currentMenu =
+        currentTheme.menu && typeof currentTheme.menu === 'object' ? { ...currentTheme.menu } : {};
+      const nextTheme = { ...currentTheme, menu: { ...currentMenu, layout } };
+      themeUpdates = nextTheme;
+    }
     if (socialUpdates) {
       updates.social = socialUpdates;
+    }
+    if (themeUpdates) {
+      updates.theme_config = themeUpdates;
     }
     if ('opening_hours' in body) {
       const raw = body.opening_hours;

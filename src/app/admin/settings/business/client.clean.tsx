@@ -18,6 +18,7 @@ type Biz = {
   opening_hours?: any | null;
   social?: { instagram?: string | null; facebook?: string | null; tiktok?: string | null; web?: string | null } | null;
   menu_mode?: 'fixed' | 'daily';
+  menu_layout?: 'cards' | 'list' | null;
 };
 
 export default function BusinessSettingsClient() {
@@ -55,8 +56,9 @@ export default function BusinessSettingsClient() {
    const [tiktok, setTiktok] = useState('');
    const [web, setWeb] = useState('');
    const [saving, setSaving] = useState(false);
-   const [msg, setMsg] = useState<string | null>(null);
-   const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
+  const [menuLayout, setMenuLayout] = useState<'cards' | 'list'>('cards');
  
   useEffect(() => {
     (async () => {
@@ -92,6 +94,7 @@ export default function BusinessSettingsClient() {
         setTiktok(j.data.social?.tiktok || '');
         setWeb(j.data.social?.web || '');
         setMenuMode((j.data.menu_mode as 'fixed' | 'daily') || 'fixed');
+        setMenuLayout((j.data.menu_layout as 'cards' | 'list') === 'list' ? 'list' : 'cards');
       } else {
         setMsg(j?.error || 'No se pudo cargar la configuracion');
       }
@@ -126,6 +129,7 @@ export default function BusinessSettingsClient() {
           social: { instagram, facebook, tiktok, web },
           opening_hours: hours && Object.keys(hours).length ? hours : '',
           menu_mode: menuMode,
+          menu_layout: menuLayout,
         }),
       });
       const j = await r.json();
@@ -229,6 +233,53 @@ export default function BusinessSettingsClient() {
                 Fijo: el catalogo funciona como ahora. Por dias: al crear productos podras marcar los dias
                 disponibles y el menu publico mostrara pestanas L-D.
               </p>
+            </fieldset>
+
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-slate-700">Diseno de la carta</legend>
+              <p className="text-xs text-slate-500">
+                Elige si quieres mostrar productos con tarjetas con foto o en un listado compacto sin imagenes.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label
+                  className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+                    menuLayout === 'cards' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="menu_layout"
+                    value="cards"
+                    checked={menuLayout === 'cards'}
+                    onChange={() => setMenuLayout('cards')}
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="block font-medium">Con imagenes</span>
+                    <span className="text-xs text-slate-500">Diseno actual con tarjetas y foto de cada producto.</span>
+                  </span>
+                </label>
+                <label
+                  className={`flex items-start gap-3 rounded border px-3 py-2 text-sm ${
+                    menuLayout === 'list' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="menu_layout"
+                    value="list"
+                    checked={menuLayout === 'list'}
+                    onChange={() => setMenuLayout('list')}
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="block font-medium">Listado compacto</span>
+                    <span className="text-xs text-slate-500">
+                      Agrupa por categoria y muestra los productos en filas sin imagen, ideal para cartas extensas.
+                    </span>
+                  </span>
+                </label>
+              </div>
             </fieldset>
         </Section>
 
