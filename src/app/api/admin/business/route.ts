@@ -69,6 +69,9 @@ export async function GET(req: Request) {
     const reservationsCapacity = Number(social?.reservations_capacity ?? 0);
     const theme = (biz as any)?.theme_config || {};
     const menuLayout = theme?.menu?.layout === 'list' ? 'list' : 'cards';
+    const telegramEnabled = !!social?.telegram_notifications_enabled;
+    const telegramToken = social?.telegram_bot_token || null;
+    const telegramChatId = social?.telegram_chat_id || null;
     return NextResponse.json({
       ok: true,
       data: {
@@ -80,6 +83,9 @@ export async function GET(req: Request) {
         reservations_email: social.reservations_email || (biz as any)?.email || null,
         reservations_capacity: Number.isFinite(reservationsCapacity) && reservationsCapacity > 0 ? Math.floor(reservationsCapacity) : 0,
         menu_layout: menuLayout,
+        telegram_notifications_enabled: telegramEnabled,
+        telegram_bot_token: telegramToken,
+        telegram_chat_id: telegramChatId,
       },
     });
   } catch (e: any) {
@@ -125,6 +131,23 @@ export async function PATCH(req: Request) {
       if (!socialUpdates) socialUpdates = { ...socialBase };
       const val = typeof body.notify_orders_email === 'string' ? body.notify_orders_email.trim() : null;
       socialUpdates.notify_orders_email = val ? val : null;
+    }
+    if (body.telegram_notifications_enabled !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      socialUpdates.telegram_notifications_enabled = !!body.telegram_notifications_enabled;
+    }
+    if (body.telegram_bot_token !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const val = typeof body.telegram_bot_token === 'string' ? body.telegram_bot_token.trim() : null;
+      socialUpdates.telegram_bot_token = val || null;
+    }
+    if (body.telegram_chat_id !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const val =
+        typeof body.telegram_chat_id === 'string' || typeof body.telegram_chat_id === 'number'
+          ? String(body.telegram_chat_id).trim()
+          : null;
+      socialUpdates.telegram_chat_id = val || null;
     }
     if (body.orders_enabled !== undefined) {
       if (!socialUpdates) socialUpdates = { ...socialBase };

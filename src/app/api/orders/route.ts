@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
+import { buildOrderTelegramMessage, sendTelegramMessage } from '@/lib/telegram';
 
 type ItemInput = { productId: number; quantity: number };
 type BodyInput = {
@@ -161,6 +162,30 @@ export async function POST(req: NextRequest) {
             pickupTime: body.pickupAt,
             notes: body.notes || undefined,
           });
+        }
+        const telegramEnabled = !!notifySettings?.telegram_notifications_enabled;
+        const telegramToken = notifySettings?.telegram_bot_token
+          ? String(notifySettings.telegram_bot_token).trim()
+          : '';
+        const telegramChatId = notifySettings?.telegram_chat_id
+          ? String(notifySettings.telegram_chat_id).trim()
+          : '';
+        if (telegramEnabled && telegramToken && telegramChatId) {
+          const text = buildOrderTelegramMessage({
+            businessName: (business as any)?.name || undefined,
+            code,
+            total: totalCents / 100,
+            items: itemsSimple,
+            paymentMethod: body.paymentMethod,
+            pickupTime: body.pickupAt,
+            customerName: body.customer.name,
+            customerPhone: body.customer.phone,
+            customerEmail: body.customer.email || null,
+            notes: body.notes || null,
+          });
+          if (text) {
+            await sendTelegramMessage({ token: telegramToken, chatId: telegramChatId, text });
+          }
         }
       } catch (e) {
         console.error('[email] create-order (non-blocking) fallo:', e);
