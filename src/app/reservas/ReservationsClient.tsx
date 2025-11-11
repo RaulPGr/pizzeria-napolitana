@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { persistTenantSlugClient, resolveTenantSlugClient } from "@/lib/tenant-client";
 
 type OpeningHours = Record<string, Array<{ abre?: string; cierra?: string; open?: string; close?: string }>>;
 
@@ -75,7 +76,7 @@ export default function ReservationsClient() {
     let active = true;
     (async () => {
       try {
-        const tenant = resolveTenantSlug();
+        const tenant = resolveTenantSlugClient();
         if (tenant) persistTenantSlugClient(tenant);
         const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
         const resp = await fetch(url, { cache: "no-store" });
@@ -157,7 +158,7 @@ export default function ReservationsClient() {
     setSubmitting(true);
     setMessage(null);
     try {
-      const tenantSlug = resolveTenantSlug();
+      const tenantSlug = resolveTenantSlugClient();
       if (tenantSlug) persistTenantSlugClient(tenantSlug);
       const endpoint = tenantSlug ? `/api/reservations?tenant=${encodeURIComponent(tenantSlug)}` : "/api/reservations";
       const resp = await fetch(endpoint, {
