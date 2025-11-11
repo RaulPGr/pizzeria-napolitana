@@ -7,9 +7,9 @@ function normalizeSlug(value: string | null | undefined) {
 }
 
 // Lee el slug de cookie (seteada por middleware) y resuelve el negocio
-export async function getTenant() {
+export async function getTenant(explicit?: string | null) {
   const cookieStore = await cookies();
-  let slug = normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
+  let slug = normalizeSlug(explicit) || normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
 
   if (!slug) {
     try {

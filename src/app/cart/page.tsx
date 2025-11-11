@@ -278,7 +278,9 @@ function CartPageContent() {
 
     try {
       setSending(true);
-      const res = await fetch("/api/orders", {
+      const tenantSlug = getTenantSlugFromCookie();
+      const endpoint = tenantSlug ? `/api/orders?tenant=${encodeURIComponent(tenantSlug)}` : "/api/orders";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -300,7 +302,6 @@ function CartPageContent() {
       setSending(false);
     }
   }
-
   // UI
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -451,6 +452,12 @@ function CartDisabledNotice({ plan, ordersEnabled }: { plan: SubscriptionPlan; o
       </div>
     </div>
   );
+}
+
+function getTenantSlugFromCookie(): string {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(/(?:^|;\s*)x-tenant-slug=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
 }
 
 export default function CartPage() {

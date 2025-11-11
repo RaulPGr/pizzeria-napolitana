@@ -16,9 +16,11 @@ type BodyInput = {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BodyInput;
+    const url = new URL(req.url);
+    const slugParam = url.searchParams.get('tenant');
 
     // 0) Cargar tenant (para asociar negocio). La validación estricta del horario se realiza en cliente.
-    const tenant = await getTenant();
+    const tenant = await getTenant(slugParam);
     if (!tenant) {
       return NextResponse.json(
         { ok: false, message: 'Negocio no encontrado' },

@@ -168,7 +168,9 @@ export default function ReservationsClient() {
     setSubmitting(true);
     setMessage(null);
     try {
-      const resp = await fetch("/api/reservations", {
+      const tenantSlug = getTenantSlugFromCookie();
+      const endpoint = tenantSlug ? `/api/reservations?tenant=${encodeURIComponent(tenantSlug)}` : "/api/reservations";
+      const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -326,4 +328,10 @@ export default function ReservationsClient() {
       </form>
     </main>
   );
+}
+
+function getTenantSlugFromCookie(): string {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie.match(/(?:^|;\s*)x-tenant-slug=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
 }
