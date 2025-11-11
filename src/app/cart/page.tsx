@@ -47,9 +47,18 @@ function CartPageContent() {
 
   // Cargar métodos de pago
   useEffect(() => {
+    const slug = resolveTenantSlug();
+    if (slug) {
+      persistTenantCookie(slug);
+    }
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/settings/payments', { cache: 'no-store' });
+        const slug = resolveTenantSlug();
+        const endpoint = slug ? `/api/settings/payments?tenant=${encodeURIComponent(slug)}` : "/api/settings/payments";
+        const res = await fetch(endpoint, { cache: "no-store" });
         const j = await res.json();
         if (j?.ok && j?.data) {
           setMethods({ cash: !!j.data.cash, card: !!j.data.card });
@@ -67,7 +76,9 @@ function CartPageContent() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/settings/schedule', { cache: 'no-store' });
+        const slug = resolveTenantSlug();
+        const endpoint = slug ? `/api/settings/schedule?tenant=${encodeURIComponent(slug)}` : "/api/settings/schedule";
+        const res = await fetch(endpoint, { cache: "no-store" });
         const j = await res.json();
         if (j?.ok) setSchedule(j.data || null);
       } catch {}
