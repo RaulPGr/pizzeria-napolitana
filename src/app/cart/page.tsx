@@ -278,7 +278,8 @@ function CartPageContent() {
 
     try {
       setSending(true);
-      const tenantSlug = getTenantSlugFromCookie();
+      const tenantSlug = resolveTenantSlug();
+      if (tenantSlug) persistTenantCookie(tenantSlug);
       const endpoint = tenantSlug ? `/api/orders?tenant=${encodeURIComponent(tenantSlug)}` : "/api/orders";
       const res = await fetch(endpoint, {
         method: "POST",
@@ -454,10 +455,25 @@ function CartDisabledNotice({ plan, ordersEnabled }: { plan: SubscriptionPlan; o
   );
 }
 
-function getTenantSlugFromCookie(): string {
-  if (typeof document === "undefined") return "";
+function resolveTenantSlug(): string {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("tenant")?.trim();
+  if (fromQuery) return fromQuery;
   const match = document.cookie.match(/(?:^|;\s*)x-tenant-slug=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
+  if (match) return decodeURIComponent(match[1]);
+  const host = window.location.hostname.toLowerCase();
+  const parts = host.split(".");
+  if (parts.length >= 3) {
+    const first = parts[0] === "www" && parts.length >= 4 ? parts[1] : parts[0];
+    return first;
+  }
+  return "";
+}
+
+function persistTenantCookie(slug: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `x-tenant-slug=${encodeURIComponent(slug)}; path=/; max-age=${60 * 60 * 24 * 30}`;
 }
 
 export default function CartPage() {
