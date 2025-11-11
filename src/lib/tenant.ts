@@ -7,7 +7,9 @@ function normalizeSlug(value: string | null | undefined) {
 }
 
 // Lee el slug de cookie (seteada por middleware) y resuelve el negocio
-export async function getTenant(explicit?: string | null) {
+type TenantOptions = { path?: string };
+
+export async function getTenant(explicit?: string | null, options?: TenantOptions) {
   const cookieStore = await cookies();
   let slug = normalizeSlug(explicit) || normalizeSlug(cookieStore.get('x-tenant-slug')?.value);
 
@@ -26,6 +28,16 @@ export async function getTenant(explicit?: string | null) {
     } catch {
       // ignore header errors
     }
+  }
+
+  if (!slug && options?.path) {
+    try {
+      const segments = options.path.split('/').filter(Boolean);
+      if (segments.length > 0) {
+        const candidate = segments[0];
+        slug = normalizeSlug(candidate);
+      }
+    } catch {}
   }
 
   if (!slug) return null;

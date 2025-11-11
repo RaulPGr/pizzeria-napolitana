@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const url = new URL(req.url);
     const slugParam = url.searchParams.get('tenant');
-    const tenant = await getTenant(slugParam);
+    const tenant = await getTenant(slugParam, { path: url.pathname });
     if (!tenant?.id) {
       return NextResponse.json({ ok: false, message: 'Negocio no encontrado' }, { status: 400 });
     }

@@ -8,6 +8,7 @@ import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
 import { subscriptionAllowsOrders, type SubscriptionPlan } from "@/lib/subscription";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import { persistTenantSlugClient, resolveTenantSlugClient } from "@/lib/tenant-client";
 
 type PaymentMethod = "cash" | "card";
 
@@ -47,16 +48,17 @@ function CartPageContent() {
 
   // Cargar métodos de pago
   useEffect(() => {
-    const slug = resolveTenantSlug();
+    const slug = resolveTenantSlugClient();
     if (slug) {
-      persistTenantCookie(slug);
+      persistTenantSlugClient(slug);
     }
   }, []);
 
   useEffect(() => {
     (async () => {
       try {
-        const slug = resolveTenantSlug();
+        const slug = resolveTenantSlugClient();
+        if (slug) persistTenantSlugClient(slug);
         const endpoint = slug ? `/api/settings/payments?tenant=${encodeURIComponent(slug)}` : "/api/settings/payments";
         const res = await fetch(endpoint, { cache: "no-store" });
         const j = await res.json();
@@ -76,7 +78,8 @@ function CartPageContent() {
   useEffect(() => {
     (async () => {
       try {
-        const slug = resolveTenantSlug();
+        const slug = resolveTenantSlugClient();
+        if (slug) persistTenantSlugClient(slug);
         const endpoint = slug ? `/api/settings/schedule?tenant=${encodeURIComponent(slug)}` : "/api/settings/schedule";
         const res = await fetch(endpoint, { cache: "no-store" });
         const j = await res.json();
@@ -289,8 +292,8 @@ function CartPageContent() {
 
     try {
       setSending(true);
-      const tenantSlug = resolveTenantSlug();
-      if (tenantSlug) persistTenantCookie(tenantSlug);
+      const tenantSlug = resolveTenantSlugClient();
+      if (tenantSlug) persistTenantSlugClient(tenantSlug);
       const endpoint = tenantSlug ? `/api/orders?tenant=${encodeURIComponent(tenantSlug)}` : "/api/orders";
       const res = await fetch(endpoint, {
         method: "POST",
@@ -466,26 +469,7 @@ function CartDisabledNotice({ plan, ordersEnabled }: { plan: SubscriptionPlan; o
   );
 }
 
-function resolveTenantSlug(): string {
-  if (typeof window === "undefined") return "";
-  const params = new URLSearchParams(window.location.search);
-  const fromQuery = params.get("tenant")?.trim();
-  if (fromQuery) return fromQuery;
-  const match = document.cookie.match(/(?:^|;\s*)x-tenant-slug=([^;]+)/);
-  if (match) return decodeURIComponent(match[1]);
-  const host = window.location.hostname.toLowerCase();
-  const parts = host.split(".");
-  if (parts.length >= 3) {
-    const first = parts[0] === "www" && parts.length >= 4 ? parts[1] : parts[0];
-    return first;
-  }
-  return "";
-}
 
-function persistTenantCookie(slug: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `x-tenant-slug=${encodeURIComponent(slug)}; path=/; max-age=${60 * 60 * 24 * 30}`;
-}
 
 export default function CartPage() {
   const plan = useSubscriptionPlan();

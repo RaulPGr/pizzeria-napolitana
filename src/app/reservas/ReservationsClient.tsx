@@ -76,7 +76,7 @@ export default function ReservationsClient() {
     (async () => {
       try {
         const tenant = resolveTenantSlug();
-        if (tenant) persistTenantCookie(tenant);
+        if (tenant) persistTenantSlugClient(tenant);
         const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
         const resp = await fetch(url, { cache: "no-store" });
         const j = await resp.json();
@@ -158,7 +158,7 @@ export default function ReservationsClient() {
     setMessage(null);
     try {
       const tenantSlug = resolveTenantSlug();
-      if (tenantSlug) persistTenantCookie(tenantSlug);
+      if (tenantSlug) persistTenantSlugClient(tenantSlug);
       const endpoint = tenantSlug ? `/api/reservations?tenant=${encodeURIComponent(tenantSlug)}` : "/api/reservations";
       const resp = await fetch(endpoint, {
         method: "POST",
@@ -318,24 +318,4 @@ export default function ReservationsClient() {
       </form>
     </main>
   );
-}
-function resolveTenantSlug(): string {
-  if (typeof window === "undefined") return "";
-  const params = new URLSearchParams(window.location.search);
-  const fromQuery = params.get("tenant")?.trim();
-  if (fromQuery) return fromQuery;
-  const match = document.cookie.match(/(?:^|;\s*)x-tenant-slug=([^;]+)/);
-  if (match) return decodeURIComponent(match[1]);
-  const host = window.location.hostname.toLowerCase();
-  const parts = host.split(".");
-  if (parts.length >= 3) {
-    const first = parts[0] === "www" && parts.length >= 4 ? parts[1] : parts[0];
-    return first;
-  }
-  return "";
-}
-
-function persistTenantCookie(slug: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `x-tenant-slug=${encodeURIComponent(slug)}; path=/; max-age=${60 * 60 * 24 * 30}`;
 }

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const slugParam = url.searchParams.get('tenant');
 
     // 0) Cargar tenant (para asociar negocio). La validación estricta del horario se realiza en cliente.
-    const tenant = await getTenant(slugParam);
+    const tenant = await getTenant(slugParam, { path: url.pathname });
     if (!tenant) {
       return NextResponse.json(
         { ok: false, message: 'Negocio no encontrado' },
