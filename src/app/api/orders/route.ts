@@ -115,7 +115,6 @@ export async function POST(req: NextRequest) {
     ;(async () => {
       try {
         // Enviar SIEMPRE si el pedido trae email del cliente (no bloquea la respuesta)
-        if (!body.customer?.email) return;
         const { data: business } = await supabaseAdmin
           .from('businesses')
           .select('name, email, address_line, city, postal_code, logo_url, social')
