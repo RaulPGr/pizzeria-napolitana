@@ -1,5 +1,12 @@
 {
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm ci || npm install"
+  "installCommand": "npm ci || npm install",
+  "crons": [
+    {
+      "path": "/api/orders/telegram-retry",
+      "schedule": "*/2 * * * *",
+      "method": "POST"
+    }
+  ]
 }

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
-import { buildOrderTelegramMessage, createTelegramSignature, sendTelegramMessage } from '@/lib/telegram';
+import { notifyOrderViaTelegram } from '@/lib/order-telegram-notify';
 
 type ItemInput = { productId: number; quantity: number };
 type BodyInput = {
@@ -167,56 +167,16 @@ export async function POST(req: NextRequest) {
             notes: body.notes || undefined,
           });
         }
-        const telegramEnabled = !!notifySettings?.telegram_notifications_enabled;
-        const telegramToken = notifySettings?.telegram_bot_token
-          ? String(notifySettings.telegram_bot_token).trim()
-          : '';
-        const telegramChatId = notifySettings?.telegram_chat_id
-          ? String(notifySettings.telegram_chat_id).trim()
-          : '';
-        if (telegramEnabled && telegramToken && telegramChatId) {
-          const slug = ((tenant as any)?.slug || "").toLowerCase();
-          const baseUrl =
-            process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-          let replyMarkup: any;
-          if (slug && baseUrl) {
-            const ts = Date.now().toString();
-            const confirmSig = createTelegramSignature(slug, orderId, ts, "delivered");
-            const cancelSig = createTelegramSignature(slug, orderId, ts, "cancelled");
-            const buttons: Array<Array<{ text: string; url: string }>> = [];
-            if (confirmSig) {
-              const confirmUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
-                slug
-              )}&order=${encodeURIComponent(orderId)}&ts=${ts}&sig=${confirmSig}&action=delivered`;
-              buttons.push([{ text: "✅ Marcar entregado", url: confirmUrl }]);
-            }
-            if (cancelSig) {
-              const cancelUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
-                slug
-              )}&order=${encodeURIComponent(orderId)}&ts=${ts}&sig=${cancelSig}&action=cancelled`;
-              buttons.push([{ text: "❌ Cancelar pedido", url: cancelUrl }]);
-            }
-            if (buttons.length) replyMarkup = { inline_keyboard: buttons };
-          }
-          const text = buildOrderTelegramMessage({
-            businessName: (business as any)?.name || undefined,
-            code,
-            total: totalCents / 100,
-            items: itemsSimple,
-            paymentMethod: body.paymentMethod,
-            pickupTime: body.pickupAt,
-            customerName: body.customer.name,
-            customerPhone: body.customer.phone,
-            customerEmail: body.customer.email || null,
-            notes: body.notes || null,
-          });
-          if (text) {
-            await sendTelegramMessage({ token: telegramToken, chatId: telegramChatId, text, replyMarkup });
-          }
-        }
       } catch (e) {
         console.error('[email] create-order (non-blocking) fallo:', e);
+      }
+      try {
+        const result = await notifyOrderViaTelegram(orderId);
+        if (!result.ok && !result.skip) {
+          console.error(`[telegram] order ${orderId} fallo: ${result.error}`);
+        }
+      } catch (err) {
+        console.error('[telegram] unexpected error', err);
       }
     })();
     return NextResponse.json({ ok: true, orderId, code });

@@ -1,0 +1,137 @@
+"use server";
+
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { buildOrderTelegramMessage, createTelegramSignature, sendTelegramMessage } from "@/lib/telegram";
+
+type NotifyResult =
+  | { ok: true }
+  | { ok: false; skip?: boolean; error: string };
+
+function appBaseUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "";
+}
+
+export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyResult> {
+  const { data: order, error } = await supabaseAdmin
+    .from("orders")
+    .select(
+      `
+        id,
+        code,
+        total_cents,
+        payment_method,
+        pickup_at,
+        notes,
+        customer_name,
+        customer_phone,
+        customer_email,
+        telegram_notify_errors,
+        business:businesses(
+          id,
+          slug,
+          name,
+          social
+        ),
+        order_items(
+          name,
+          quantity,
+          unit_price_cents
+        )
+      `
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (error || !order) {
+    return { ok: false, error: error?.message || "Pedido no encontrado" };
+  }
+
+  const social = (order.business as any)?.social || {};
+  const telegramEnabled = !!social?.telegram_notifications_enabled;
+  const telegramToken = social?.telegram_bot_token ? String(social.telegram_bot_token).trim() : "";
+  const telegramChatId = social?.telegram_chat_id ? String(social.telegram_chat_id).trim() : "";
+  if (!telegramEnabled || !telegramToken || !telegramChatId) {
+    return { ok: false, skip: true, error: "Telegram no configurado para este negocio" };
+  }
+
+  const itemsSimple =
+    Array.isArray(order.order_items) && order.order_items.length > 0
+      ? order.order_items.map((it: any) => ({
+          name: it.name,
+          qty: it.quantity,
+          price: (it.unit_price_cents || 0) / 100,
+        }))
+      : [];
+
+  const slug = (order.business as any)?.slug || "";
+  const baseUrl = appBaseUrl();
+  let replyMarkup: any;
+  if (slug && baseUrl) {
+    const ts = Date.now().toString();
+    const confirmSig = createTelegramSignature(slug, order.id, ts, "delivered");
+    const cancelSig = createTelegramSignature(slug, order.id, ts, "cancelled");
+    const buttons: Array<Array<{ text: string; url: string }>> = [];
+    if (confirmSig) {
+      const confirmUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
+        slug
+      )}&order=${encodeURIComponent(order.id)}&ts=${ts}&sig=${confirmSig}&action=delivered`;
+      buttons.push([{ text: "✅ Marcar entregado", url: confirmUrl }]);
+    }
+    if (cancelSig) {
+      const cancelUrl = `${baseUrl}/api/orders/telegram-complete?tenant=${encodeURIComponent(
+        slug
+      )}&order=${encodeURIComponent(order.id)}&ts=${ts}&sig=${cancelSig}&action=cancelled`;
+      buttons.push([{ text: "❌ Cancelar pedido", url: cancelUrl }]);
+    }
+    if (buttons.length) replyMarkup = { inline_keyboard: buttons };
+  }
+
+  const text = buildOrderTelegramMessage({
+    businessName: (order.business as any)?.name || undefined,
+    code: order.code || undefined,
+    total: (order.total_cents || 0) / 100,
+    items: itemsSimple,
+    paymentMethod: order.payment_method || undefined,
+    pickupTime: order.pickup_at || undefined,
+    customerName: order.customer_name,
+    customerPhone: order.customer_phone || undefined,
+    customerEmail: order.customer_email || undefined,
+    notes: order.notes || undefined,
+  });
+
+  if (!text) {
+    return { ok: false, skip: true, error: "Mensaje vacío" };
+  }
+
+  try {
+    await sendTelegramMessage({
+      token: telegramToken,
+      chatId: telegramChatId,
+      text,
+      replyMarkup,
+    });
+
+    await supabaseAdmin
+      .from("orders")
+      .update({
+        telegram_notified_at: new Date().toISOString(),
+        telegram_notify_errors: 0,
+        telegram_last_error: null,
+      })
+      .eq("id", order.id);
+
+    return { ok: true };
+  } catch (err: any) {
+    const message = err?.message || "Fallo al enviar Telegram";
+    await supabaseAdmin
+      .from("orders")
+      .update({
+        telegram_notify_errors: (order.telegram_notify_errors || 0) + 1,
+        telegram_last_error: message,
+      })
+      .eq("id", order.id);
+    return { ok: false, error: message };
+  }
+}
