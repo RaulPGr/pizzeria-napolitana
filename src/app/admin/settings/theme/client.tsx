@@ -25,11 +25,19 @@ type ThemeHome = {
   heroOverlay?: boolean;
 };
 
+type ThemeNotifications = {
+  telegram_bot_token?: string;
+  telegram_chat_id?: string;
+  telegram_reservations_bot_token?: string;
+  telegram_reservations_chat_id?: string;
+};
+
 type ThemeConfig = {
   colors?: ThemeColors;
   fonts?: ThemeFonts;
   home?: ThemeHome;
   subscription?: SubscriptionPlan;
+  notifications?: ThemeNotifications;
 };
 
 const DEFAULTS: {
@@ -189,6 +197,10 @@ export default function ThemeSettingsClient() {
   const [members, setMembers] = useState<
     Array<{ userId: string; email: string | null; role: string; createdAt: string | null }>
   >([]);
+  const [telegramToken, setTelegramToken] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
+  const [telegramResToken, setTelegramResToken] = useState("");
+  const [telegramResChatId, setTelegramResChatId] = useState("");
 
   const merged = useMemo(
     () => ({
@@ -319,6 +331,31 @@ export default function ThemeSettingsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const tenant = getTenantFromUrl();
+    if (!tenant) return;
+    (async () => {
+      try {
+        const url = `/api/admin/business?tenant=${encodeURIComponent(tenant)}`;
+        const resp = await fetch(url, { cache: "no-store" });
+        const j = await resp.json();
+        if (!active) return;
+        if (j?.ok && j?.data) {
+          setTelegramToken(j.data.telegram_bot_token || "");
+          setTelegramChatId(j.data.telegram_chat_id || "");
+          setTelegramResToken(j.data.telegram_reservations_bot_token || "");
+          setTelegramResChatId(j.data.telegram_reservations_chat_id || "");
+        }
+      } catch (e) {
+        console.error("[theme] telegram fetch error", e);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Cargar tema actual
   useEffect(() => {
     let active = true;
@@ -351,6 +388,20 @@ export default function ThemeSettingsClient() {
       });
       const j = await resp.json();
       if (!resp.ok || !j?.ok) throw new Error(j?.error || "Error al guardar");
+      const tenant = getTenantFromUrl();
+      const bizUrl = tenant ? `/api/admin/business?tenant=${encodeURIComponent(tenant)}` : "/api/admin/business";
+      const bizResp = await fetch(bizUrl, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          telegram_bot_token: telegramToken || null,
+          telegram_chat_id: telegramChatId || null,
+          telegram_reservations_bot_token: telegramResToken || null,
+          telegram_reservations_chat_id: telegramResChatId || null,
+        }),
+      });
+      const bizJson = await bizResp.json();
+      if (!bizResp.ok || !bizJson?.ok) throw new Error(bizJson?.error || "Error al guardar Telegram");
     } catch (e: any) {
       setError(e?.message || "Error al guardar");
     } finally {
@@ -715,6 +766,57 @@ export default function ThemeSettingsClient() {
         <p className="mt-1 text-xs text-slate-500">
           Si lo desactivas, el nombre y el boton "Ver menu ahora" solo se mostraran en el banner superior.
         </p>
+      </div>
+
+      <div className="rounded border bg-white p-4">
+        <h2 className="text-sm font-medium text-slate-700">Telegram (solo superadmins)</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Define el bot y el chat oficiales. En /settings cada negocio solo podra activar o desactivar los avisos.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="text-sm font-medium text-slate-700">
+            Token del bot (pedidos)
+            <input
+              className="mt-1 w-full rounded border border-slate-200 px-3 py-2"
+              value={telegramToken}
+              onChange={(e) => setTelegramToken(e.target.value)}
+              placeholder="123456:ABCDEF..."
+            />
+            <span className="mt-1 block text-xs text-slate-500">
+              Crea el bot con @BotFather y pega el token aqui. Usa un bot distinto por comercio si lo necesitas.
+            </span>
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Chat ID (pedidos)
+            <input
+              className="mt-1 w-full rounded border border-slate-200 px-3 py-2"
+              value={telegramChatId}
+              onChange={(e) => setTelegramChatId(e.target.value)}
+              placeholder="Ej: -100123456789"
+            />
+            <span className="mt-1 block text-xs text-slate-500">
+              Inicia el chat con el bot y usa https://api.telegram.org/botTOKEN/getUpdates para obtener el chat_id.
+            </span>
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Token del bot (reservas)
+            <input
+              className="mt-1 w-full rounded border border-slate-200 px-3 py-2"
+              value={telegramResToken}
+              onChange={(e) => setTelegramResToken(e.target.value)}
+              placeholder="Opcional, puedes reutilizar el mismo bot"
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Chat ID (reservas)
+            <input
+              className="mt-1 w-full rounded border border-slate-200 px-3 py-2"
+              value={telegramResChatId}
+              onChange={(e) => setTelegramResChatId(e.target.value)}
+              placeholder="Ej: -100123456789"
+            />
+          </label>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

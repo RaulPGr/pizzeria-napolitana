@@ -52,11 +52,9 @@ export default function BusinessSettingsClient() {
   const [reservationsEmail, setReservationsEmail] = useState('');
   const [reservationsCapacity, setReservationsCapacity] = useState<number>(0);
   const [telegramEnabled, setTelegramEnabled] = useState(false);
-  const [telegramToken, setTelegramToken] = useState('');
-  const [telegramChatId, setTelegramChatId] = useState('');
+  const [telegramConfigured, setTelegramConfigured] = useState(false);
   const [telegramResEnabled, setTelegramResEnabled] = useState(false);
-  const [telegramResToken, setTelegramResToken] = useState('');
-  const [telegramResChatId, setTelegramResChatId] = useState('');
+  const [telegramResConfigured, setTelegramResConfigured] = useState(false);
    const [instagram, setInstagram] = useState('');
    const [facebook, setFacebook] = useState('');
    const [tiktok, setTiktok] = useState('');
@@ -96,11 +94,9 @@ export default function BusinessSettingsClient() {
         const cap = Number(j.data.reservations_capacity ?? 0);
         setReservationsCapacity(Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0);
         setTelegramEnabled(Boolean(j.data.telegram_notifications_enabled));
-        setTelegramToken(j.data.telegram_bot_token || '');
-        setTelegramChatId(j.data.telegram_chat_id || '');
+        setTelegramConfigured(Boolean(j.data.telegram_bot_token && j.data.telegram_chat_id));
         setTelegramResEnabled(Boolean(j.data.telegram_reservations_enabled));
-        setTelegramResToken(j.data.telegram_reservations_bot_token || '');
-        setTelegramResChatId(j.data.telegram_reservations_chat_id || '');
+        setTelegramResConfigured(Boolean(j.data.telegram_reservations_bot_token && j.data.telegram_reservations_chat_id));
         setInstagram(j.data.social?.instagram || '');
         setFacebook(j.data.social?.facebook || '');
         setTiktok(j.data.social?.tiktok || '');
@@ -136,11 +132,7 @@ export default function BusinessSettingsClient() {
         reservations_email: reservationsEmail || null,
         reservations_capacity: reservationsCapacity,
         telegram_notifications_enabled: telegramEnabled,
-        telegram_bot_token: telegramToken || null,
-        telegram_chat_id: telegramChatId || null,
         telegram_reservations_enabled: telegramResEnabled,
-        telegram_reservations_bot_token: telegramResToken || null,
-        telegram_reservations_chat_id: telegramResChatId || null,
           address_line: address,
           lat: lat !== '' ? Number(lat) : null,
           lng: lng !== '' ? Number(lng) : null,
@@ -428,86 +420,46 @@ export default function BusinessSettingsClient() {
         {canManageOrders && (
           <Section
             title="Alertas por Telegram (Pedidos)"
-            description="Recibe el mismo aviso en tu movil usando un bot de Telegram."
+            description="Activa o desactiva los avisos. El bot y el chat se configuran en Apariencia → Tema."
           >
+            {!telegramConfigured && (
+              <p className="text-xs text-rose-600">
+                Telegram no está configurado. Pide al superadmin que lo configure en la pestaña Tema.
+              </p>
+            )}
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
                 className="h-4 w-4"
                 checked={telegramEnabled}
+                disabled={!telegramConfigured}
                 onChange={(e) => setTelegramEnabled(e.target.checked)}
               />
-              <span>Activar avisos por Telegram</span>
+              <span>Recibir avisos por Telegram</span>
             </label>
-            {telegramEnabled && (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-500">
-                  Pasos: 1) Crea un bot con @BotFather y copia el token. 2) Inicia chat con tu bot, enviale un mensaje y
-                  pega abajo el chat ID (lo obtienes en https://api.telegram.org/botTOKEN/getUpdates). Solo necesitas
-                  hacerlo una vez.
-                </p>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Token del bot</label>
-                  <input
-                    className="w-full rounded border border-slate-200 px-3 py-2"
-                    value={telegramToken}
-                    onChange={(e) => setTelegramToken(e.target.value)}
-                    placeholder="123456:ABCDEF..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Chat ID donde avisar</label>
-                  <input
-                    className="w-full rounded border border-slate-200 px-3 py-2"
-                    value={telegramChatId}
-                    onChange={(e) => setTelegramChatId(e.target.value)}
-                    placeholder="Ej: 123456789"
-                  />
-                </div>
-              </div>
-            )}
           </Section>
         )}
 
         {canManageReservations && (
           <Section
             title="Alertas por Telegram (Reservas)"
-            description="Envía las reservas nuevas a otro chat si lo necesitas."
+            description="Usa Telegram para enterarte de las reservas aunque no tengas el panel abierto."
           >
+            {!telegramResConfigured && (
+              <p className="text-xs text-rose-600">
+                Telegram para reservas no está configurado. Pide al superadmin que lo añada en la pestaña Tema.
+              </p>
+            )}
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
                 className="h-4 w-4"
                 checked={telegramResEnabled}
+                disabled={!telegramResConfigured}
                 onChange={(e) => setTelegramResEnabled(e.target.checked)}
               />
               <span>Activar avisos para reservas</span>
             </label>
-            {telegramResEnabled && (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-500">
-                  Puedes usar el mismo bot que los pedidos pero apuntar a otro chat o grupo.
-                </p>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Token del bot</label>
-                  <input
-                    className="w-full rounded border border-slate-200 px-3 py-2"
-                    value={telegramResToken}
-                    onChange={(e) => setTelegramResToken(e.target.value)}
-                    placeholder="123456:ABCDEF..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Chat ID destino</label>
-                  <input
-                    className="w-full rounded border border-slate-200 px-3 py-2"
-                    value={telegramResChatId}
-                    onChange={(e) => setTelegramResChatId(e.target.value)}
-                    placeholder="Ej: -100123456789"
-                  />
-                </div>
-              </div>
-            )}
           </Section>
         )}
 

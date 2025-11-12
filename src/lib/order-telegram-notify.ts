@@ -33,11 +33,6 @@ export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyRes
           slug,
           name,
           social
-        ),
-        order_items(
-          name,
-          quantity,
-          unit_price_cents
         )
       `
     )
@@ -56,14 +51,19 @@ export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyRes
     return { ok: false, skip: true, error: "Telegram no configurado para este negocio" };
   }
 
-  const itemsSimple =
-    Array.isArray(order.order_items) && order.order_items.length > 0
-      ? order.order_items.map((it: any) => ({
-          name: it.name,
-          qty: it.quantity,
-          price: (it.unit_price_cents || 0) / 100,
-        }))
-      : [];
+  const { data: orderItems, error: itemsErr } = await supabaseAdmin
+    .from("order_items")
+    .select("name, quantity, unit_price_cents")
+    .eq("order_id", orderId);
+  if (itemsErr) {
+    return { ok: false, error: itemsErr.message };
+  }
+
+  const itemsSimple = (orderItems || []).map((it: any) => ({
+    name: it.name,
+    qty: it.quantity,
+    price: (it.unit_price_cents || 0) / 100,
+  }));
 
   const slug = (order.business as any)?.slug || "";
   const baseUrl = appBaseUrl();
