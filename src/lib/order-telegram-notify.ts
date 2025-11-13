@@ -56,6 +56,11 @@ export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyRes
     ""
   ).toString().trim();
   if (!telegramEnabled || !telegramToken || !telegramChatId) {
+    console.warn("[telegram] skip order", order.id, {
+      telegramEnabled,
+      hasToken: Boolean(telegramToken),
+      hasChat: Boolean(telegramChatId),
+    });
     return { ok: false, skip: true, error: "Telegram no configurado para este negocio" };
   }
 
