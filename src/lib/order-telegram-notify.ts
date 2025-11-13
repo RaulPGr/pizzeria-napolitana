@@ -45,8 +45,16 @@ export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyRes
 
   const social = (order.business as any)?.social || {};
   const telegramEnabled = !!social?.telegram_notifications_enabled;
-  const telegramToken = social?.telegram_bot_token ? String(social.telegram_bot_token).trim() : "";
-  const telegramChatId = social?.telegram_chat_id ? String(social.telegram_chat_id).trim() : "";
+  const telegramToken = (
+    social?.telegram_bot_token ||
+    social?.telegram_reservations_bot_token ||
+    ""
+  ).toString().trim();
+  const telegramChatId = (
+    social?.telegram_chat_id ||
+    social?.telegram_reservations_chat_id ||
+    ""
+  ).toString().trim();
   if (!telegramEnabled || !telegramToken || !telegramChatId) {
     return { ok: false, skip: true, error: "Telegram no configurado para este negocio" };
   }
