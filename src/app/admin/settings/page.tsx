@@ -12,7 +12,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <details open className="rounded-lg border bg-white shadow-sm">
+      <details className="rounded-lg border bg-white shadow-sm">
         <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">Configuracion del negocio</summary>
         <div className="p-4">
           <BusinessSettingsClient />
