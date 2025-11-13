@@ -6,3 +6,4 @@ alter table public.orders
 create index if not exists idx_orders_telegram_pending
   on public.orders (created_at)
   where telegram_notified_at is null;
+-- comentario de prueba
