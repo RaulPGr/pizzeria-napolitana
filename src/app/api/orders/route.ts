@@ -169,15 +169,16 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error('[email] create-order (non-blocking) fallo:', e);
       }
-      try {
-        const result = await notifyOrderViaTelegram(orderId);
-        if (!result.ok && !result.skip) {
-          console.error(`[telegram] order ${orderId} fallo: ${result.error}`);
-        }
-      } catch (err) {
-        console.error('[telegram] unexpected error', err);
-      }
     })();
+
+    try {
+      const result = await notifyOrderViaTelegram(orderId);
+      if (!result.ok && !result.skip) {
+        console.error(`[telegram] order ${orderId} fallo: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('[telegram] unexpected error', err);
+    }
     return NextResponse.json({ ok: true, orderId, code });
   } catch (err: any) {
     return NextResponse.json(
