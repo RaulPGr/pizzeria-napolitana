@@ -21,6 +21,13 @@ type Dataset = {
   newVsReturning: { newCount: number; returningCount: number };
   monthly: Array<{ ym: string; cents: number; count: number }>;
   byCategory: Array<{ id: number | 'nocat'; name: string; cents: number; qty: number }>;
+  reservationsSummary: {
+    total: number;
+    confirmed: number;
+    pending: number;
+    cancelled: number;
+    upcoming: number;
+  };
 };
 
 export async function GET(req: NextRequest) {
@@ -203,6 +210,29 @@ export async function GET(req: NextRequest) {
     }
     const byCategory = Array.from(catAgg.entries()).map(([id, v]) => ({ id, name: v.name, cents: v.cents, qty: v.qty }));
 
+    // Reservas (mismo rango temporal)
+    let resQuery = supabaseAdmin
+      .from('reservations')
+      .select('id, status, reserved_at')
+      .order('reserved_at', { ascending: true });
+    if (from) resQuery = resQuery.gte('reserved_at', new Date(from).toISOString());
+    if (to) resQuery = resQuery.lte('reserved_at', new Date(to).toISOString());
+    if (bid) resQuery = resQuery.eq('business_id', bid);
+    const { data: reservations, error: reservationsErr } = await resQuery;
+    if (reservationsErr) throw reservationsErr;
+    const reservationsList = reservations || [];
+    const nowTs = Date.now();
+    const reservationsSummary = {
+      total: reservationsList.length,
+      confirmed: reservationsList.filter((r: any) => r.status === 'confirmed').length,
+      pending: reservationsList.filter((r: any) => r.status === 'pending').length,
+      cancelled: reservationsList.filter((r: any) => r.status === 'cancelled').length,
+      upcoming: reservationsList.filter((r: any) => {
+        const when = r?.reserved_at ? Date.parse(r.reserved_at) : NaN;
+        return Number.isFinite(when) && when >= nowTs && r.status !== 'cancelled';
+      }).length,
+    };
+
     const payload: Dataset = {
       ordersCount: orders?.length || 0,
       deliveredCount: delivered.length,
@@ -217,6 +247,7 @@ export async function GET(req: NextRequest) {
       newVsReturning,
       monthly,
       byCategory,
+      reservationsSummary,
     };
 
     return NextResponse.json({ ok: true, data: payload });
