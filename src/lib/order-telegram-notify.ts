@@ -13,7 +13,7 @@ function appBaseUrl() {
   return "";
 }
 
-export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyResult> {
+export async function notifyOrderViaTelegram(orderId: string, socialOverride?: Record<string, any>): Promise<NotifyResult> {
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
@@ -43,7 +43,7 @@ export async function notifyOrderViaTelegram(orderId: string): Promise<NotifyRes
     return { ok: false, error: error?.message || "Pedido no encontrado" };
   }
 
-  const social = (order.business as any)?.social || {};
+  const social = socialOverride || (order.business as any)?.social || {};
   const telegramEnabled = !!social?.telegram_notifications_enabled;
   const telegramToken = (
     social?.telegram_bot_token ||
