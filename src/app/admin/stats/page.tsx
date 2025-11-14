@@ -43,13 +43,6 @@ type Dataset = {
   newVsReturning: { newCount: number; returningCount: number };
   monthly: Array<{ ym: string; cents: number; count: number }>;
   byCategory: Array<{ id: number | 'nocat'; name: string; cents: number; qty: number }>;
-  reservationsSummary: {
-    total: number;
-    confirmed: number;
-    pending: number;
-    cancelled: number;
-    upcoming: number;
-  };
 };
 
 export default function AdminStatsPage() {
@@ -128,15 +121,6 @@ export default function AdminStatsPage() {
         <KpiCard title="Ingresos" value={formatEur(kpis.revenueCents)} subtitle={`Ticket medio: ${formatEur(kpis.aovCents)}`} tone="primary" />
       </section>
 
-      {/* Reservas */}
-      <Card title="Reservas (rango seleccionado)">
-        {loading ? (
-          <Skeleton />
-        ) : (
-          <ReservationSummary summary={data?.reservationsSummary} />
-        )}
-      </Card>
-
       {/* Estado y serie diaria */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="p-4 border rounded bg-white lg:col-span-2">
@@ -193,27 +177,6 @@ function Card({ title, children, className = "" }: { title: string; children: Re
 }
 
 function Skeleton() { return <div className="h-40 animate-pulse bg-gray-100 rounded" />; }
-
-function ReservationSummary({ summary }: { summary?: Dataset["reservationsSummary"] }) {
-  const s = summary || { total: 0, confirmed: 0, pending: 0, cancelled: 0, upcoming: 0 };
-  const rows = [
-    { label: "Total recibidas", value: s.total },
-    { label: "Confirmadas", value: s.confirmed },
-    { label: "Pendientes", value: s.pending },
-    { label: "Canceladas", value: s.cancelled },
-    { label: "Próximas (futuras)", value: s.upcoming },
-  ];
-  return (
-    <div className="space-y-2 text-sm">
-      {rows.map((row) => (
-        <div key={row.label} className="flex items-center justify-between border rounded px-3 py-2">
-          <span className="text-gray-600">{row.label}</span>
-          <span className="font-semibold text-gray-900">{row.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function KpiCard({ title, value, subtitle, tone = "default" }: { title: string; value: string; subtitle?: string; tone?: "default" | "primary" | "success" | "danger" }) {
   const tones: Record<NonNullable<typeof tone>, { bg: string; text: string; border: string }> = {
