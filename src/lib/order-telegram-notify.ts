@@ -27,13 +27,7 @@ export async function notifyOrderViaTelegram(orderId: string, socialOverride?: R
         customer_name,
         customer_phone,
         customer_email,
-        telegram_notify_errors,
-        business:businesses(
-          id,
-          slug,
-          name,
-          social
-        )
+        telegram_notify_errors
       `
     )
     .eq("id", orderId)
@@ -43,7 +37,7 @@ export async function notifyOrderViaTelegram(orderId: string, socialOverride?: R
     return { ok: false, error: error?.message || "Pedido no encontrado" };
   }
 
-  const social = socialOverride || (order.business as any)?.social || {};
+  const social = socialOverride || {};
   const telegramEnabled = !!social?.telegram_notifications_enabled;
   const telegramToken = (
     social?.telegram_bot_token ||
@@ -78,7 +72,7 @@ export async function notifyOrderViaTelegram(orderId: string, socialOverride?: R
     price: (it.unit_price_cents || 0) / 100,
   }));
 
-  const slug = (order.business as any)?.slug || "";
+  const slug = (social as any)?.slug || "";
   const baseUrl = appBaseUrl();
   let replyMarkup: any;
   if (slug && baseUrl) {
@@ -102,7 +96,7 @@ export async function notifyOrderViaTelegram(orderId: string, socialOverride?: R
   }
 
   const text = buildOrderTelegramMessage({
-    businessName: (order.business as any)?.name || undefined,
+    businessName: (social as any)?.businessName || undefined,
     code: order.code || undefined,
     total: (order.total_cents || 0) / 100,
     items: itemsSimple,

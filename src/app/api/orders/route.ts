@@ -172,7 +172,11 @@ export async function POST(req: NextRequest) {
     })();
 
     try {
-      const result = await notifyOrderViaTelegram(orderId, (tenant as any)?.social || undefined);
+      const result = await notifyOrderViaTelegram(orderId, {
+        ...(tenant as any)?.social,
+        slug: (tenant as any)?.slug || "",
+        businessName: (tenant as any)?.name || "",
+      });
       if (!result.ok && !result.skip) {
         console.error(`[telegram] order ${orderId} fallo: ${result.error}`);
       }
