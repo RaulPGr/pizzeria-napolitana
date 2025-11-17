@@ -192,8 +192,8 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
-            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menú ahora</button>
+            <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
+            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver carta</button>
           </div>
         </div>
       </header>
@@ -206,7 +206,7 @@ export default function HomePage() {
               <div className="text-center space-y-2">
                 <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
                 <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
-                <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menú ahora</button>
+                <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver carta</button>
               </div>
             </div>
           </>
