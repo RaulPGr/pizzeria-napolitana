@@ -161,6 +161,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   function renderProductCard(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
+    const priceValue = Number(p.price || 0);
+    const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li key={p.id} className={['relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}>
         {p.available === false && (
@@ -173,9 +175,11 @@ export default async function MenuPage({ searchParams }: PageProps) {
         <div className="p-3">
           <div className="flex items-baseline justify-between gap-4">
             <h3 className="text-base font-medium">{p.name}</h3>
-            <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
-              {formatPrice(Number(p.price || 0))}
-            </span>
+            {showPrice && (
+              <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+                {formatPrice(priceValue)}
+              </span>
+            )}
           </div>
           {p.description && (
             <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{p.description}</p>
@@ -194,6 +198,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   function renderProductListRow(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
+    const priceValue = Number(p.price || 0);
+    const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li
         key={p.id}
@@ -208,16 +214,18 @@ export default async function MenuPage({ searchParams }: PageProps) {
         )}
         {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
         <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <div className="flex flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col flex-1 min-w-0">
               <h3 className="text-base font-medium">{p.name}</h3>
               {p.description && (
                 <p className="text-sm text-slate-600">{p.description}</p>
               )}
             </div>
-            <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
-              {formatPrice(Number(p.price || 0))}
-            </span>
+            {showPrice && (
+              <span className={['whitespace-nowrap font-semibold flex-shrink-0 text-right', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+                {formatPrice(priceValue)}
+              </span>
+            )}
           </div>
           {allowOrdering && (
             <div className="max-w-xs">
