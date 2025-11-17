@@ -197,7 +197,10 @@ function BarMiniChart({ data }: { data: { key: string; date: Date; cents: number
         {data.map((d) => {
           const h = Math.round((d.cents / max) * 100);
           return (
-            <div key={d.key} className="flex-1 flex flex-col items-center justify-end h-full">
+            <div key={d.key} className="flex-1 flex flex-col items-center justify-end h-full relative">
+              <span className="absolute -top-4 text-[10px] text-gray-600">
+                {formatEur(d.cents)}
+              </span>
               <div
                 className="w-full bg-blue-500 rounded-t"
                 style={{ height: `${h}%` }}
