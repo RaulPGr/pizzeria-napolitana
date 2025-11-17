@@ -207,10 +207,12 @@ function BarMiniChart({ data }: { data: { key: string; date: Date; cents: number
           );
         })}
       </div>
-      <div className="mt-2 grid grid-cols-7 gap-1 text-[10px] text-gray-500">
-        {data
-          .filter((_, i) => i % Math.ceil(data.length / 7 || 1) === 0)
-          .map((d) => (<div key={d.key}>{d.key.slice(5)}</div>))}
+      <div className="mt-2 flex text-[10px] text-gray-500">
+        {data.map((d) => (
+          <div key={d.key} className="flex-1 text-center">
+            {d.key.slice(5)}
+          </div>
+        ))}
       </div>
     </div>
   );
