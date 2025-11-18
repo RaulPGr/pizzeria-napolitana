@@ -35,8 +35,8 @@ export default function AddToCartButton({ product, disabled, disabledLabel }: Pr
     : disabled
     ? (disabledLabel || "Agotado")
     : busy
-    ? "Anadiendo..."
-    : "Anadir";
+    ? "Añadiendo..."
+    : "Añadir";
 
   return (
     <button

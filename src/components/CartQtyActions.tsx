@@ -80,8 +80,8 @@ export default function CartQtyActions({ productId, allowAdd = true }: Props) {
         className={`inline-flex h-5 w-5 items-center justify-center rounded-full border bg-white text-gray-700 ${
           allowAdd ? "hover:bg-gray-100" : "opacity-50 cursor-not-allowed"
         }`}
-        title={allowAdd ? "Anadir 1" : "No disponible hoy"}
-        aria-label={allowAdd ? "Anadir 1" : "No disponible hoy"}
+        title={allowAdd ? "Añadir 1" : "No disponible hoy"}
+        aria-label={allowAdd ? "Añadir 1" : "No disponible hoy"}
       >
         +
       </button>
