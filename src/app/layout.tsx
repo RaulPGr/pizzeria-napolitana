@@ -7,6 +7,8 @@ import DayTabsClientAdjust from "@/components/DayTabsClientAdjust";
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import AuthHashRedirect from '@/components/AuthHashRedirect';
+import Analytics from "@/components/Analytics";
+
 import Script from 'next/script';
 import { SubscriptionPlanProvider } from "@/context/SubscriptionPlanContext";
 import { OrdersEnabledProvider } from "@/context/OrdersEnabledContext";
@@ -228,6 +230,10 @@ export default async function RootLayout({
             </CartProvider>
           </OrdersEnabledProvider>
         </SubscriptionPlanProvider>
+
+        {/* Google Analytics 4 para todos los subdominios */}
+        <Analytics />
+        
       </body>
     </html>
   );
