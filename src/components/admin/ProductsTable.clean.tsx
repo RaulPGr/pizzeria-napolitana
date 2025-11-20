@@ -424,7 +424,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
                     <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">-</span>}</td>
                     <td className="px-3 py-2">
                       <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
-                      <input className="mt-2 w-full rounded border px-2 py-1" value={editRow.description ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} placeholder="Descripción" />
+                      <textarea className="mt-2 w-full rounded border px-2 py-2 min-h-[80px]" value={editRow.description ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} placeholder="Descripción" />
                       {menuMode === 'daily' && (
                         <div className="mt-2 space-y-2">
                           <div className="flex items-center gap-2 text-sm">
