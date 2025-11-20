@@ -200,17 +200,19 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     return (
       <div className="mb-4 rounded border bg-white p-3 shadow-sm">
         <div className="mb-2 text-sm font-medium">Categorías</div>
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input className="w-full rounded border px-2 py-1" placeholder="Nueva categoría" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
           <button onClick={addCategory} disabled={busy || !newCatName.trim()} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">Añadir</button>
         </div>
         <ul className="space-y-2">
           {cats.map((c, idx) => (
-            <li key={c.id} className="flex items-center gap-2">
+            <li key={c.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input className="flex-1 rounded border px-2 py-1" defaultValue={c.name} onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== c.name) renameCategory(c.id, v); }} />
-              <button onClick={() => reorder(c.id, -1)} disabled={busy || idx===0} className="rounded border px-2 py-1">↑</button>
-              <button onClick={() => reorder(c.id, +1)} disabled={busy || idx===cats.length-1} className="rounded border px-2 py-1">↓</button>
-              <button onClick={() => remove(c.id)} disabled={busy} className="rounded border px-2 py-1 text-red-600">Eliminar</button>
+              <div className="flex gap-2 sm:flex-nowrap flex-wrap">
+                <button onClick={() => reorder(c.id, -1)} disabled={busy || idx===0} className="rounded border px-2 py-1">↑</button>
+                <button onClick={() => reorder(c.id, +1)} disabled={busy || idx===cats.length-1} className="rounded border px-2 py-1">↓</button>
+                <button onClick={() => remove(c.id)} disabled={busy} className="rounded border px-2 py-1 text-red-600">Eliminar</button>
+              </div>
             </li>
           ))}
           {cats.length === 0 && (<li className="text-sm text-gray-500">Sin categorías todavía.</li>)}
@@ -332,10 +334,10 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
             <input type="checkbox" checked={newAvail} onChange={(e) => setNewAvail(e.target.checked)} />
             <span>Disponible</span>
           </label>
-          <div className="md:col-span-6 flex items-center gap-3">
+          <div className="md:col-span-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <input type="file" accept="image/*" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
-            {newFile && <span className="text-xs text-gray-500">{newFile.name}</span>}
-            {newFile && <button onClick={() => setNewFile(null)} className="rounded border px-2 py-1">Quitar</button>}
+            {newFile && <span className="text-xs text-gray-500 break-all">{newFile.name}</span>}
+            {newFile && <button onClick={() => setNewFile(null)} className="rounded border px-2 py-1 w-full sm:w-auto">Quitar</button>}
             {newFilePreview && (
               <img
                 src={newFilePreview}
@@ -402,7 +404,8 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
       {/* Tabla de productos */}
       <div className="rounded border bg-white p-3 shadow-sm">
         <div className="mb-2 text-sm font-medium">Listado</div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="text-left border-b">
               <th className="px-3 py-2">Imagen</th>
@@ -475,7 +478,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
                   </td>
                   <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '-' : '-'}</td>
                   <td className="px-3 py-2">
-                    <div className="flex w-full justify-end gap-2">
+                    <div className="flex w-full flex-wrap justify-end gap-2">
                       <button onClick={() => startEdit(p)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-blue-600 text-white hover:bg-blue-700" title="Editar producto" aria-label="Editar producto">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M16.862 3.487a1.75 1.75 0 0 1 2.476 2.476l-9.8 9.8a4 4 0 0 1-1.693.99l-2.707.77a.75.75 0 0 1-.923-.923l.77-2.707a4 4 0 0 1 .99-1.693l9.8-9.8Z"/><path d="M5.25 19.5h13.5a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1 0-1.5Z"/></svg>
                       </button>
@@ -492,6 +495,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
