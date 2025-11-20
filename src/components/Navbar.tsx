@@ -62,7 +62,7 @@ export default function NavBar() {
   const Item = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Link
       href={href}
-      className="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+      className="rounded-full px-3 py-1.5 text-xs font-medium text-white/90 transition hover:bg-white/10 hover:text-white sm:px-4 sm:py-2 sm:text-sm"
     >
       {children}
     </Link>
@@ -70,17 +70,17 @@ export default function NavBar() {
 
   return (
     <header className="text-white">
-      <nav className="mx-auto flex w-full max-w-6xl items-center gap-3 overflow-x-auto px-4 py-3 whitespace-nowrap sm:h-16 sm:py-0">
-        <div className="flex items-center gap-2 rounded-full bg-white/5 px-3 py-2 md:gap-3">
+      <nav className="mx-auto flex w-full max-w-6xl items-center gap-2 px-3 py-3 sm:h-16 sm:gap-3 sm:px-4 sm:py-0">
+        <div className="flex flex-1 items-center gap-1 rounded-full bg-white/5 px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Carta</Item>
           {allowReservations && reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
           {/* Admin link intentionally removed */}
         </div>
         {allowOrdering && (
-          <div className="group relative ml-auto inline-flex flex-shrink-0 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/20">
+          <div className="group relative inline-flex flex-shrink-0 items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 transition hover:bg-white/20 sm:px-4 sm:py-2 sm:text-sm">
             <Link href="/cart" className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center rounded-full bg-white/20 p-1.5 transition group-hover:bg-white/30">
+              <span className="inline-flex items-center justify-center rounded-full bg-white/20 p-1 transition group-hover:bg-white/30 sm:p-1.5">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
