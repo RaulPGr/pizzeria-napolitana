@@ -195,8 +195,11 @@ export default function ThemeSettingsClient() {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [members, setMembers] = useState<
-    Array<{ userId: string; email: string | null; role: string; createdAt: string | null }>
+    Array<{ userId: string; email: string | null; role: string; createdAt: string | null; lastAccessAt: string | null }>
   >([]);
+  const [accessLogs, setAccessLogs] = useState<Array<{ userId: string; email: string | null; accessedAt: string | null }>>([]);
+  const [accessLogsLoading, setAccessLogsLoading] = useState(false);
+  const [accessLogsError, setAccessLogsError] = useState<string | null>(null);
   const [telegramToken, setTelegramToken] = useState("");
   const [telegramChatId, setTelegramChatId] = useState("");
   const [telegramResToken, setTelegramResToken] = useState("");
@@ -290,6 +293,23 @@ export default function ThemeSettingsClient() {
     }
   }
 
+  async function loadAccessLogs() {
+    setAccessLogsLoading(true);
+    setAccessLogsError(null);
+    try {
+      const tenant = getTenantFromUrl();
+      const url = tenant ? `/api/admin/member-access-logs?tenant=${encodeURIComponent(tenant)}` : "/api/admin/member-access-logs";
+      const resp = await fetch(url, { cache: "no-store" });
+      const j = await resp.json();
+      if (!resp.ok || !j?.ok) throw new Error(j?.error || "No se pudo obtener el historial de accesos");
+      setAccessLogs(Array.isArray(j.logs) ? j.logs : []);
+    } catch (e: any) {
+      setAccessLogsError(e?.message || "No se pudo obtener el historial de accesos");
+    } finally {
+      setAccessLogsLoading(false);
+    }
+  }
+
   async function removeMember(userId: string, email?: string | null) {
     const label = email || userId;
     if (!window.confirm(`Eliminar acceso de ${label}?`)) return;
@@ -328,6 +348,7 @@ export default function ThemeSettingsClient() {
 
   useEffect(() => {
     void loadMembers();
+    void loadAccessLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -568,6 +589,7 @@ export default function ThemeSettingsClient() {
                   <th className="border-b px-3 py-2">Email</th>
                   <th className="border-b px-3 py-2">Rol</th>
                   <th className="border-b px-3 py-2">Alta</th>
+                  <th className="border-b px-3 py-2">Último acceso</th>
                   <th className="border-b px-3 py-2 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -575,11 +597,13 @@ export default function ThemeSettingsClient() {
                 {members.map((m) => {
                   const date = m.createdAt ? new Date(m.createdAt) : null;
                   const formatted = date ? date.toLocaleString() : "-";
+                  const lastAccess = m.lastAccessAt ? new Date(m.lastAccessAt).toLocaleString() : "Nunca";
                   return (
                     <tr key={m.userId} className="hover:bg-slate-50">
                       <td className="border-b px-3 py-2">{m.email || "(sin email)"}</td>
                       <td className="border-b px-3 py-2 capitalize">{m.role}</td>
                       <td className="border-b px-3 py-2">{formatted}</td>
+                      <td className="border-b px-3 py-2">{lastAccess}</td>
                       <td className="border-b px-3 py-2 text-right">
                         <button
                           type="button"
@@ -589,6 +613,52 @@ export default function ThemeSettingsClient() {
                           Quitar acceso
                         </button>
                       </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded border bg-white p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-medium text-slate-700">Últimos accesos al panel</h4>
+            <p className="text-xs text-slate-500">Se actualiza automáticamente cada vez que un miembro entra en /admin.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadAccessLogs()}
+            className="rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Actualizar
+          </button>
+        </div>
+        {accessLogsLoading ? (
+          <div className="text-sm text-slate-500">Cargando historial...</div>
+        ) : accessLogsError ? (
+          <div className="rounded border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">{accessLogsError}</div>
+        ) : accessLogs.length === 0 ? (
+          <div className="text-sm text-slate-500">Aún no hay accesos registrados.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500">
+                  <th className="border-b px-3 py-2">Fecha y hora</th>
+                  <th className="border-b px-3 py-2">Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accessLogs.map((log, idx) => {
+                  const date = log.accessedAt ? new Date(log.accessedAt) : null;
+                  const formatted = date ? date.toLocaleString() : "-";
+                  return (
+                    <tr key={`${log.userId}-${idx}`} className="hover:bg-slate-50">
+                      <td className="border-b px-3 py-2">{formatted}</td>
+                      <td className="border-b px-3 py-2">{log.email || "(sin email)"}</td>
                     </tr>
                   );
                 })}

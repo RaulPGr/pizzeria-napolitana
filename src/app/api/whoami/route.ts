@@ -53,6 +53,20 @@ export async function GET() {
           .eq('user_id', data.user.id)
           .maybeSingle();
         isMember = !!mm;
+        if (isMember) {
+          try {
+            await supabaseAdmin
+              .from('business_members')
+              .update({ last_access_at: new Date().toISOString() })
+              .eq('business_id', bid)
+              .eq('user_id', data.user.id);
+          } catch {}
+          try {
+            await supabaseAdmin
+              .from('business_member_access_logs')
+              .insert({ business_id: bid, user_id: data.user.id });
+          } catch {}
+        }
       }
     }
   } catch {}
