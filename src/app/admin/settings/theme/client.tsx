@@ -14,6 +14,7 @@ type ThemeColors = {
   secondaryHover?: string;
   topbarStart?: string;
   topbarEnd?: string;
+  menuHeading?: string;
 };
 
 type ThemeFonts = {
@@ -56,6 +57,7 @@ const DEFAULTS: {
     secondaryHover: "#375a35",
     topbarStart: "#CC2936",
     topbarEnd: "#457242",
+    menuHeading: "#1f2937",
   },
   fonts: {
     body:
@@ -342,6 +344,7 @@ export default function ThemeSettingsClient() {
     r.style.setProperty("--brand-green", (merged.colors.topbarEnd || merged.colors.secondary) ?? "");
     r.style.setProperty("--brand-green-700", merged.colors.secondaryHover ?? "");
     r.style.setProperty("--brand-orange", (merged.colors.topbarStart || merged.colors.accent) ?? "");
+    r.style.setProperty("--menu-heading-color", merged.colors.menuHeading ?? merged.colors.text ?? "");
     if (merged.fonts.body) r.style.setProperty("--font-body", merged.fonts.body ?? "");
     if (merged.fonts.headings) r.style.setProperty("--font-headings", merged.fonts.headings ?? "");
   }, [merged]);
@@ -758,6 +761,12 @@ export default function ThemeSettingsClient() {
           desc="Color principal de los textos (parrafos y titulos)."
           value={theme.colors?.text}
           onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, text: v } }))}
+        />
+        <ColorInput
+          label="Títulos de la carta"
+          desc="Color de los encabezados de categoría dentro de la carta / menú."
+          value={theme.colors?.menuHeading}
+          onChange={(v) => setTheme((t) => ({ ...t, colors: { ...t.colors, menuHeading: v } }))}
         />
         <ColorInput
           label="Texto secundario"

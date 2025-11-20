@@ -92,7 +92,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
         if (!hasAny && (products && products.length > 0)) {
           return (
             <section className="mb-10">
-              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">Productos</h2>
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide border-b border-slate-200 pb-1" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {products.map((p: any) => {
                   const pDays = normalizeDays(p.product_weekdays);
@@ -149,7 +149,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
         return (
           <section key={String(section.id)} className="mb-10">
             {!selectedCat && (
-              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide border-b border-slate-200 pb-1" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>
                 {section.name}
               </h2>
             )}

@@ -243,7 +243,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Carta</h1>
+      <h1 className="mb-6 text-3xl font-semibold" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>Carta</h1>
 
      {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} availableDays={(Array.isArray((payload as any)?.available_days) ? (payload as any).available_days : undefined) as any} />
@@ -270,7 +270,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         if (!hasAny && viewProducts && viewProducts.length > 0) {
           return (
             <section className="mb-10">
-              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide text-slate-900 md:text-3xl">
+              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide md:text-3xl" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>
                 Productos
               </h2>
               {isListLayout ? (
@@ -297,7 +297,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         return (
           <section key={String(section.id)} className="mb-10">
             {!selectedCat && (
-              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide text-slate-900 md:text-3xl">
+              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide md:text-3xl" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>
                 {section.name}
               </h2>
             )}
