@@ -70,7 +70,7 @@ export default function NavBar() {
 
   return (
     <header className="text-white">
-      <nav className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0">
+      <nav className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:h-16 sm:gap-4 sm:py-0">
         <div className="flex flex-wrap items-center gap-2 rounded-full bg-white/5 px-3 py-2 md:gap-3">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Carta</Item>
@@ -78,7 +78,7 @@ export default function NavBar() {
           {/* Admin link intentionally removed */}
         </div>
         {allowOrdering && (
-          <div className="group relative inline-flex w-full items-center justify-between gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/20 sm:w-auto sm:justify-center">
+          <div className="group relative inline-flex flex-shrink-0 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/20">
             <Link href="/cart" className="flex items-center gap-2">
               <span className="inline-flex items-center justify-center rounded-full bg-white/20 p-1.5 transition group-hover:bg-white/30">
                 <svg
