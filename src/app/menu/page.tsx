@@ -173,10 +173,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
           <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
         )}
         <div className="p-3">
-          <div className="flex items-baseline justify-between gap-4">
-            <h3 className="text-base font-medium">{p.name}</h3>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+            <h3 className="text-base font-medium break-words">{p.name}</h3>
             {showPrice && (
-              <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+              <span className={['whitespace-nowrap font-semibold text-right sm:text-left', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
                 {formatPrice(priceValue)}
               </span>
             )}
@@ -214,7 +214,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         )}
         {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
         <div className="flex flex-col gap-2">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <div className="flex flex-col flex-1 min-w-0">
               <h3 className="text-base font-medium">{p.name}</h3>
               {p.description && (
@@ -222,7 +222,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
               )}
             </div>
             {showPrice && (
-              <span className={['whitespace-nowrap font-semibold flex-shrink-0 text-right', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+              <span className={['whitespace-nowrap font-semibold flex-shrink-0 text-right w-full sm:w-auto', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
                 {formatPrice(priceValue)}
               </span>
             )}

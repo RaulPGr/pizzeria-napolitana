@@ -117,12 +117,12 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                       {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
                       {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                       <div className="p-3">
-                        <div className="flex items-baseline justify-between gap-4">
-                          <h3 className="text-base font-medium">{p.name}</h3>
-                          <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
-                            {formatPrice(Number(p.price || 0))}
-                          </span>
-                        </div>
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                        <h3 className="text-base font-medium break-words">{p.name}</h3>
+                        <span className={[ 'whitespace-nowrap font-semibold text-right sm:text-left', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
+                          {formatPrice(Number(p.price || 0))}
+                        </span>
+                      </div>
                         {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
                         {allowOrdering && (
                           <AddToCartButton
@@ -177,9 +177,9 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                     {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
                     {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                     <div className="p-3">
-                      <div className="flex items-baseline justify-between gap-4">
-                        <h3 className="text-base font-medium">{p.name}</h3>
-                        <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                        <h3 className="text-base font-medium break-words">{p.name}</h3>
+                        <span className={[ 'whitespace-nowrap font-semibold text-right sm:text-left', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
                           {formatPrice(Number(p.price || 0))}
                         </span>
                       </div>
