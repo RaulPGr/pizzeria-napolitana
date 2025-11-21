@@ -185,8 +185,8 @@ export default async function PromotionsPage() {
                   </span>
                 </div>
                 {promos.length === 0 ? (
-                  <p className="rounded border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                    Sin promociones activas asignadas a este día.
+                  <p className="rounded-2xl border border-amber-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm">
+                    No hay promociones activas para este día. Vuelve a mirar pronto o consulta los otros días disponibles.
                   </p>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
