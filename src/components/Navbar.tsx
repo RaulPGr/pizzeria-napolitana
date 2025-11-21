@@ -74,6 +74,7 @@ export default function NavBar() {
         <div className="flex flex-1 items-center gap-1 rounded-full bg-white/5 px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Carta</Item>
+          <Item href="/promociones">Promociones</Item>
           {allowReservations && reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
           {/* Admin link intentionally removed */}
         </div>

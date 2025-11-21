@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
+import { isPromotionActive, type Promotion as PromotionRule } from "@/lib/promotions";
 
 // Defaults (fallbacks si no hay configuración)
 const INFO_DEFAULT = {
@@ -94,20 +95,49 @@ function jsonLd(info: typeof INFO_DEFAULT, horarios: Horarios, coords: typeof CO
 
 export default function HomePage() {
   const router = useRouter();
+  const resolveTenantParam = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      return new URLSearchParams(window.location.search).get("tenant");
+    } catch {
+      return null;
+    }
+  };
 
   // Cargar configuración dinÃ¡mica
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [highlightPromotion, setHighlightPromotion] = useState<PromotionRule | null>(null);
   useEffect(() => {
     (async () => {
       try {
-        const tenant = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tenant") : null;
+        const tenant = resolveTenantParam();
         const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
         const r = await fetch(url, { cache: "no-store" });
         const j = await r.json();
         if (j?.ok && j?.data) setCfg(j.data);
       } catch {}
       finally { setLoading(false); }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const tenant = resolveTenantParam();
+        const url = tenant ? `/api/promotions?tenant=${encodeURIComponent(tenant)}` : "/api/promotions";
+        const res = await fetch(url, { cache: "no-store" });
+        const j = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(j?.promotions)) {
+          const now = new Date();
+          const promos = (j.promotions as PromotionRule[]).filter((p) => isPromotionActive(p, now));
+          setHighlightPromotion(promos[0] || null);
+        } else {
+          setHighlightPromotion(null);
+        }
+      } catch {
+        setHighlightPromotion(null);
+      }
     })();
   }, []);
 
@@ -197,6 +227,23 @@ export default function HomePage() {
           </div>
         </div>
       </header>
+      {highlightPromotion && (
+        <section className="border-b border-amber-100 bg-gradient-to-r from-amber-100 via-orange-50 to-emerald-50">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 text-slate-800 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Promoción activa hoy</p>
+              <h2 className="text-xl font-semibold text-slate-900">{`🔥 Hoy: ${highlightPromotion.name}`}</h2>
+              <p className="text-sm text-slate-600">{highlightPromotion.description || (highlightPromotion.type === "percent" ? `Ahorra ${highlightPromotion.value}% en esta promoción.` : `Descuento de ${highlightPromotion.value}€ disponible durante el día de hoy.`)}</p>
+            </div>
+            <button
+              onClick={() => router.push("/promociones")}
+              className="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white/80 px-4 py-2 text-sm font-semibold text-amber-700 shadow-sm transition hover:bg-white"
+            >
+              Ver promociones
+            </button>
+          </div>
+        </section>
+      )}
       <section className="relative">
         <img src={INFO.fachadaUrl} alt="Fachada" className="h-[420px] md:h-[520px] w-full object-cover" />
         {showHeroOverlay ? (
