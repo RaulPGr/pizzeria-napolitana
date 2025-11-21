@@ -171,6 +171,17 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return promo;
   }
 
+  function getEffectivePrice(price: number, promo: PromotionRule | null) {
+    if (!promo) return price;
+    const value = Number(promo.value || 0);
+    if (!Number.isFinite(value) || value <= 0) return price;
+    if (promo.type === "percent") {
+      const pct = Math.min(Math.max(value, 0), 100);
+      return Math.max(0, price - (price * pct) / 100);
+    }
+    return Math.max(0, price - value);
+  }
+
   function availabilityFor(p: any) {
     if (p.available === false) {
       return { out: true, disabledLabel: "Agotado" as string | undefined };
@@ -199,6 +210,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     const { out, disabledLabel } = availabilityFor(p);
     const promo = getProductPromotion(p);
     const priceValue = Number(p.price || 0);
+    const effectivePrice = getEffectivePrice(priceValue, promo);
     const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li key={p.id} className={['relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}>
@@ -222,9 +234,18 @@ export default async function MenuPage({ searchParams }: PageProps) {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
             <h3 className="text-base font-medium break-words">{p.name}</h3>
             {showPrice && (
-              <span className={['whitespace-nowrap font-semibold text-right sm:text-left', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
-                {formatPrice(priceValue)}
-              </span>
+              <div className="text-right sm:text-left">
+                {promo ? (
+                  <>
+                    <span className="block text-sm text-slate-500 line-through">{formatPrice(priceValue)}</span>
+                    <span className="block whitespace-nowrap font-semibold text-emerald-700">{formatPrice(effectivePrice)}</span>
+                  </>
+                ) : (
+                  <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+                    {formatPrice(priceValue)}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           {p.description && (
@@ -246,6 +267,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     const { out, disabledLabel } = availabilityFor(p);
     const promo = getProductPromotion(p);
     const priceValue = Number(p.price || 0);
+    const effectivePrice = getEffectivePrice(priceValue, promo);
     const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li
@@ -278,9 +300,18 @@ export default async function MenuPage({ searchParams }: PageProps) {
               )}
             </div>
             {showPrice && (
-              <span className={['whitespace-nowrap font-semibold flex-shrink-0 text-right w-full sm:w-auto', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
-                {formatPrice(priceValue)}
-              </span>
+              <div className="flex-shrink-0 text-right w-full sm:w-auto">
+                {promo ? (
+                  <>
+                    <span className="block text-sm text-slate-500 line-through">{formatPrice(priceValue)}</span>
+                    <span className="block whitespace-nowrap font-semibold text-emerald-700">{formatPrice(effectivePrice)}</span>
+                  </>
+                ) : (
+                  <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+                    {formatPrice(priceValue)}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           {allowOrdering && (
