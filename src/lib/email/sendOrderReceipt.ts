@@ -64,7 +64,7 @@ function formatPickup(ts: string): string {
 
 export async function sendOrderReceiptEmail({
   orderId, orderCode, businessName, businessAddress, businessLogoUrl, customerEmail, customerName,
-  items, subtotal, deliveryFee = 0, discount = 0, total,
+  items, subtotal, deliveryFee = 0, discount = 0, promotionName, total,
   pickupTime, deliveryAddress, notes, bcc
 }: SendOrderReceiptParams): Promise<void> {
   try {
