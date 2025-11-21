@@ -16,6 +16,7 @@ export default function NavBar() {
   const allowReservations = subscriptionAllowsReservations(plan);
   const [count, setCount] = useState(0);
   const [reservationsEnabled, setReservationsEnabled] = useState(false);
+  const [hasPromotions, setHasPromotions] = useState(false);
 
   useEffect(() => {
     if (!allowOrdering) {
@@ -74,7 +75,7 @@ export default function NavBar() {
         <div className="flex flex-1 items-center gap-1 rounded-full bg-white/5 px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2">
           <Item href="/">Inicio</Item>
           <Item href="/menu">Carta</Item>
-          <Item href="/promociones">Promociones</Item>
+          {hasPromotions && <Item href="/promociones">Promociones</Item>}
           {allowReservations && reservationsEnabled && <Item href="/reservas">Reserva tu mesa</Item>}
           {/* Admin link intentionally removed */}
         </div>
@@ -111,3 +112,35 @@ export default function NavBar() {
     </header>
   );
 }
+  const resolveTenantFromLocation = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("tenant");
+      if (fromQuery) return fromQuery;
+      const host = window.location.hostname.split(".");
+      if (host.length >= 3) return host[0];
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const tenant = resolveTenantFromLocation();
+        const url = tenant ? `/api/promotions?tenant=${encodeURIComponent(tenant)}` : "/api/promotions";
+        const resp = await fetch(url, { cache: "no-store" });
+        const j = await resp.json().catch(() => ({}));
+        if (!active) return;
+        setHasPromotions(resp.ok && Array.isArray(j?.promotions) && j.promotions.length > 0);
+      } catch {
+        if (active) setHasPromotions(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
