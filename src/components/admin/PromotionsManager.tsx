@@ -150,11 +150,23 @@ function startEdit(promo: Promotion) {
     });
   }
 
-function toggleWeekday(day: number) {
+  function toggleWeekday(day: number) {
     setForm((prev) => {
       const exists = prev.weekdays.includes(day);
       const next = exists ? prev.weekdays.filter((d) => d !== day) : [...prev.weekdays, day];
       return { ...prev, weekdays: next.length > 0 ? next.sort((a, b) => a - b) : [] };
+    });
+  }
+
+  function toggleProductSelection(id: string) {
+    setForm((prev) => {
+      const exists = prev.target_product_ids.includes(id);
+      return {
+        ...prev,
+        target_product_ids: exists
+          ? prev.target_product_ids.filter((val) => val !== id)
+          : [...prev.target_product_ids, id],
+      };
     });
   }
 
@@ -287,27 +299,37 @@ function toggleWeekday(day: number) {
             </label>
           )}
           {form.scope === "product" && (
-            <label className="text-sm">
+            <div className="text-sm">
               <span className="text-slate-600">Productos objetivo</span>
-              <select
-                multiple
-                className="mt-1 w-full rounded border px-3 py-2 bg-white"
-                value={form.target_product_ids}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    target_product_ids: Array.from(e.target.selectedOptions).map((opt) => opt.value),
-                  }))
-                }
-              >
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.active === false ? "(inactivo)" : ""}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-slate-500">Mantén pulsada la tecla Ctrl (Cmd en Mac) para seleccionar varios.</p>
-            </label>
+              <div className="mt-2 max-h-56 overflow-y-auto rounded border bg-white px-3 py-2 shadow-inner">
+                {products.length === 0 ? (
+                  <p className="text-xs text-slate-500">Aún no hay productos disponibles.</p>
+                ) : (
+                  products.map((p) => {
+                    const value = String(p.id);
+                    const checked = form.target_product_ids.includes(value);
+                    return (
+                      <label key={p.id} className="flex items-center gap-2 py-1 text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleProductSelection(value)}
+                        />
+                        <span>
+                          {p.name}
+                          {p.active === false ? " (inactivo)" : ""}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {form.target_product_ids.length === 0
+                  ? "Selecciona al menos un producto."
+                  : `${form.target_product_ids.length} producto(s) seleccionado(s).`}
+              </p>
+            </div>
           )}
           <label className="text-sm">
             <span className="text-slate-600">Fecha inicio</span>
