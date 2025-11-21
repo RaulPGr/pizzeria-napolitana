@@ -17,6 +17,21 @@ export default function NavBar() {
   const [count, setCount] = useState(0);
   const [reservationsEnabled, setReservationsEnabled] = useState(false);
   const [hasPromotions, setHasPromotions] = useState(false);
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+
+  const resolveTenantFromLocation = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("tenant");
+      if (fromQuery) return fromQuery;
+      const host = window.location.hostname.split(".");
+      if (host.length >= 3) return host[0];
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!allowOrdering) {
@@ -49,6 +64,7 @@ export default function NavBar() {
         const j = await resp.json();
         if (!active) return;
         setReservationsEnabled(Boolean(j?.data?.reservations?.enabled));
+        setTenantSlug(slug);
       } catch {
         if (active) setReservationsEnabled(false);
       }
@@ -59,6 +75,25 @@ export default function NavBar() {
       active = false;
     };
   }, [allowReservations]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const slug = tenantSlug || resolveTenantFromLocation();
+        const url = slug ? `/api/promotions?tenant=${encodeURIComponent(slug)}` : "/api/promotions";
+        const resp = await fetch(url, { cache: "no-store" });
+        const j = await resp.json().catch(() => ({}));
+        if (!active) return;
+        setHasPromotions(resp.ok && Array.isArray(j?.promotions) && j.promotions.length > 0);
+      } catch {
+        if (active) setHasPromotions(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [tenantSlug]);
 
   const Item = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Link
@@ -112,35 +147,3 @@ export default function NavBar() {
     </header>
   );
 }
-  const resolveTenantFromLocation = () => {
-    if (typeof window === "undefined") return null;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const fromQuery = params.get("tenant");
-      if (fromQuery) return fromQuery;
-      const host = window.location.hostname.split(".");
-      if (host.length >= 3) return host[0];
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const tenant = resolveTenantFromLocation();
-        const url = tenant ? `/api/promotions?tenant=${encodeURIComponent(tenant)}` : "/api/promotions";
-        const resp = await fetch(url, { cache: "no-store" });
-        const j = await resp.json().catch(() => ({}));
-        if (!active) return;
-        setHasPromotions(resp.ok && Array.isArray(j?.promotions) && j.promotions.length > 0);
-      } catch {
-        if (active) setHasPromotions(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
