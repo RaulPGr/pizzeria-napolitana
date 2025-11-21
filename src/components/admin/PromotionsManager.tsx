@@ -11,6 +11,7 @@ type Promotion = {
   scope: "order" | "category" | "product";
   target_category_id?: number | null;
   target_product_id?: number | null;
+  target_product_ids?: number[] | null;
   min_amount?: number | null;
   start_date?: string | null;
   end_date?: string | null;
@@ -38,7 +39,7 @@ type FormState = {
   value: string;
   scope: "order" | "category" | "product";
   target_category_id: string;
-  target_product_id: string;
+  target_product_ids: string[];
   min_amount: string;
   start_date: string;
   end_date: string;
@@ -53,7 +54,7 @@ const DEFAULT_FORM: FormState = {
   value: "10",
   scope: "order",
   target_category_id: "",
-  target_product_id: "",
+  target_product_ids: [],
   min_amount: "",
   start_date: "",
   end_date: "",
@@ -79,8 +80,15 @@ function formatScope(promo: Promotion, categories: Option[], products: Option[])
     return name ? `Categoría: ${name}` : "Categoría";
   }
   if (promo.scope === "product") {
-    const name = products.find((p) => p.id === promo.target_product_id)?.name;
-    return name ? `Producto: ${name}` : "Producto";
+    const ids = (promo.target_product_ids && promo.target_product_ids.length > 0)
+      ? promo.target_product_ids
+      : (promo.target_product_id ? [promo.target_product_id] : []);
+    if (!ids.length) return "Producto";
+    const names = ids
+      .map((id) => products.find((p) => p.id === id)?.name)
+      .filter(Boolean) as string[];
+    if (names.length === 0) return "Producto";
+    return `Productos: ${names.join(", ")}`;
   }
   return promo.scope;
 }
@@ -122,16 +130,18 @@ export default function PromotionsManager() {
     setEditingId(null);
   }
 
-  function startEdit(promo: Promotion) {
-    setEditingId(promo.id);
-    setForm({
-      name: promo.name || "",
-      description: promo.description || "",
-      type: promo.type,
-      value: String(promo.value ?? ""),
-      scope: promo.scope,
-      target_category_id: promo.target_category_id ? String(promo.target_category_id) : "",
-      target_product_id: promo.target_product_id ? String(promo.target_product_id) : "",
+function startEdit(promo: Promotion) {
+  setEditingId(promo.id);
+  setForm({
+    name: promo.name || "",
+    description: promo.description || "",
+    type: promo.type,
+    value: String(promo.value ?? ""),
+    scope: promo.scope,
+    target_category_id: promo.target_category_id ? String(promo.target_category_id) : "",
+    target_product_ids: promo.target_product_ids && promo.target_product_ids.length > 0
+      ? promo.target_product_ids.map((id) => String(id))
+      : (promo.target_product_id ? [String(promo.target_product_id)] : []),
       min_amount: promo.min_amount != null ? String(promo.min_amount) : "",
       start_date: promo.start_date || "",
       end_date: promo.end_date || "",
@@ -140,7 +150,7 @@ export default function PromotionsManager() {
     });
   }
 
-  function toggleWeekday(day: number) {
+function toggleWeekday(day: number) {
     setForm((prev) => {
       const exists = prev.weekdays.includes(day);
       const next = exists ? prev.weekdays.filter((d) => d !== day) : [...prev.weekdays, day];
@@ -153,13 +163,22 @@ export default function PromotionsManager() {
       setSaving(true);
       setMessage(null);
       setError(null);
-      const payload = {
+    const payload = {
         ...form,
         value: Number(form.value),
         min_amount: form.min_amount ? Number(form.min_amount) : undefined,
         weekdays: form.weekdays.length > 0 ? form.weekdays : [...ALL_WEEKDAYS],
         target_category_id: form.scope === "category" ? Number(form.target_category_id) || null : null,
-        target_product_id: form.scope === "product" ? Number(form.target_product_id) || null : null,
+        target_product_id:
+          form.scope === "product" && form.target_product_ids.length > 0
+            ? Number(form.target_product_ids[0]) || null
+            : null,
+        target_product_ids:
+          form.scope === "product"
+            ? form.target_product_ids
+                .map((id) => Number(id))
+                .filter((id) => Number.isFinite(id))
+            : null,
       };
       const method = editingId ? "PATCH" : "POST";
       const body = editingId ? { id: editingId, ...payload } : payload;
@@ -269,15 +288,25 @@ export default function PromotionsManager() {
           )}
           {form.scope === "product" && (
             <label className="text-sm">
-              <span className="text-slate-600">Producto objetivo</span>
-              <select className="mt-1 w-full rounded border px-3 py-2 bg-white" value={form.target_product_id} onChange={(e) => setForm((prev) => ({ ...prev, target_product_id: e.target.value }))}>
-                <option value="">Selecciona producto</option>
+              <span className="text-slate-600">Productos objetivo</span>
+              <select
+                multiple
+                className="mt-1 w-full rounded border px-3 py-2 bg-white"
+                value={form.target_product_ids}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    target_product_ids: Array.from(e.target.selectedOptions).map((opt) => opt.value),
+                  }))
+                }
+              >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} {p.active === false ? "(inactivo)" : ""}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-xs text-slate-500">Mantén pulsada la tecla Ctrl (Cmd en Mac) para seleccionar varios.</p>
             </label>
           )}
           <label className="text-sm">

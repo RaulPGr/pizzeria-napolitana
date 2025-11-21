@@ -9,6 +9,7 @@ export type Promotion = {
   scope: "order" | "category" | "product";
   target_category_id?: number | null;
   target_product_id?: number | null;
+  target_product_ids?: number[] | null;
   min_amount?: number | null;
   start_date?: string | null;
   end_date?: string | null;
@@ -52,9 +53,11 @@ function calculateEligibleAmount(promo: Promotion, items: CartItem[]): number {
     return items.reduce((sum, item) => (item.category_id === catId ? sum + item.price * item.qty : sum), 0);
   }
   if (promo.scope === "product") {
-    const productId = promo.target_product_id;
-    if (productId == null) return 0;
-    return items.reduce((sum, item) => (String(item.id) === String(productId) ? sum + item.price * item.qty : sum), 0);
+    const ids = (promo.target_product_ids && promo.target_product_ids.length > 0)
+      ? promo.target_product_ids.map((id) => String(id))
+      : (promo.target_product_id != null ? [String(promo.target_product_id)] : []);
+    if (!ids.length) return 0;
+    return items.reduce((sum, item) => (ids.includes(String(item.id)) ? sum + item.price * item.qty : sum), 0);
   }
   return items.reduce((sum, item) => sum + item.price * item.qty, 0);
 }
@@ -109,7 +112,10 @@ export function findPromotionForProduct(
     if (promo.scope === "category") {
       if (!promo.target_category_id || Number(product.category_id ?? null) !== Number(promo.target_category_id)) continue;
     } else if (promo.scope === "product") {
-      if (!promo.target_product_id || String(product.id) !== String(promo.target_product_id)) continue;
+      const ids = (promo.target_product_ids && promo.target_product_ids.length > 0)
+        ? promo.target_product_ids.map((id) => String(id))
+        : (promo.target_product_id != null ? [String(promo.target_product_id)] : []);
+      if (!ids.includes(String(product.id))) continue;
     }
     const minAmount = Number(promo.min_amount ?? 0);
     if (product.price < Math.max(0, minAmount)) continue;

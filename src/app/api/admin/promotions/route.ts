@@ -111,13 +111,20 @@ function sanitizePayload(body: any) {
   const minAmount = body?.min_amount == null ? 0 : Number(body?.min_amount);
   if (!Number.isFinite(minAmount) || minAmount < 0) throw new Error('Importe minimo invalido');
   const targetCategoryId = body?.target_category_id == null ? null : Number(body?.target_category_id);
+  const productIdsRaw: number[] = Array.isArray(body?.target_product_ids)
+    ? body.target_product_ids.map((id: any) => Number(id)).filter((n: number) => Number.isFinite(n))
+    : [];
   const targetProductId = body?.target_product_id == null ? null : Number(body?.target_product_id);
   if (scope === 'category' && !targetCategoryId) throw new Error('Selecciona una categoria para la promocion');
-  if (scope === 'product' && !targetProductId) throw new Error('Selecciona un producto para la promocion');
+  if (scope === 'product' && productIdsRaw.length === 0 && !targetProductId) throw new Error('Selecciona al menos un producto para la promocion');
   const weekdays = sanitizeWeekdays(body?.weekdays);
   const startDate = sanitizeDate(body?.start_date);
   const endDate = sanitizeDate(body?.end_date);
   const active = body?.active === false ? false : true;
+  const normalizedProductIds =
+    scope === 'product'
+      ? (productIdsRaw.length > 0 ? productIdsRaw : (targetProductId ? [targetProductId] : []))
+      : [];
   return {
     name,
     description,
@@ -125,7 +132,8 @@ function sanitizePayload(body: any) {
     value,
     scope,
     target_category_id: scope === 'category' ? targetCategoryId : null,
-    target_product_id: scope === 'product' ? targetProductId : null,
+    target_product_id: scope === 'product' ? (normalizedProductIds[0] ?? null) : null,
+    target_product_ids: scope === 'product' ? (normalizedProductIds.length > 0 ? normalizedProductIds : null) : null,
     min_amount: minAmount,
     start_date: startDate,
     end_date: endDate,

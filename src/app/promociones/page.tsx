@@ -59,8 +59,17 @@ function scopeLabel(
     return name ? `Categoría: ${name}` : "Categoría específica";
   }
   if (promo.scope === "product") {
-    const name = promo.target_product_id ? products.get(Number(promo.target_product_id)) : null;
-    return name ? `Producto: ${name}` : "Producto específico";
+    const ids =
+      promo.target_product_ids && promo.target_product_ids.length > 0
+        ? promo.target_product_ids
+        : promo.target_product_id
+        ? [promo.target_product_id]
+        : [];
+    if (!ids.length) return "Producto específico";
+    const names = ids
+      .map((id) => products.get(Number(id)))
+      .filter(Boolean) as string[];
+    return names.length ? `Productos: ${names.join(", ")}` : "Producto específico";
   }
   return "Promoción";
 }
