@@ -1,4 +1,4 @@
-﻿// src/app/menu/page.tsx
+// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import CartQtyActions from '@/components/CartQtyActions';
 import { getSubscriptionForSlug } from '@/lib/subscription-server';
 import { subscriptionAllowsOrders } from '@/lib/subscription';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/promotions';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -81,9 +82,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
   }
   const qps = new URLSearchParams();
   qps.set('day', String(selectedDaySafe));
+  let tenantParam = '';
   if (host) {
     const parts = host.split('.');
-    if (parts.length >= 3) qps.set('tenant', parts[0]);
+    if (parts.length >= 3) {
+      tenantParam = parts[0];
+      qps.set('tenant', tenantParam);
+    }
   }
   const apiUrl = origin ? `${origin}/api/products?${qps.toString()}` : `/api/products?${qps.toString()}`;
 
@@ -102,6 +107,21 @@ export default async function MenuPage({ searchParams }: PageProps) {
   } catch (e: any) {
     error = { message: e?.message || 'Fetch error' };
   }
+
+  let promotions: PromotionRule[] = [];
+  try {
+    const promoParams = new URLSearchParams();
+    if (tenantParam) promoParams.set('tenant', tenantParam);
+    const promoQuery = promoParams.toString();
+    const promoUrl = origin
+      ? `${origin}/api/promotions${promoQuery ? `?${promoQuery}` : ''}`
+      : `/api/promotions${promoQuery ? `?${promoQuery}` : ''}`;
+    const resp = await fetch(promoUrl, { cache: 'no-store' });
+    const pj = await resp.json().catch(() => ({}));
+    if (resp.ok && Array.isArray(pj?.promotions)) {
+      promotions = pj.promotions as PromotionRule[];
+    }
+  } catch {}
 
   // View list for selected day (reinforce API filtering and handle day=0)
   const viewProducts = (menuMode === 'daily')
@@ -135,6 +155,22 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const dayNames = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const currentIsoDay = ((new Date().getDay() + 6) % 7) + 1;
 
+  const promotionCache = new Map<string, PromotionRule | null>();
+  function getProductPromotion(p: any) {
+    if (!promotions.length) return null;
+    const key = `${p.id}-${p.category_id ?? 'nocat'}-${p.price ?? ''}`;
+    if (promotionCache.has(key)) {
+      const cached = promotionCache.get(key);
+      return cached || null;
+    }
+    const promo = findPromotionForProduct(
+      { id: p.id, price: Number(p.price || 0), category_id: p.category_id ?? null },
+      promotions
+    );
+    promotionCache.set(key, promo);
+    return promo;
+  }
+
   function availabilityFor(p: any) {
     if (p.available === false) {
       return { out: true, disabledLabel: "Agotado" as string | undefined };
@@ -161,12 +197,22 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   function renderProductCard(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
+    const promo = getProductPromotion(p);
     const priceValue = Number(p.price || 0);
     const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li key={p.id} className={['relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}>
-        {p.available === false && (
-          <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+        {(p.available === false || promo) && (
+          <div className="absolute left-2 top-2 flex flex-col gap-1">
+            {p.available === false && (
+              <span className="rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+            )}
+            {promo && (
+              <span className="rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow">
+                {promo.name || 'Promoción'}
+              </span>
+            )}
+          </div>
         )}
         {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
         {p.image_url && (
@@ -198,6 +244,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   function renderProductListRow(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
+    const promo = getProductPromotion(p);
     const priceValue = Number(p.price || 0);
     const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
@@ -209,8 +256,17 @@ export default async function MenuPage({ searchParams }: PageProps) {
           allowOrdering ? 'pr-24' : '',
         ].join(' ')}
       >
-        {p.available === false && (
-          <span className="absolute left-4 top-3 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+        {(p.available === false || promo) && (
+          <div className="absolute left-4 top-3 flex flex-col gap-1">
+            {p.available === false && (
+              <span className="rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+            )}
+            {promo && (
+              <span className="rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow">
+                {promo.name || 'Promoción'}
+              </span>
+            )}
+          </div>
         )}
         {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
         <div className="flex flex-col gap-2">

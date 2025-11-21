@@ -1,5 +1,3 @@
-"use client";
-
 import type { CartItem } from "@/lib/cart-storage";
 
 export type Promotion = {
@@ -30,7 +28,7 @@ function jsToIsoDay(date: Date) {
   return ((js + 6) % 7) + 1; // 1=lunes ... 7=domingo
 }
 
-function isPromotionActive(promo: Promotion, reference = new Date()): boolean {
+export function isPromotionActive(promo: Promotion, reference = new Date()): boolean {
   if (promo.active === false) return false;
   if (promo.start_date) {
     const start = new Date(promo.start_date);
@@ -96,4 +94,26 @@ export function applyBestPromotion(items: CartItem[], promotions: Promotion[], o
 
   const total = Math.max(0, subtotal - bestDiscount);
   return { subtotal, discount: bestDiscount, total, promotion: bestPromotion };
+}
+
+export function findPromotionForProduct(
+  product: { id: string | number; price: number; category_id?: number | null },
+  promotions: Promotion[],
+  options?: { now?: Date }
+): Promotion | null {
+  if (!promotions.length || product.price <= 0) return null;
+  const reference = options?.now ?? new Date();
+  for (const promo of promotions) {
+    if (promo.scope === "order") continue;
+    if (!isPromotionActive(promo, reference)) continue;
+    if (promo.scope === "category") {
+      if (!promo.target_category_id || Number(product.category_id ?? null) !== Number(promo.target_category_id)) continue;
+    } else if (promo.scope === "product") {
+      if (!promo.target_product_id || String(product.id) !== String(promo.target_product_id)) continue;
+    }
+    const minAmount = Number(promo.min_amount ?? 0);
+    if (product.price < Math.max(0, minAmount)) continue;
+    return promo;
+  }
+  return null;
 }
