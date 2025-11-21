@@ -126,7 +126,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                         {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
                         {allowOrdering && (
                           <AddToCartButton
-                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined, category_id: p.category_id ?? null }}
                             disabled={out}
                             disabledLabel={disabledLabel}
                           />
@@ -186,7 +186,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                       {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
                       {allowOrdering && (
                         <AddToCartButton
-                          product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+                          product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined, category_id: p.category_id ?? null }}
                           disabled={out}
                           disabledLabel={disabledLabel}
                         />

@@ -4,9 +4,10 @@
 export type CartItem = {
   id: string | number;
   name: string;
-  price: number;      // en euros
+  price: number; // en euros
   image?: string;
   qty: number;
+  category_id?: number | null;
 };
 
 const KEY = "cart";
@@ -27,9 +28,12 @@ function normalize(raw: any): CartItem | null {
       : NaN;
   const image = raw.image ?? raw.imagen ?? raw.photo;
   const qty = Number(raw.qty ?? raw.quantity ?? 1);
+  const category_id_raw = raw.category_id ?? raw.categoryId ?? null;
+  const category_id =
+    category_id_raw == null || category_id_raw === "" ? null : Number(category_id_raw);
 
   if (id === undefined || !name || !isFinite(price)) return null;
-  return { id, name, price, image, qty: Math.max(1, qty) };
+  return { id, name, price, image, qty: Math.max(1, qty), category_id: Number.isFinite(category_id) ? category_id : null };
 }
 
 function read(): CartItem[] {
@@ -59,7 +63,17 @@ export function getCount(): number {
 }
 
 export function addItem(
-  product: { id: any; name?: string; nombre?: string; price?: number; precio?: number; image?: string; imagen?: string },
+  product: {
+    id: any;
+    name?: string;
+    nombre?: string;
+    price?: number;
+    precio?: number;
+    image?: string;
+    imagen?: string;
+    category_id?: number | null;
+    categoryId?: number | null;
+  },
   qty = 1
 ) {
   const items = read();
@@ -67,12 +81,17 @@ export function addItem(
   const name = (product.name ?? product.nombre) as string;
   const price = Number(product.price ?? product.precio ?? 0);
   const image = product.image ?? product.imagen;
+  const category_id_raw = product.category_id ?? product.categoryId ?? null;
+  const category_id = category_id_raw == null ? null : Number(category_id_raw);
 
   const idx = items.findIndex((it) => it.id === id);
   if (idx >= 0) {
     items[idx].qty += qty;
+    if ((items[idx].category_id == null || Number.isNaN(items[idx].category_id as any)) && category_id != null && Number.isFinite(category_id)) {
+      items[idx].category_id = category_id;
+    }
   } else {
-    items.push({ id, name, price, image, qty: Math.max(1, qty) });
+    items.push({ id, name, price, image, qty: Math.max(1, qty), category_id: Number.isFinite(category_id) ? category_id : null });
   }
   write(items);
 }

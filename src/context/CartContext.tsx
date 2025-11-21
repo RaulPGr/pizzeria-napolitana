@@ -14,6 +14,7 @@ export type CartItem = {
   price: number;
   image?: string;
   qty: number;
+  category_id?: number | null;
 };
 
 type CartState = { items: CartItem[] };

@@ -186,7 +186,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
           )}
           {allowOrdering && (
             <AddToCartButton
-              product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+              product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined, category_id: p.category_id ?? null }}
               disabled={out}
               disabledLabel={disabledLabel}
             />
@@ -230,7 +230,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
           {allowOrdering && (
             <div className="max-w-xs">
               <AddToCartButton
-                product={{ id: p.id, name: p.name, price: Number(p.price || 0) }}
+                product={{ id: p.id, name: p.name, price: Number(p.price || 0), category_id: p.category_id ?? null }}
                 disabled={out}
                 disabledLabel={disabledLabel}
               />

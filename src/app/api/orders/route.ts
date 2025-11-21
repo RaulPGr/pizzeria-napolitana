@@ -11,6 +11,13 @@ type BodyInput = {
   items: ItemInput[];
   paymentMethod: 'cash' | 'card';
   notes?: string;
+  pricing?: {
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    promotionId?: string | null;
+    promotionName?: string | null;
+  };
 };
 
 export async function POST(req: NextRequest) {
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const map = new Map(products?.map((p) => [p.id, p]) || []);
 
-    let totalCents = 0;
+    let subtotalCents = 0;
     const itemsPrepared = body.items.map((i) => {
       const p = map.get(i.productId);
       if (!p) {
@@ -65,7 +72,7 @@ export async function POST(req: NextRequest) {
       }
       const unit_price_cents = Math.round(Number(p.price) * 100);
       const line_total_cents = unit_price_cents * i.quantity;
-      totalCents += line_total_cents;
+      subtotalCents += line_total_cents;
       return {
         product_id: i.productId,
         name: p.name,
@@ -74,6 +81,33 @@ export async function POST(req: NextRequest) {
         line_total_cents,
       };
     });
+
+    let discountCents = 0;
+    let promotionId: string | null = null;
+    let promotionName: string | null = body.pricing?.promotionName ? String(body.pricing.promotionName).slice(0, 120) : null;
+    if (body.pricing) {
+      const requestedDiscount = Math.round(Number(body.pricing.discount ?? 0) * 100);
+      if (Number.isFinite(requestedDiscount) && requestedDiscount > 0) {
+        discountCents = Math.min(requestedDiscount, subtotalCents);
+      }
+    }
+    const finalTotalCents = Math.max(0, subtotalCents - discountCents);
+
+    const requestedPromotionId = body.pricing?.promotionId ? String(body.pricing.promotionId).trim() : '';
+    if (requestedPromotionId) {
+      try {
+        const { data: promo } = await supabaseAdmin
+          .from('promotions')
+          .select('id, name')
+          .eq('id', requestedPromotionId)
+          .eq('business_id', (tenant as any)?.id || null)
+          .maybeSingle();
+        if (promo?.id) {
+          promotionId = promo.id as string;
+          if (!promotionName) promotionName = (promo as any)?.name || null;
+        }
+      } catch {}
+    }
 
     // Decidir estado inicial según método de pago
     const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
@@ -87,7 +121,10 @@ export async function POST(req: NextRequest) {
         customer_email: body.customer.email || null,
         pickup_at: body.pickupAt ? new Date(body.pickupAt).toISOString() : null,
         status: initialStatus,
-        total_cents: totalCents,
+        total_cents: finalTotalCents,
+        discount_cents: discountCents,
+        promotion_id: promotionId,
+        promotion_name: promotionName,
         payment_method: body.paymentMethod,
         payment_status: 'unpaid',
         notes: body.notes || null,
@@ -120,7 +157,7 @@ export async function POST(req: NextRequest) {
           .select('name, email, address_line, city, postal_code, logo_url, social')
           .eq('id', (tenant as any)?.id || null)
           .maybeSingle();
-        const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
+        const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents / 100 }));
         const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
         const { sendOrderReceiptEmail, sendOrderBusinessNotificationEmail } = await import('@/lib/email/sendOrderReceipt');
         if (body.customer?.email) {
@@ -136,9 +173,11 @@ export async function POST(req: NextRequest) {
             customerName: body.customer.name,
             items: itemsSimple,
             subtotal,
-            total: totalCents/100,
+            total: finalTotalCents / 100,
             pickupTime: body.pickupAt,
             notes: body.notes || undefined,
+            discount: discountCents / 100,
+            promotionName: promotionName || undefined,
           });
         }
         const notifySettings = (business as any)?.social || {};
@@ -158,7 +197,7 @@ export async function POST(req: NextRequest) {
             businessLogoUrl: (business as any)?.logo_url || undefined,
             businessEmail: notifyTarget,
             items: itemsSimple,
-            total: totalCents / 100,
+            total: finalTotalCents / 100,
             customerName: body.customer.name,
             customerPhone: body.customer.phone,
             customerEmail: body.customer.email || null,

@@ -9,6 +9,7 @@ import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
 import { subscriptionAllowsOrders, type SubscriptionPlan } from "@/lib/subscription";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 import { persistTenantSlugClient, resolveTenantSlugClient } from "@/lib/tenant-client";
+import { applyBestPromotion, type Promotion as PromotionRule } from "@/lib/promotions";
 
 type PaymentMethod = "cash" | "card";
 
@@ -28,7 +29,14 @@ function CartPageContent() {
     const unsub = subscribe((next) => setItems(next));
     return () => unsub();
   }, []);
-  const total = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items]);
+  const [promotions, setPromotions] = useState<PromotionRule[]>([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(false);
+  const [promotionsError, setPromotionsError] = useState<string | null>(null);
+  const promoResult = useMemo(() => applyBestPromotion(items, promotions), [items, promotions]);
+  const subtotal = promoResult.subtotal;
+  const discount = promoResult.discount;
+  const total = promoResult.total;
+  const appliedPromotion = promoResult.promotion;
 
   // Formulario
   const [name, setName] = useState("");
@@ -72,6 +80,37 @@ function CartPageContent() {
         }
       } catch {}
     })();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        setPromotionsLoading(true);
+        setPromotionsError(null);
+        const slug = resolveTenantSlugClient();
+        if (slug) persistTenantSlugClient(slug);
+        const endpoint = slug ? `/api/promotions?tenant=${encodeURIComponent(slug)}` : "/api/promotions";
+        const res = await fetch(endpoint, { cache: "no-store", signal: controller.signal });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.ok) throw new Error(j?.error || "No se pudieron cargar las promociones");
+        const normalized = Array.isArray(j.promotions)
+          ? (j.promotions as any[]).map((p) => ({
+              ...p,
+              value: Number(p.value ?? 0),
+              min_amount: p.min_amount != null ? Number(p.min_amount) : null,
+              weekdays: Array.isArray(p.weekdays) ? p.weekdays.map((n: any) => Number(n)).filter((d: number) => Number.isFinite(d)) : undefined,
+            }))
+          : [];
+        setPromotions(normalized);
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        setPromotionsError(e?.message || "No se pudieron cargar las promociones");
+      } finally {
+        setPromotionsLoading(false);
+      }
+    })();
+    return () => controller.abort();
   }, []);
 
   // Cargar horario de pedidos
@@ -288,6 +327,13 @@ function CartPageContent() {
       pickupAt: pickup.toISOString(),
       paymentMethod: payment,
       items: items.map((it) => ({ productId: it.id as number, quantity: it.qty })),
+      pricing: {
+        subtotal,
+        discount,
+        total,
+        promotionId: appliedPromotion?.id || null,
+        promotionName: appliedPromotion?.name || null,
+      },
     } as const;
 
     try {
@@ -358,11 +404,26 @@ function CartPageContent() {
       </div>
 
       {/* TOTAL */}
-      <div className="mb-6 flex items-center justify-end rounded border bg-white p-4 shadow">
-        <div className="text-lg">
-          <span className="font-semibold">Total: </span>
+      <div className="mb-6 rounded border bg-white p-4 shadow">
+        <div className="flex flex-col items-end text-right">
+          <div className="text-sm text-slate-600">
+            Subtotal: <span className="font-semibold text-slate-800">{subtotal.toFixed(2)} €</span>
+          </div>
+          {discount > 0 && appliedPromotion ? (
+            <div className="text-sm text-emerald-700">
+              Promo aplicada ({appliedPromotion.name}): -{discount.toFixed(2)} €
+            </div>
+          ) : promotionsLoading ? (
+            <div className="text-xs text-slate-500">Buscando promociones...</div>
+          ) : promotionsError ? (
+            <div className="text-xs text-amber-600">{promotionsError}</div>
+          ) : (
+            <div className="text-xs text-slate-500">No hay promociones aplicadas</div>
+          )}
+          <div className="mt-2 text-lg font-semibold">
+            Total: <span>{total.toFixed(2)} €</span>
+          </div>
         </div>
-        <div className="ml-2 text-lg">{total.toFixed(2)} €</div>
       </div>
 
       {/* FORMULARIO */}
