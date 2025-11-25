@@ -74,18 +74,23 @@ async function getBusinessIdBySlug(slug: string): Promise<string | null> {
   return (data as any)?.id ?? null;
 }
 
-async function ensureGroupAndProduct(
-  businessId: string,
-  groupId: string,
-  productId: number
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { data: group } = await supabaseAdmin
+async function ensureGroupBelongs(businessId: string, groupId: string) {
+  const { data } = await supabaseAdmin
     .from("option_groups")
     .select("id")
     .eq("id", groupId)
     .eq("business_id", businessId)
     .maybeSingle();
-  if (!group) return { ok: false, error: "Grupo no encontrado" };
+  return !!data;
+}
+
+async function ensureGroupAndProduct(
+  businessId: string,
+  groupId: string,
+  productId: number
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const groupOk = await ensureGroupBelongs(businessId, groupId);
+  if (!groupOk) return { ok: false, error: "Grupo no encontrado" };
   const { data: product } = await supabaseAdmin
     .from("products")
     .select("id")
@@ -108,6 +113,8 @@ export async function GET() {
       options: [],
       assignments: [],
       products: [],
+      categories: [],
+      categoryAssignments: [],
     });
   }
 
@@ -125,6 +132,19 @@ export async function GET() {
       category_name: p.categories?.name || null,
     })) || [];
   const productIds = productList.map((p) => p.id);
+
+  const { data: categoriesData } = await supabaseAdmin
+    .from("categories")
+    .select("id, name")
+    .eq("business_id", bid)
+    .order("sort_order", { ascending: true, nullsFirst: true })
+    .order("name", { ascending: true });
+  const categories =
+    (categoriesData || []).map((c: any) => ({
+      id: Number(c.id),
+      name: c.name,
+    })) || [];
+  const categoryIds = categories.map((c) => c.id);
 
   const { data: groups, error: groupsError } = await supabaseAdmin
     .from("option_groups")
@@ -155,12 +175,30 @@ export async function GET() {
     assignments = assignData || [];
   }
 
+  let categoryAssignments: any[] = [];
+  if (categoryIds.length > 0 && groupIds.length > 0) {
+    const { data: catAssignData } = await supabaseAdmin
+      .from("category_option_groups")
+      .select("id, category_id, group_id")
+      .eq("business_id", bid)
+      .in("category_id", categoryIds)
+      .in("group_id", groupIds);
+    categoryAssignments =
+      (catAssignData || []).map((item: any) => ({
+        id: item.id,
+        category_id: Number(item.category_id),
+        group_id: item.group_id,
+      })) || [];
+  }
+
   return NextResponse.json({
     ok: true,
     groups: groups || [],
     options,
     assignments,
     products: productList,
+    categories,
+    categoryAssignments,
   });
 }
 
@@ -176,7 +214,7 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "JSON invalido" }, { status: 400 });
   }
   const groupId = String(body?.group_id || "").trim();
   const productId = Number(body?.product_id);
@@ -242,7 +280,7 @@ export async function DELETE(req: Request) {
 
   const productId = Number(productIdParam);
   if (!Number.isFinite(productId) || !groupId) {
-    return NextResponse.json({ ok: false, error: "Par producto/grupo inválido" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Par producto/grupo invalido" }, { status: 400 });
   }
   const validation = await ensureGroupAndProduct(bid, groupId, productId);
   if (!validation.ok) {
