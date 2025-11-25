@@ -60,17 +60,32 @@ export async function notifyOrderViaTelegram(orderId: string, socialOverride?: R
 
   const { data: orderItems, error: itemsErr } = await supabaseAdmin
     .from("order_items")
-    .select("name, quantity, unit_price_cents")
+    .select("name, quantity, unit_price_cents, order_item_options(name_snapshot, group_name_snapshot, price_delta_snapshot)")
     .eq("order_id", orderId);
   if (itemsErr) {
     return { ok: false, error: itemsErr.message };
   }
 
-  const itemsSimple = (orderItems || []).map((it: any) => ({
-    name: it.name,
-    qty: it.quantity,
-    price: (it.unit_price_cents || 0) / 100,
-  }));
+  const itemsSimple = (orderItems || []).map((it: any) => {
+    const options = Array.isArray(it.order_item_options)
+      ? it.order_item_options.map((opt: any) => {
+          const base = opt.group_name_snapshot ? `${opt.group_name_snapshot}: ${opt.name_snapshot}` : opt.name_snapshot;
+          const delta = Number(opt.price_delta_snapshot || 0);
+          if (delta) {
+            const formatted = delta.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+            const sign = delta > 0 ? "+" : "-";
+            return `${base} (${sign}${formatted})`;
+          }
+          return base;
+        })
+      : [];
+    return {
+      name: it.name,
+      qty: it.quantity,
+      price: (it.unit_price_cents || 0) / 100,
+      options,
+    };
+  });
 
   const slug = (social as any)?.slug || "";
   const baseUrl = appBaseUrl();

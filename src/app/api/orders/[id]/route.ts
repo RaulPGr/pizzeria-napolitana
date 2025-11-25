@@ -39,7 +39,7 @@ export async function GET(_req: Request, { params }: Params) {
     // Items
     const { data: items, error: e2 } = await supabaseAdmin
       .from("order_items")
-      .select("id, product_id, name, unit_price_cents, quantity, line_total_cents")
+      .select("id, product_id, name, unit_price_cents, quantity, line_total_cents, order_item_options ( name_snapshot, group_name_snapshot, price_delta_snapshot )")
       .eq("order_id", id)
       .order("created_at", { ascending: true });
 
@@ -47,7 +47,23 @@ export async function GET(_req: Request, { params }: Params) {
       return NextResponse.json({ ok: false, message: e2.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, data: { order, items: items || [] } });
+    const normalizedItems = (items || []).map((item) => ({
+      id: item.id,
+      product_id: item.product_id,
+      name: item.name,
+      unit_price_cents: item.unit_price_cents,
+      quantity: item.quantity,
+      line_total_cents: item.line_total_cents,
+      options: (item as any)?.order_item_options
+        ? (item as any).order_item_options.map((opt: any) => ({
+            name: opt.name_snapshot,
+            groupName: opt.group_name_snapshot,
+            priceDelta: opt.price_delta_snapshot,
+          }))
+        : [],
+    }));
+
+    return NextResponse.json({ ok: true, data: { order, items: normalizedItems } });
   } catch (e) {
     return NextResponse.json({ ok: false, message: "Error obteniendo el detalle" }, { status: 500 });
   }

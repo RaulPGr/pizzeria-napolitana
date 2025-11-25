@@ -361,7 +361,22 @@ export async function POST(req: NextRequest) {
           .select('name, email, address_line, city, postal_code, logo_url, social')
           .eq('id', (tenant as any)?.id || null)
           .maybeSingle();
-        const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents / 100 }));
+        const optionLabel = (opt: any) => {
+          const base = opt.group_name_snapshot ? `${opt.group_name_snapshot}: ${opt.name_snapshot}` : opt.name_snapshot;
+          const priceDelta = Number(opt.price_delta_snapshot || 0);
+          if (priceDelta) {
+            const formatted = priceDelta.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+            const sign = priceDelta > 0 ? "+" : "-";
+            return `${base} (${sign}${formatted})`;
+          }
+          return base;
+        };
+        const itemsSimple = itemsPrepared.map((it) => ({
+          name: it.name,
+          qty: it.quantity,
+          price: it.unit_price_cents / 100,
+          options: (it.options_snapshot || []).map(optionLabel),
+        }));
         const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
         const { sendOrderReceiptEmail, sendOrderBusinessNotificationEmail } = await import('@/lib/email/sendOrderReceipt');
         if (body.customer?.email) {

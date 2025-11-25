@@ -22,6 +22,12 @@ type OrderRow = {
   created_at: string;
 };
 
+type OrderItemOption = {
+  name: string;
+  groupName?: string | null;
+  priceDelta?: number | null;
+};
+
 type OrderItem = {
   id: string;
   product_id: number | null;
@@ -29,6 +35,7 @@ type OrderItem = {
   unit_price_cents: number;
   quantity: number;
   line_total_cents: number;
+  options?: OrderItemOption[];
 };
 
 type OrderDetailResponse = {
@@ -52,6 +59,19 @@ const pagarEtiqueta: Record<string, string> = { cash: "efectivo", card: "tarjeta
 
 function eur(cents: number) {
   return (cents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+}
+
+function eurFloat(value: number) {
+  return value.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+}
+
+function formatOptionLine(opt: OrderItemOption) {
+  const namePart = opt.groupName ? `${opt.groupName}: ${opt.name}` : opt.name;
+  if (opt.priceDelta && opt.priceDelta !== 0) {
+    const signed = `${opt.priceDelta > 0 ? "+" : "-"}${eurFloat(Math.abs(opt.priceDelta))}`;
+    return `${namePart} (${signed})`;
+  }
+  return namePart;
 }
 
 const NEW_WINDOW_MS = 120000; // 2 minutos para considerar "reciente"
@@ -417,7 +437,16 @@ export default function OrdersClient() {
                       {!detailLoading[o.id] && (detailCache[o.id] || []).map((it) => (
                         <tr key={it.id} className="border-t">
                           <td className="px-3 py-2">{it.quantity}</td>
-                          <td className="px-3 py-2">{it.name}</td>
+                          <td className="px-3 py-2">
+                            <div>{it.name}</div>
+                            {it.options && it.options.length > 0 && (
+                              <ul className="mt-1 list-disc pl-4 text-xs text-slate-500 space-y-0.5">
+                                {it.options.map((opt, idx) => (
+                                  <li key={idx}>{formatOptionLine(opt)}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </td>
                           <td className="px-3 py-2">{eur(it.unit_price_cents)}</td>
                           <td className="px-3 py-2">{eur(it.line_total_cents)}</td>
                         </tr>
@@ -489,7 +518,16 @@ export default function OrdersClient() {
                             {!detailLoading[o.id] && (detailCache[o.id] || []).map((it) => (
                               <tr key={it.id} className="border-t">
                                 <td className="px-3 py-2">{it.quantity}</td>
-                                <td className="px-3 py-2">{it.name}</td>
+                                <td className="px-3 py-2">
+                                  <div>{it.name}</div>
+                                  {it.options && it.options.length > 0 && (
+                                    <ul className="mt-1 list-disc pl-4 text-xs text-slate-500 space-y-0.5">
+                                      {it.options.map((opt, idx) => (
+                                        <li key={idx}>{formatOptionLine(opt)}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </td>
                                 <td className="px-3 py-2">{eur(it.unit_price_cents)}</td>
                                 <td className="px-3 py-2">{eur(it.line_total_cents)}</td>
                               </tr>

@@ -3,7 +3,7 @@
 // No importa UI; se usa únicamente desde rutas del servidor.
 import { Resend } from "resend";
 
-export type OrderItem = { name: string; qty: number; price: number };
+export type OrderItem = { name: string; qty: number; price: number; options?: string[] };
 export type SendOrderReceiptParams = {
   orderId: string;
   orderCode?: string; // código corto usado en el panel (p.ej., primeros chars)
@@ -77,13 +77,18 @@ export async function sendOrderReceiptEmail({
 
     const resend = new Resend(apiKey);
 
-    const rows = items.map((it) => `
+    const rows = items.map((it) => {
+      const optionsHtml = it.options && it.options.length
+        ? `<div style="margin-top:4px;font-size:12px;color:#666;">${it.options.map((opt) => `• ${opt}`).join("<br/>")}</div>`
+        : "";
+      return `
       <tr>
-        <td>${it.name}</td>
+        <td>${it.name}${optionsHtml}</td>
         <td align="center">${it.qty}</td>
         <td align="right">${currency(it.price * it.qty)}</td>
       </tr>
-    `).join("");
+    `;
+    }).join("");
 
     const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 7)}`;
 
@@ -161,13 +166,18 @@ export async function sendOrderBusinessNotificationEmail({
     }
     const resend = new Resend(apiKey);
 
-    const rows = items.map((it) => `
+    const rows = items.map((it) => {
+      const optionsHtml = it.options && it.options.length
+        ? `<div style="margin-top:4px;font-size:12px;color:#666;">${it.options.map((opt) => `• ${opt}`).join("<br/>")}</div>`
+        : "";
+      return `
       <tr>
-        <td>${it.name}</td>
+        <td>${it.name}${optionsHtml}</td>
         <td align="center">${it.qty}</td>
         <td align="right">${currency(it.price * it.qty)}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
     const ticket = `#${(orderCode ?? (orderId?.toString().split('-')[0] || '')).toString().slice(0, 7)}`;
     const logoSection = businessLogoUrl
       ? `<div style="margin-bottom:16px;"><img src="${businessLogoUrl}" alt="${businessName}" style="max-height:70px; object-fit:contain;" /></div>`

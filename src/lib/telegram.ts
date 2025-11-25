@@ -11,7 +11,7 @@ type OrderTelegramPayload = {
   businessName?: string;
   code?: string;
   total?: number;
-  items?: Array<{ name: string; qty: number; price: number }>;
+  items?: Array<{ name: string; qty: number; price: number; options?: string[] }>;
   paymentMethod?: string;
   pickupTime?: string | null;
   customerName?: string;
@@ -58,11 +58,11 @@ export function verifyTelegramSignature(slug: string, entityId: string, ts: stri
 
 export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string {
   const parts: string[] = [];
-  const title = payload.businessName ? `🍕 Nuevo pedido en ${payload.businessName}` : "🍕 Nuevo pedido";
+  const title = payload.businessName ? `Nuevo pedido en ${payload.businessName}` : "Nuevo pedido";
   parts.push(title);
   if (payload.code) {
     const masked = payload.code.length > 1 ? payload.code.slice(0, -1) : payload.code;
-    parts.push(`Código: #${masked}`);
+    parts.push(`Codigo: #${masked}`);
   }
   if (payload.pickupTime) {
     const when = new Date(payload.pickupTime);
@@ -82,17 +82,23 @@ export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string
   if (payload.customerName) customer.push(payload.customerName);
   if (payload.customerPhone) customer.push(payload.customerPhone);
   if (payload.customerEmail) customer.push(payload.customerEmail);
-  if (customer.length) parts.push(`Cliente: ${customer.join(" · ")}`);
+  if (customer.length) parts.push(`Cliente: ${customer.join(" | ")}`);
 
   if (payload.items && payload.items.length > 0) {
     parts.push("");
     parts.push("Detalle:");
     payload.items.slice(0, 20).forEach((item) => {
       const price = typeof item.price === "number" ? formatCurrency(item.price) : "";
-      parts.push(`• ${item.qty} × ${sanitize(item.name)}${price ? ` (${price})` : ""}`);
+      parts.push(`- ${item.qty} x ${sanitize(item.name)}${price ? ` (${price})` : ""}`);
+      if (item.options && item.options.length) {
+        item.options.slice(0, 5).forEach((opt) => parts.push(`   * ${sanitize(opt)}`));
+        if (item.options.length > 5) {
+          parts.push("   * ...");
+        }
+      }
     });
     if (payload.items.length > 20) {
-      parts.push(`• … y ${payload.items.length - 20} productos más`);
+      parts.push(`- ... y ${payload.items.length - 20} productos mas`);
     }
   }
 
@@ -111,7 +117,7 @@ export function buildOrderTelegramMessage(payload: OrderTelegramPayload): string
 
 export function buildReservationTelegramMessage(payload: ReservationTelegramPayload): string {
   const parts: string[] = [];
-  const title = payload.businessName ? `📅 Nueva reserva en ${payload.businessName}` : "📅 Nueva reserva";
+  const title = payload.businessName ? `Nueva reserva en ${payload.businessName}` : "Nueva reserva";
   parts.push(title);
   parts.push(`Cuando: ${payload.reservedFor}`);
   parts.push(`Comensales: ${payload.partySize}`);
@@ -119,7 +125,7 @@ export function buildReservationTelegramMessage(payload: ReservationTelegramPayl
     .filter((val) => !!val)
     .map((val) => sanitize(String(val)));
   if (customerBits.length) {
-    parts.push(`Cliente: ${customerBits.join(" · ")}`);
+    parts.push(`Cliente: ${customerBits.join(" | ")}`);
   }
   if (payload.notes) {
     parts.push("");
