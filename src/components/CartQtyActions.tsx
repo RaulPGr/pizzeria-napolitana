@@ -8,10 +8,11 @@ import { subscriptionAllowsOrders } from "@/lib/subscription";
 
 type Props = {
   productId: number | string;
-  allowAdd?: boolean; // si false, desactiva el boton + (anadir)
+  allowAdd?: boolean;
+  variantKey?: string | null;
 };
 
-export default function CartQtyActions({ productId, allowAdd = true }: Props) {
+export default function CartQtyActions({ productId, allowAdd = true, variantKey }: Props) {
   const plan = useSubscriptionPlan();
   const ordersEnabled = useOrdersEnabled();
   const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
@@ -24,7 +25,9 @@ export default function CartQtyActions({ productId, allowAdd = true }: Props) {
       return;
     }
     return subscribe((items: CartItem[]) => {
-      const it = items.find((x) => String(x.id) === String(productId));
+      const it = items.find(
+        (x) => String(x.id) === String(productId) && String(x.variantKey || "") === String(variantKey || "")
+      );
       const next = it?.qty ?? 0;
       setLocalQty((prev) => {
         if (prev !== next) {
@@ -42,15 +45,15 @@ export default function CartQtyActions({ productId, allowAdd = true }: Props) {
 
   function dec() {
     const next = Math.max(0, qty - 1);
-    if (next === 0) removeItem(productId);
-    else setQty(productId, next);
+    if (next === 0) removeItem(productId, variantKey || undefined);
+    else setQty(productId, next, variantKey || undefined);
   }
   function inc() {
     if (!allowAdd) return;
-    addItem({ id: productId }, 1);
+    addItem({ id: productId, variantKey: variantKey || undefined }, 1);
   }
   function clear() {
-    removeItem(productId);
+    removeItem(productId, variantKey || undefined);
   }
 
   return (

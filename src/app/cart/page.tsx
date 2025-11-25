@@ -326,7 +326,17 @@ function CartPageContent() {
       notes: notes.trim() || undefined,
       pickupAt: pickup.toISOString(),
       paymentMethod: payment,
-      items: items.map((it) => ({ productId: it.id as number, quantity: it.qty })),
+      items: items.map((it) => ({
+        productId: it.id as number,
+        quantity: it.qty,
+        unitPrice: it.price,
+        options: it.options?.map((opt) => ({
+          optionId: opt.optionId,
+          name: opt.name,
+          groupName: opt.groupName,
+          price_delta: opt.price_delta ?? 0,
+        })),
+      })),
       pricing: {
         subtotal,
         discount,
@@ -375,24 +385,35 @@ function CartPageContent() {
         ) : (
           <ul className="space-y-3">
             {items.map((it) => (
-              <li key={String(it.id)} className="rounded border bg-white p-3 shadow">
+              <li key={`${String(it.id)}-${it.variantKey || "base"}`} className="rounded border bg-white p-3 shadow">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-1 items-start gap-3">
                     {it.image && <img src={it.image} alt={it.name} className="h-12 w-12 rounded object-cover" />}
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium">{it.name}</div>
                       <div className="text-sm text-gray-500">{it.price.toFixed(2)} €</div>
+                      {it.options && it.options.length > 0 && (
+                        <ul className="mt-1 text-xs text-gray-600">
+                          {it.options.map((opt, idx) => (
+                            <li key={idx}>
+                              {opt.groupName ? `${opt.groupName}: ` : ""}
+                              {opt.name}
+                              {opt.price_delta ? ` (+${opt.price_delta.toFixed(2)} €)` : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setQty(it.id, Math.max(1, it.qty - 1))} className="rounded border px-2 py-1">
+                    <button onClick={() => setQty(it.id, Math.max(1, it.qty - 1), it.variantKey || undefined)} className="rounded border px-2 py-1">
                       -
                     </button>
                     <span className="w-8 text-center">{it.qty}</span>
-                    <button onClick={() => setQty(it.id, it.qty + 1)} className="rounded border px-2 py-1">
+                    <button onClick={() => setQty(it.id, it.qty + 1, it.variantKey || undefined)} className="rounded border px-2 py-1">
                       +
                     </button>
-                    <button onClick={() => removeItem(it.id)} className="rounded border border-red-300 px-3 py-1 text-red-600">
+                    <button onClick={() => removeItem(it.id, it.variantKey || undefined)} className="rounded border border-red-300 px-3 py-1 text-red-600">
                       Quitar
                     </button>
                   </div>

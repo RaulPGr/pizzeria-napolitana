@@ -4,7 +4,19 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
 import { notifyOrderViaTelegram } from '@/lib/order-telegram-notify';
 
-type ItemInput = { productId: number; quantity: number };
+type ItemOptionInput = {
+  optionId?: string;
+  name?: string;
+  price_delta?: number;
+  groupName?: string;
+};
+
+type ItemInput = {
+  productId: number;
+  quantity: number;
+  unitPrice?: number;
+  options?: ItemOptionInput[];
+};
 type BodyInput = {
   customer: { name: string; phone: string; email?: string };
   pickupAt: string; // ISO
@@ -63,6 +75,116 @@ export async function POST(req: NextRequest) {
     if (prodErr) throw prodErr;
 
     const map = new Map(products?.map((p) => [p.id, p]) || []);
+    const productCategoryMap = new Map<number, number | null>();
+    products?.forEach((p) => {
+      productCategoryMap.set(Number(p.id), p.category_id != null ? Number(p.category_id) : null);
+    });
+    const productsByCategory = new Map<number, number[]>();
+    productCategoryMap.forEach((cid, pid) => {
+      if (cid == null) return;
+      if (!productsByCategory.has(cid)) productsByCategory.set(cid, []);
+      productsByCategory.get(cid)!.push(pid);
+    });
+    const categoryIds = Array.from(new Set(Array.from(productCategoryMap.values()).filter((cid): cid is number => cid != null)));
+
+    const productGroupAssignments: Array<{ product_id: number; group_id: string }> = productIds.length
+      ? ((await supabaseAdmin
+          .from("product_option_groups")
+          .select("product_id, group_id")
+          .in("product_id", productIds)) as any).data || []
+      : [];
+    const categoryGroupAssignments: Array<{ category_id: number; group_id: string }> =
+      categoryIds.length > 0
+        ? ((await supabaseAdmin
+            .from("category_option_groups")
+            .select("category_id, group_id")
+            .eq("business_id", (tenant as any)?.id || null)
+            .in("category_id", categoryIds)) as any).data || []
+        : [];
+    const allowedGroupsByProduct = new Map<number, Set<string>>();
+    const allRelevantGroupIds = new Set<string>();
+    const addGroup = (pid: number, groupId: string) => {
+      if (!allowedGroupsByProduct.has(pid)) allowedGroupsByProduct.set(pid, new Set());
+      allowedGroupsByProduct.get(pid)!.add(groupId);
+      allRelevantGroupIds.add(groupId);
+    };
+    for (const row of productGroupAssignments) {
+      const pid = Number(row.product_id);
+      if (!Number.isFinite(pid)) continue;
+      addGroup(pid, row.group_id);
+    }
+    for (const row of categoryGroupAssignments) {
+      const cid = Number(row.category_id);
+      if (!Number.isFinite(cid)) continue;
+      const productsForCat = productsByCategory.get(cid) || [];
+      for (const pid of productsForCat) {
+        addGroup(pid, row.group_id);
+      }
+    }
+
+    const groupMetaMap = new Map<
+      string,
+      { id: string; name: string | null; selection_type: "single" | "multiple"; min_select?: number | null; max_select?: number | null; is_required?: boolean }
+    >();
+    if (allRelevantGroupIds.size > 0) {
+      const { data: groupRows } = await supabaseAdmin
+        .from("option_groups")
+        .select("id, name, selection_type, min_select, max_select, is_required")
+        .in("id", Array.from(allRelevantGroupIds));
+      (groupRows || []).forEach((row: any) => {
+        groupMetaMap.set(row.id, {
+          id: row.id,
+          name: row.name,
+          selection_type: (row.selection_type || "single") as "single" | "multiple",
+          min_select: row.min_select,
+          max_select: row.max_select,
+          is_required: row.is_required,
+        });
+      });
+    }
+
+    const requestedOptionIds = new Set<string>();
+    for (const item of body.items) {
+      if (!Array.isArray(item.options)) continue;
+      for (const opt of item.options) {
+        const optId = String(opt.optionId ?? "").trim();
+        if (optId) requestedOptionIds.add(optId);
+      }
+    }
+    const optionRowMap = new Map<
+      string,
+      { id: string; name: string; price_delta: number; group_id: string }
+    >();
+    if (requestedOptionIds.size > 0) {
+      const { data: optionRows, error: optionErr } = await supabaseAdmin
+        .from("options")
+        .select("id, name, price_delta, group_id")
+        .in("id", Array.from(requestedOptionIds));
+      if (optionErr) throw optionErr;
+      (optionRows || []).forEach((row: any) => {
+        optionRowMap.set(row.id, {
+          id: row.id,
+          name: row.name,
+          price_delta: Number(row.price_delta || 0),
+          group_id: row.group_id,
+        });
+        allRelevantGroupIds.add(row.group_id);
+        if (!groupMetaMap.has(row.group_id)) {
+          groupMetaMap.set(row.group_id, {
+            id: row.group_id,
+            name: null,
+            selection_type: "single",
+            min_select: null,
+            max_select: null,
+            is_required: false,
+          });
+        }
+      });
+      const missingOptions = Array.from(requestedOptionIds).filter((id) => !optionRowMap.has(id));
+      if (missingOptions.length > 0) {
+        throw new Error("Alguna opción seleccionada no existe");
+      }
+    }
 
     let subtotalCents = 0;
     const itemsPrepared = body.items.map((i) => {
@@ -70,7 +192,53 @@ export async function POST(req: NextRequest) {
       if (!p) {
         throw new Error(`Producto no existe (id=${i.productId})`);
       }
-      const unit_price_cents = Math.round(Number(p.price) * 100);
+      const normalizedSelections: Array<{
+        option_id: string | null;
+        name_snapshot: string;
+        price_delta_snapshot: number;
+        group_name_snapshot: string | null;
+        group_id: string;
+      }> = [];
+      const allowedGroups = allowedGroupsByProduct.get(i.productId) || new Set<string>();
+      const requestedOptions = Array.isArray(i.options) ? i.options : [];
+      const selectionCounts = new Map<string, number>();
+      for (const opt of requestedOptions) {
+        const optionId = String(opt.optionId ?? "").trim();
+        if (!optionId) continue;
+        const optionRow = optionRowMap.get(optionId);
+        if (!optionRow) {
+          throw new Error("Opción seleccionada no existe");
+        }
+        if (!allowedGroups.has(optionRow.group_id)) {
+          throw new Error("Opción no permitida para este producto");
+        }
+        const groupMeta = groupMetaMap.get(optionRow.group_id);
+        const priceDelta = Number(optionRow.price_delta || 0);
+        normalizedSelections.push({
+          option_id: optionRow.id,
+          name_snapshot: optionRow.name,
+          price_delta_snapshot: priceDelta,
+          group_name_snapshot: groupMeta?.name || opt.groupName || null,
+          group_id: optionRow.group_id,
+        });
+        selectionCounts.set(optionRow.group_id, (selectionCounts.get(optionRow.group_id) || 0) + 1);
+      }
+      allowedGroups.forEach((groupId) => {
+        const meta = groupMetaMap.get(groupId);
+        if (!meta) return;
+        const selectionType = meta.selection_type || "single";
+        const min = meta.min_select != null ? Number(meta.min_select) : meta.is_required !== false && selectionType === "single" ? 1 : 0;
+        const max = meta.max_select != null ? Number(meta.max_select) : selectionType === "single" ? 1 : null;
+        const count = selectionCounts.get(groupId) || 0;
+        if (min > 0 && count < min) {
+          throw new Error(`Faltan opciones obligatorias en ${meta.name || "el producto"}`);
+        }
+        if (max != null && count > max) {
+          throw new Error(`Demasiadas opciones seleccionadas en ${meta.name || "el producto"}`);
+        }
+      });
+      const optionsDeltaCents = normalizedSelections.reduce((sum, opt) => sum + Math.round(opt.price_delta_snapshot * 100), 0);
+      const unit_price_cents = Math.round(Number(p.price) * 100) + optionsDeltaCents;
       const line_total_cents = unit_price_cents * i.quantity;
       subtotalCents += line_total_cents;
       return {
@@ -79,6 +247,7 @@ export async function POST(req: NextRequest) {
         unit_price_cents,
         quantity: i.quantity,
         line_total_cents,
+        options_snapshot: normalizedSelections,
       };
     });
 
@@ -145,10 +314,42 @@ export async function POST(req: NextRequest) {
     if (upErr) throw upErr;
 
     // Insertar los items
-    const { error: itemsErr } = await supabaseAdmin
+    const itemsPayload = itemsPrepared.map((it) => {
+      const { options_snapshot, ...rest } = it;
+      return { ...rest, order_id: orderId, business_id: (tenant as any)?.id || null };
+    });
+    const { data: insertedItems, error: itemsErr } = await supabaseAdmin
       .from('order_items')
-      .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId, business_id: (tenant as any)?.id || null })));
+      .insert(itemsPayload)
+      .select('id');
     if (itemsErr) throw itemsErr;
+
+    const optionRows: Array<{
+      order_item_id: string;
+      option_id: string | null;
+      name_snapshot: string;
+      price_delta_snapshot: number;
+      group_name_snapshot?: string | null;
+      business_id: string | null;
+    }> = [];
+    if (insertedItems && insertedItems.length === itemsPrepared.length) {
+      insertedItems.forEach((row, index) => {
+        const snapshots = itemsPrepared[index].options_snapshot || [];
+        snapshots.forEach((snap) => {
+          optionRows.push({
+            order_item_id: row.id,
+            option_id: snap.option_id,
+            name_snapshot: snap.name_snapshot,
+            price_delta_snapshot: snap.price_delta_snapshot,
+            group_name_snapshot: snap.group_name_snapshot,
+            business_id: (tenant as any)?.id || null,
+          });
+        });
+      });
+      if (optionRows.length > 0) {
+        await supabaseAdmin.from('order_item_options').insert(optionRows);
+      }
+    }
     ;(async () => {
       try {
         // Enviar SIEMPRE si el pedido trae email del cliente (no bloquea la respuesta)

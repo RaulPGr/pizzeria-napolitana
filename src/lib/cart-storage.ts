@@ -1,13 +1,24 @@
 // src/lib/cart-storage.ts
 "use client";
 
+export type CartOption = {
+  optionId?: string;
+  name: string;
+  groupName?: string;
+  price_delta?: number;
+};
+
 export type CartItem = {
   id: string | number;
   name: string;
-  price: number; // en euros
+  price: number; // precio final por unidad
   image?: string;
   qty: number;
   category_id?: number | null;
+  options?: CartOption[];
+  variantKey?: string | null;
+  basePrice?: number;
+  optionTotal?: number;
 };
 
 const KEY = "cart";
@@ -31,9 +42,31 @@ function normalize(raw: any): CartItem | null {
   const category_id_raw = raw.category_id ?? raw.categoryId ?? null;
   const category_id =
     category_id_raw == null || category_id_raw === "" ? null : Number(category_id_raw);
+  const optionsArray = Array.isArray(raw.options)
+    ? raw.options.map((opt: any) => ({
+        optionId: opt.optionId ?? opt.id ?? undefined,
+        name: opt.name ?? "",
+        groupName: opt.groupName ?? opt.group ?? undefined,
+        price_delta: Number(opt.price_delta ?? opt.priceDelta ?? 0) || 0,
+      }))
+    : undefined;
+  const variantKey = raw.variantKey ?? null;
+  const basePrice = raw.basePrice != null ? Number(raw.basePrice) : undefined;
+  const optionTotal = raw.optionTotal != null ? Number(raw.optionTotal) : undefined;
 
   if (id === undefined || !name || !isFinite(price)) return null;
-  return { id, name, price, image, qty: Math.max(1, qty), category_id: Number.isFinite(category_id) ? category_id : null };
+  return {
+    id,
+    name,
+    price,
+    image,
+    qty: Math.max(1, qty),
+    category_id: Number.isFinite(category_id) ? category_id : null,
+    options: optionsArray,
+    variantKey: variantKey || null,
+    basePrice,
+    optionTotal,
+  };
 }
 
 function read(): CartItem[] {
@@ -73,6 +106,10 @@ export function addItem(
     imagen?: string;
     category_id?: number | null;
     categoryId?: number | null;
+    options?: CartOption[];
+    variantKey?: string;
+    basePrice?: number;
+    optionTotal?: number;
   },
   qty = 1
 ) {
@@ -83,28 +120,57 @@ export function addItem(
   const image = product.image ?? product.imagen;
   const category_id_raw = product.category_id ?? product.categoryId ?? null;
   const category_id = category_id_raw == null ? null : Number(category_id_raw);
+  const options = Array.isArray(product.options)
+    ? product.options.map((opt) => ({
+        optionId: opt.optionId,
+        name: opt.name,
+        groupName: opt.groupName,
+        price_delta: Number(opt.price_delta ?? 0) || 0,
+      }))
+    : undefined;
+  const variantKey =
+    product.variantKey ||
+    (options && options.length > 0 ? [id, ...options.map((opt) => opt.optionId ?? opt.name)].join("|") : undefined);
 
-  const idx = items.findIndex((it) => it.id === id);
+  const idx = items.findIndex((it) => it.id === id && (it.variantKey || null) === (variantKey || null));
   if (idx >= 0) {
     items[idx].qty += qty;
     if ((items[idx].category_id == null || Number.isNaN(items[idx].category_id as any)) && category_id != null && Number.isFinite(category_id)) {
       items[idx].category_id = category_id;
     }
+    if (!items[idx].options && options) {
+      items[idx].options = options;
+    }
   } else {
-    items.push({ id, name, price, image, qty: Math.max(1, qty), category_id: Number.isFinite(category_id) ? category_id : null });
+    items.push({
+      id,
+      name,
+      price,
+      image,
+      qty: Math.max(1, qty),
+      category_id: Number.isFinite(category_id) ? category_id : null,
+      options,
+      variantKey: variantKey || null,
+      basePrice: product.basePrice != null ? Number(product.basePrice) : undefined,
+      optionTotal: product.optionTotal != null ? Number(product.optionTotal) : undefined,
+    });
   }
   write(items);
 }
 
-export function setQty(id: any, qty: number) {
+export function setQty(id: any, qty: number, variantKey?: string) {
   const items = read()
-    .map((it) => (it.id === id ? { ...it, qty: Math.max(0, qty) } : it))
+    .map((it) =>
+      it.id === id && (it.variantKey || null) === (variantKey || null)
+        ? { ...it, qty: Math.max(0, qty) }
+        : it
+    )
     .filter((it) => it.qty > 0);
   write(items);
 }
 
-export function removeItem(id: any) {
-  const items = read().filter((it) => it.id !== id);
+export function removeItem(id: any, variantKey?: string) {
+  const items = read().filter((it) => !(it.id === id && (it.variantKey || null) === (variantKey || null)));
   write(items);
 }
 
