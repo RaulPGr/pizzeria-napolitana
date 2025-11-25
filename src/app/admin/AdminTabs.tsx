@@ -26,7 +26,7 @@ export default function AdminTabs() {
           href="/admin"
           className={clsx(
             "inline-flex items-center rounded-full border px-4 py-2 text-sm",
-            !isOrders && !isSettings && !isStats && !isPromotions ? "bg-black text-white" : "bg-white"
+            !isOrders && !isSettings && !isStats && !isPromotions && !isOptions ? "bg-black text-white" : "bg-white"
           )}
         >
           Productos
