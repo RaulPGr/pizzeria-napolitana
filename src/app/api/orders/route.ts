@@ -76,8 +76,11 @@ export async function POST(req: NextRequest) {
 
     const map = new Map(products?.map((p) => [p.id, p]) || []);
     const productCategoryMap = new Map<number, number | null>();
-    products?.forEach((p) => {
-      productCategoryMap.set(Number(p.id), p.category_id != null ? Number(p.category_id) : null);
+    (products || []).forEach((p: any) => {
+      const pid = Number(p?.id);
+      if (!Number.isFinite(pid)) return;
+      const cid = p?.category_id != null ? Number(p.category_id) : null;
+      productCategoryMap.set(pid, Number.isFinite(cid as number) ? (cid as number) : null);
     });
     const productsByCategory = new Map<number, number[]>();
     productCategoryMap.forEach((cid, pid) => {
