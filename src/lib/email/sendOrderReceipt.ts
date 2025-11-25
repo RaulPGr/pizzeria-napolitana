@@ -16,6 +16,7 @@ export type SendOrderReceiptParams = {
   subtotal: number;
   deliveryFee?: number;
   discount?: number;
+  promotionName?: string;
   total: number;
   pickupTime?: string;
   deliveryAddress?: string;
@@ -63,7 +64,7 @@ function formatPickup(ts: string): string {
 
 export async function sendOrderReceiptEmail({
   orderId, orderCode, businessName, businessAddress, businessLogoUrl, customerEmail, customerName,
-  items, subtotal, deliveryFee = 0, discount = 0, total,
+  items, subtotal, deliveryFee = 0, discount = 0, promotionName, total,
   pickupTime, deliveryAddress, notes, bcc
 }: SendOrderReceiptParams): Promise<void> {
   try {
@@ -109,7 +110,7 @@ export async function sendOrderReceiptEmail({
           <tbody>${rows}</tbody>
           <tfoot>
             <tr><td></td><td align="right">Subtotal</td><td align="right">${currency(subtotal)}</td></tr>
-            ${discount ? `<tr><td></td><td align="right">Descuento</td><td align="right">-${currency(discount)}</td></tr>` : ""}
+            ${discount ? `<tr><td></td><td align="right">Descuento${promotionName ? ` (${promotionName})` : ""}</td><td align="right">-${currency(discount)}</td></tr>` : ""}
             ${deliveryFee ? `<tr><td></td><td align="right">Envío</td><td align="right">${currency(deliveryFee)}</td></tr>` : ""}
             <tr><td></td><td align="right"><strong>Total</strong></td><td align="right"><strong>${currency(total)}</strong></td></tr>
           </tfoot>

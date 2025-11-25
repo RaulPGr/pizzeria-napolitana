@@ -7,7 +7,7 @@ import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
 import { subscriptionAllowsOrders } from "@/lib/subscription";
 
 type Props = {
-  product: { id: number | string; name: string; price: number; image_url?: string };
+  product: { id: number | string; name: string; price: number; image_url?: string; category_id?: number | null };
   disabled?: boolean;
   disabledLabel?: string;
 };
@@ -23,7 +23,7 @@ export default function AddToCartButton({ product, disabled, disabledLabel }: Pr
     if (disabled || busy || !allowOrdering) return;
     try {
       setBusy(true);
-      addItem({ id: product.id, name: product.name, price: product.price, image: product.image_url }, 1);
+      addItem({ id: product.id, name: product.name, price: product.price, image: product.image_url, category_id: product.category_id }, 1);
     } finally {
       setBusy(false);
     }
@@ -35,8 +35,8 @@ export default function AddToCartButton({ product, disabled, disabledLabel }: Pr
     : disabled
     ? (disabledLabel || "Agotado")
     : busy
-    ? "Anadiendo..."
-    : "Anadir";
+    ? "Añadiendo..."
+    : "Añadir";
 
   return (
     <button

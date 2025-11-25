@@ -9,6 +9,7 @@ import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
 import { subscriptionAllowsOrders, type SubscriptionPlan } from "@/lib/subscription";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 import { persistTenantSlugClient, resolveTenantSlugClient } from "@/lib/tenant-client";
+import { applyBestPromotion, type Promotion as PromotionRule } from "@/lib/promotions";
 
 type PaymentMethod = "cash" | "card";
 
@@ -28,7 +29,14 @@ function CartPageContent() {
     const unsub = subscribe((next) => setItems(next));
     return () => unsub();
   }, []);
-  const total = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items]);
+  const [promotions, setPromotions] = useState<PromotionRule[]>([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(false);
+  const [promotionsError, setPromotionsError] = useState<string | null>(null);
+  const promoResult = useMemo(() => applyBestPromotion(items, promotions), [items, promotions]);
+  const subtotal = promoResult.subtotal;
+  const discount = promoResult.discount;
+  const total = promoResult.total;
+  const appliedPromotion = promoResult.promotion;
 
   // Formulario
   const [name, setName] = useState("");
@@ -72,6 +80,37 @@ function CartPageContent() {
         }
       } catch {}
     })();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        setPromotionsLoading(true);
+        setPromotionsError(null);
+        const slug = resolveTenantSlugClient();
+        if (slug) persistTenantSlugClient(slug);
+        const endpoint = slug ? `/api/promotions?tenant=${encodeURIComponent(slug)}` : "/api/promotions";
+        const res = await fetch(endpoint, { cache: "no-store", signal: controller.signal });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.ok) throw new Error(j?.error || "No se pudieron cargar las promociones");
+        const normalized = Array.isArray(j.promotions)
+          ? (j.promotions as any[]).map((p) => ({
+              ...p,
+              value: Number(p.value ?? 0),
+              min_amount: p.min_amount != null ? Number(p.min_amount) : null,
+              weekdays: Array.isArray(p.weekdays) ? p.weekdays.map((n: any) => Number(n)).filter((d: number) => Number.isFinite(d)) : undefined,
+            }))
+          : [];
+        setPromotions(normalized);
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        setPromotionsError(e?.message || "No se pudieron cargar las promociones");
+      } finally {
+        setPromotionsLoading(false);
+      }
+    })();
+    return () => controller.abort();
   }, []);
 
   // Cargar horario de pedidos
@@ -287,7 +326,24 @@ function CartPageContent() {
       notes: notes.trim() || undefined,
       pickupAt: pickup.toISOString(),
       paymentMethod: payment,
-      items: items.map((it) => ({ productId: it.id as number, quantity: it.qty })),
+      items: items.map((it) => ({
+        productId: it.id as number,
+        quantity: it.qty,
+        unitPrice: it.price,
+        options: it.options?.map((opt) => ({
+          optionId: opt.optionId,
+          name: opt.name,
+          groupName: opt.groupName,
+          price_delta: opt.price_delta ?? 0,
+        })),
+      })),
+      pricing: {
+        subtotal,
+        discount,
+        total,
+        promotionId: appliedPromotion?.id || null,
+        promotionName: appliedPromotion?.name || null,
+      },
     } as const;
 
     try {
@@ -329,24 +385,35 @@ function CartPageContent() {
         ) : (
           <ul className="space-y-3">
             {items.map((it) => (
-              <li key={String(it.id)} className="rounded border bg-white p-3 shadow">
+              <li key={`${String(it.id)}-${it.variantKey || "base"}`} className="rounded border bg-white p-3 shadow">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-1 items-start gap-3">
                     {it.image && <img src={it.image} alt={it.name} className="h-12 w-12 rounded object-cover" />}
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium">{it.name}</div>
                       <div className="text-sm text-gray-500">{it.price.toFixed(2)} €</div>
+                      {it.options && it.options.length > 0 && (
+                        <ul className="mt-1 text-xs text-gray-600">
+                          {it.options.map((opt, idx) => (
+                            <li key={idx}>
+                              {opt.groupName ? `${opt.groupName}: ` : ""}
+                              {opt.name}
+                              {opt.price_delta ? ` (+${opt.price_delta.toFixed(2)} €)` : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setQty(it.id, Math.max(1, it.qty - 1))} className="rounded border px-2 py-1">
+                    <button onClick={() => setQty(it.id, Math.max(1, it.qty - 1), it.variantKey || undefined)} className="rounded border px-2 py-1">
                       -
                     </button>
                     <span className="w-8 text-center">{it.qty}</span>
-                    <button onClick={() => setQty(it.id, it.qty + 1)} className="rounded border px-2 py-1">
+                    <button onClick={() => setQty(it.id, it.qty + 1, it.variantKey || undefined)} className="rounded border px-2 py-1">
                       +
                     </button>
-                    <button onClick={() => removeItem(it.id)} className="rounded border border-red-300 px-3 py-1 text-red-600">
+                    <button onClick={() => removeItem(it.id, it.variantKey || undefined)} className="rounded border border-red-300 px-3 py-1 text-red-600">
                       Quitar
                     </button>
                   </div>
@@ -358,11 +425,26 @@ function CartPageContent() {
       </div>
 
       {/* TOTAL */}
-      <div className="mb-6 flex items-center justify-end rounded border bg-white p-4 shadow">
-        <div className="text-lg">
-          <span className="font-semibold">Total: </span>
+      <div className="mb-6 rounded border bg-white p-4 shadow">
+        <div className="flex flex-col items-end text-right">
+          <div className="text-sm text-slate-600">
+            Subtotal: <span className="font-semibold text-slate-800">{subtotal.toFixed(2)} €</span>
+          </div>
+          {discount > 0 && appliedPromotion ? (
+            <div className="text-sm text-emerald-700">
+              Promo aplicada ({appliedPromotion.name}): -{discount.toFixed(2)} €
+            </div>
+          ) : promotionsLoading ? (
+            <div className="text-xs text-slate-500">Buscando promociones...</div>
+          ) : promotionsError ? (
+            <div className="text-xs text-amber-600">{promotionsError}</div>
+          ) : (
+            <div className="text-xs text-slate-500">No hay promociones aplicadas</div>
+          )}
+          <div className="mt-2 text-lg font-semibold">
+            Total: <span>{total.toFixed(2)} €</span>
+          </div>
         </div>
-        <div className="ml-2 text-lg">{total.toFixed(2)} €</div>
       </div>
 
       {/* FORMULARIO */}

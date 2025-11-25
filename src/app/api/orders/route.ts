@@ -4,13 +4,32 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
 import { notifyOrderViaTelegram } from '@/lib/order-telegram-notify';
 
-type ItemInput = { productId: number; quantity: number };
+type ItemOptionInput = {
+  optionId?: string;
+  name?: string;
+  price_delta?: number;
+  groupName?: string;
+};
+
+type ItemInput = {
+  productId: number;
+  quantity: number;
+  unitPrice?: number;
+  options?: ItemOptionInput[];
+};
 type BodyInput = {
   customer: { name: string; phone: string; email?: string };
   pickupAt: string; // ISO
   items: ItemInput[];
   paymentMethod: 'cash' | 'card';
   notes?: string;
+  pricing?: {
+    subtotal?: number;
+    discount?: number;
+    total?: number;
+    promotionId?: string | null;
+    promotionName?: string | null;
+  };
 };
 
 export async function POST(req: NextRequest) {
@@ -56,24 +75,211 @@ export async function POST(req: NextRequest) {
     if (prodErr) throw prodErr;
 
     const map = new Map(products?.map((p) => [p.id, p]) || []);
+    const productCategoryMap = new Map<number, number | null>();
+    (products || []).forEach((p: any) => {
+      const pid = Number(p?.id);
+      if (!Number.isFinite(pid)) return;
+      const cid = p?.category_id != null ? Number(p.category_id) : null;
+      productCategoryMap.set(pid, Number.isFinite(cid as number) ? (cid as number) : null);
+    });
+    const productsByCategory = new Map<number, number[]>();
+    productCategoryMap.forEach((cid, pid) => {
+      if (cid == null) return;
+      if (!productsByCategory.has(cid)) productsByCategory.set(cid, []);
+      productsByCategory.get(cid)!.push(pid);
+    });
+    const categoryIds = Array.from(new Set(Array.from(productCategoryMap.values()).filter((cid): cid is number => cid != null)));
 
-    let totalCents = 0;
+    const productGroupAssignments: Array<{ product_id: number; group_id: string }> = productIds.length
+      ? ((await supabaseAdmin
+          .from("product_option_groups")
+          .select("product_id, group_id")
+          .in("product_id", productIds)) as any).data || []
+      : [];
+    const categoryGroupAssignments: Array<{ category_id: number; group_id: string }> =
+      categoryIds.length > 0
+        ? ((await supabaseAdmin
+            .from("category_option_groups")
+            .select("category_id, group_id")
+            .eq("business_id", (tenant as any)?.id || null)
+            .in("category_id", categoryIds)) as any).data || []
+        : [];
+    const allowedGroupsByProduct = new Map<number, Set<string>>();
+    const allRelevantGroupIds = new Set<string>();
+    const addGroup = (pid: number, groupId: string) => {
+      if (!allowedGroupsByProduct.has(pid)) allowedGroupsByProduct.set(pid, new Set());
+      allowedGroupsByProduct.get(pid)!.add(groupId);
+      allRelevantGroupIds.add(groupId);
+    };
+    for (const row of productGroupAssignments) {
+      const pid = Number(row.product_id);
+      if (!Number.isFinite(pid)) continue;
+      addGroup(pid, row.group_id);
+    }
+    for (const row of categoryGroupAssignments) {
+      const cid = Number(row.category_id);
+      if (!Number.isFinite(cid)) continue;
+      const productsForCat = productsByCategory.get(cid) || [];
+      for (const pid of productsForCat) {
+        addGroup(pid, row.group_id);
+      }
+    }
+
+    const groupMetaMap = new Map<
+      string,
+      { id: string; name: string | null; selection_type: "single" | "multiple"; min_select?: number | null; max_select?: number | null; is_required?: boolean }
+    >();
+    if (allRelevantGroupIds.size > 0) {
+      const { data: groupRows } = await supabaseAdmin
+        .from("option_groups")
+        .select("id, name, selection_type, min_select, max_select, is_required")
+        .in("id", Array.from(allRelevantGroupIds));
+      (groupRows || []).forEach((row: any) => {
+        groupMetaMap.set(row.id, {
+          id: row.id,
+          name: row.name,
+          selection_type: (row.selection_type || "single") as "single" | "multiple",
+          min_select: row.min_select,
+          max_select: row.max_select,
+          is_required: row.is_required,
+        });
+      });
+    }
+
+    const requestedOptionIds = new Set<string>();
+    for (const item of body.items) {
+      if (!Array.isArray(item.options)) continue;
+      for (const opt of item.options) {
+        const optId = String(opt.optionId ?? "").trim();
+        if (optId) requestedOptionIds.add(optId);
+      }
+    }
+    const optionRowMap = new Map<
+      string,
+      { id: string; name: string; price_delta: number; group_id: string }
+    >();
+    if (requestedOptionIds.size > 0) {
+      const { data: optionRows, error: optionErr } = await supabaseAdmin
+        .from("options")
+        .select("id, name, price_delta, group_id")
+        .in("id", Array.from(requestedOptionIds));
+      if (optionErr) throw optionErr;
+      (optionRows || []).forEach((row: any) => {
+        optionRowMap.set(row.id, {
+          id: row.id,
+          name: row.name,
+          price_delta: Number(row.price_delta || 0),
+          group_id: row.group_id,
+        });
+        allRelevantGroupIds.add(row.group_id);
+        if (!groupMetaMap.has(row.group_id)) {
+          groupMetaMap.set(row.group_id, {
+            id: row.group_id,
+            name: null,
+            selection_type: "single",
+            min_select: null,
+            max_select: null,
+            is_required: false,
+          });
+        }
+      });
+      const missingOptions = Array.from(requestedOptionIds).filter((id) => !optionRowMap.has(id));
+      if (missingOptions.length > 0) {
+        throw new Error("Alguna opción seleccionada no existe");
+      }
+    }
+
+    let subtotalCents = 0;
     const itemsPrepared = body.items.map((i) => {
       const p = map.get(i.productId);
       if (!p) {
         throw new Error(`Producto no existe (id=${i.productId})`);
       }
-      const unit_price_cents = Math.round(Number(p.price) * 100);
+      const normalizedSelections: Array<{
+        option_id: string | null;
+        name_snapshot: string;
+        price_delta_snapshot: number;
+        group_name_snapshot: string | null;
+        group_id: string;
+      }> = [];
+      const allowedGroups = allowedGroupsByProduct.get(i.productId) || new Set<string>();
+      const requestedOptions = Array.isArray(i.options) ? i.options : [];
+      const selectionCounts = new Map<string, number>();
+      for (const opt of requestedOptions) {
+        const optionId = String(opt.optionId ?? "").trim();
+        if (!optionId) continue;
+        const optionRow = optionRowMap.get(optionId);
+        if (!optionRow) {
+          throw new Error("Opción seleccionada no existe");
+        }
+        if (!allowedGroups.has(optionRow.group_id)) {
+          throw new Error("Opción no permitida para este producto");
+        }
+        const groupMeta = groupMetaMap.get(optionRow.group_id);
+        const priceDelta = Number(optionRow.price_delta || 0);
+        normalizedSelections.push({
+          option_id: optionRow.id,
+          name_snapshot: optionRow.name,
+          price_delta_snapshot: priceDelta,
+          group_name_snapshot: groupMeta?.name || opt.groupName || null,
+          group_id: optionRow.group_id,
+        });
+        selectionCounts.set(optionRow.group_id, (selectionCounts.get(optionRow.group_id) || 0) + 1);
+      }
+      allowedGroups.forEach((groupId) => {
+        const meta = groupMetaMap.get(groupId);
+        if (!meta) return;
+        const selectionType = meta.selection_type || "single";
+        const min = meta.min_select != null ? Number(meta.min_select) : meta.is_required !== false && selectionType === "single" ? 1 : 0;
+        const max = meta.max_select != null ? Number(meta.max_select) : selectionType === "single" ? 1 : null;
+        const count = selectionCounts.get(groupId) || 0;
+        if (min > 0 && count < min) {
+          throw new Error(`Faltan opciones obligatorias en ${meta.name || "el producto"}`);
+        }
+        if (max != null && count > max) {
+          throw new Error(`Demasiadas opciones seleccionadas en ${meta.name || "el producto"}`);
+        }
+      });
+      const optionsDeltaCents = normalizedSelections.reduce((sum, opt) => sum + Math.round(opt.price_delta_snapshot * 100), 0);
+      const unit_price_cents = Math.round(Number(p.price) * 100) + optionsDeltaCents;
       const line_total_cents = unit_price_cents * i.quantity;
-      totalCents += line_total_cents;
+      subtotalCents += line_total_cents;
       return {
         product_id: i.productId,
         name: p.name,
         unit_price_cents,
         quantity: i.quantity,
         line_total_cents,
+        options_snapshot: normalizedSelections,
       };
     });
+
+    let discountCents = 0;
+    let promotionId: string | null = null;
+    let promotionName: string | null = body.pricing?.promotionName ? String(body.pricing.promotionName).slice(0, 120) : null;
+    if (body.pricing) {
+      const requestedDiscount = Math.round(Number(body.pricing.discount ?? 0) * 100);
+      if (Number.isFinite(requestedDiscount) && requestedDiscount > 0) {
+        discountCents = Math.min(requestedDiscount, subtotalCents);
+      }
+    }
+    const finalTotalCents = Math.max(0, subtotalCents - discountCents);
+
+    const requestedPromotionId = body.pricing?.promotionId ? String(body.pricing.promotionId).trim() : '';
+    if (requestedPromotionId) {
+      try {
+        const { data: promo } = await supabaseAdmin
+          .from('promotions')
+          .select('id, name')
+          .eq('id', requestedPromotionId)
+          .eq('business_id', (tenant as any)?.id || null)
+          .maybeSingle();
+        if (promo?.id) {
+          promotionId = promo.id as string;
+          if (!promotionName) promotionName = (promo as any)?.name || null;
+        }
+      } catch {}
+    }
 
     // Decidir estado inicial según método de pago
     const initialStatus = body.paymentMethod === 'card' ? 'confirmed' : 'pending';
@@ -87,7 +293,10 @@ export async function POST(req: NextRequest) {
         customer_email: body.customer.email || null,
         pickup_at: body.pickupAt ? new Date(body.pickupAt).toISOString() : null,
         status: initialStatus,
-        total_cents: totalCents,
+        total_cents: finalTotalCents,
+        discount_cents: discountCents,
+        promotion_id: promotionId,
+        promotion_name: promotionName,
         payment_method: body.paymentMethod,
         payment_status: 'unpaid',
         notes: body.notes || null,
@@ -108,10 +317,42 @@ export async function POST(req: NextRequest) {
     if (upErr) throw upErr;
 
     // Insertar los items
-    const { error: itemsErr } = await supabaseAdmin
+    const itemsPayload = itemsPrepared.map((it) => {
+      const { options_snapshot, ...rest } = it;
+      return { ...rest, order_id: orderId, business_id: (tenant as any)?.id || null };
+    });
+    const { data: insertedItems, error: itemsErr } = await supabaseAdmin
       .from('order_items')
-      .insert(itemsPrepared.map((it) => ({ ...it, order_id: orderId, business_id: (tenant as any)?.id || null })));
+      .insert(itemsPayload)
+      .select('id');
     if (itemsErr) throw itemsErr;
+
+    const optionRows: Array<{
+      order_item_id: string;
+      option_id: string | null;
+      name_snapshot: string;
+      price_delta_snapshot: number;
+      group_name_snapshot?: string | null;
+      business_id: string | null;
+    }> = [];
+    if (insertedItems && insertedItems.length === itemsPrepared.length) {
+      insertedItems.forEach((row, index) => {
+        const snapshots = itemsPrepared[index].options_snapshot || [];
+        snapshots.forEach((snap) => {
+          optionRows.push({
+            order_item_id: row.id,
+            option_id: snap.option_id,
+            name_snapshot: snap.name_snapshot,
+            price_delta_snapshot: snap.price_delta_snapshot,
+            group_name_snapshot: snap.group_name_snapshot,
+            business_id: (tenant as any)?.id || null,
+          });
+        });
+      });
+      if (optionRows.length > 0) {
+        await supabaseAdmin.from('order_item_options').insert(optionRows);
+      }
+    }
     ;(async () => {
       try {
         // Enviar SIEMPRE si el pedido trae email del cliente (no bloquea la respuesta)
@@ -120,7 +361,7 @@ export async function POST(req: NextRequest) {
           .select('name, email, address_line, city, postal_code, logo_url, social')
           .eq('id', (tenant as any)?.id || null)
           .maybeSingle();
-        const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents/100 }));
+        const itemsSimple = itemsPrepared.map((it) => ({ name: it.name, qty: it.quantity, price: it.unit_price_cents / 100 }));
         const subtotal = itemsSimple.reduce((a, it) => a + it.price * it.qty, 0);
         const { sendOrderReceiptEmail, sendOrderBusinessNotificationEmail } = await import('@/lib/email/sendOrderReceipt');
         if (body.customer?.email) {
@@ -136,9 +377,11 @@ export async function POST(req: NextRequest) {
             customerName: body.customer.name,
             items: itemsSimple,
             subtotal,
-            total: totalCents/100,
+            total: finalTotalCents / 100,
             pickupTime: body.pickupAt,
             notes: body.notes || undefined,
+            discount: discountCents / 100,
+            promotionName: promotionName || undefined,
           });
         }
         const notifySettings = (business as any)?.social || {};
@@ -158,7 +401,7 @@ export async function POST(req: NextRequest) {
             businessLogoUrl: (business as any)?.logo_url || undefined,
             businessEmail: notifyTarget,
             items: itemsSimple,
-            total: totalCents / 100,
+            total: finalTotalCents / 100,
             customerName: body.customer.name,
             customerPhone: body.customer.phone,
             customerEmail: body.customer.email || null,
@@ -169,15 +412,20 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error('[email] create-order (non-blocking) fallo:', e);
       }
-      try {
-        const result = await notifyOrderViaTelegram(orderId);
-        if (!result.ok && !result.skip) {
-          console.error(`[telegram] order ${orderId} fallo: ${result.error}`);
-        }
-      } catch (err) {
-        console.error('[telegram] unexpected error', err);
-      }
     })();
+
+    try {
+      const result = await notifyOrderViaTelegram(orderId, {
+        ...(tenant as any)?.social,
+        slug: (tenant as any)?.slug || "",
+        businessName: (tenant as any)?.name || "",
+      });
+      if (!result.ok && !result.skip) {
+        console.error(`[telegram] order ${orderId} fallo: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('[telegram] unexpected error', err);
+    }
     return NextResponse.json({ ok: true, orderId, code });
   } catch (err: any) {
     return NextResponse.json(

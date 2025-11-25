@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
+import { isPromotionActive, type Promotion as PromotionRule } from "@/lib/promotions";
 
 // Defaults (fallbacks si no hay configuración)
 const INFO_DEFAULT = {
@@ -94,20 +95,49 @@ function jsonLd(info: typeof INFO_DEFAULT, horarios: Horarios, coords: typeof CO
 
 export default function HomePage() {
   const router = useRouter();
+  const resolveTenantParam = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      return new URLSearchParams(window.location.search).get("tenant");
+    } catch {
+      return null;
+    }
+  };
 
   // Cargar configuración dinÃ¡mica
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [highlightPromotion, setHighlightPromotion] = useState<PromotionRule | null>(null);
   useEffect(() => {
     (async () => {
       try {
-        const tenant = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tenant") : null;
+        const tenant = resolveTenantParam();
         const url = tenant ? `/api/settings/home?tenant=${encodeURIComponent(tenant)}` : "/api/settings/home";
         const r = await fetch(url, { cache: "no-store" });
         const j = await r.json();
         if (j?.ok && j?.data) setCfg(j.data);
       } catch {}
       finally { setLoading(false); }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const tenant = resolveTenantParam();
+        const url = tenant ? `/api/promotions?tenant=${encodeURIComponent(tenant)}` : "/api/promotions";
+        const res = await fetch(url, { cache: "no-store" });
+        const j = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(j?.promotions)) {
+          const now = new Date();
+          const promos = (j.promotions as PromotionRule[]).filter((p) => isPromotionActive(p, now));
+          setHighlightPromotion(promos[0] || null);
+        } else {
+          setHighlightPromotion(null);
+        }
+      } catch {
+        setHighlightPromotion(null);
+      }
     })();
   }, []);
 
@@ -192,11 +222,28 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
-            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver menú ahora</button>
+            <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${abierto ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{abierto ? "Abierto ahora" : "Cerrado"}</span>
+            <button onClick={() => router.push(INFO.menuPath)} className="rounded bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700 text-sm">Ver carta</button>
           </div>
         </div>
       </header>
+      {highlightPromotion && (
+        <section className="border-b border-amber-100 bg-gradient-to-r from-amber-100 via-orange-50 to-emerald-50">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 text-slate-800 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Promoción activa hoy</p>
+              <h2 className="text-xl font-semibold text-slate-900">{`🔥 Hoy: ${highlightPromotion.name}`}</h2>
+              <p className="text-sm text-slate-600">{highlightPromotion.description || (highlightPromotion.type === "percent" ? `Ahorra ${highlightPromotion.value}% en esta promoción.` : `Descuento de ${highlightPromotion.value}€ disponible durante el día de hoy.`)}</p>
+            </div>
+            <button
+              onClick={() => router.push("/promociones")}
+              className="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white/80 px-4 py-2 text-sm font-semibold text-amber-700 shadow-sm transition hover:bg-white"
+            >
+              Ver promociones
+            </button>
+          </div>
+        </section>
+      )}
       <section className="relative">
         <img src={INFO.fachadaUrl} alt="Fachada" className="h-[420px] md:h-[520px] w-full object-cover" />
         {showHeroOverlay ? (
@@ -206,7 +253,7 @@ export default function HomePage() {
               <div className="text-center space-y-2">
                 <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
                 <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
-                <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver menú ahora</button>
+                <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver carta</button>
               </div>
             </div>
           </>

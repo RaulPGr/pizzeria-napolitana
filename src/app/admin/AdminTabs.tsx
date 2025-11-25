@@ -10,6 +10,8 @@ import { subscriptionAllowsOrders, subscriptionAllowsReservations } from "@/lib/
 export default function AdminTabs() {
   const pathname = usePathname();
   const isOrders = pathname?.startsWith("/admin/orders");
+  const isPromotions = pathname?.startsWith("/admin/promotions");
+  const isOptions = pathname?.startsWith("/admin/options");
   const isReservations = pathname?.startsWith("/admin/reservations");
   const isSettings = pathname?.startsWith("/admin/settings");
   const isStats = pathname?.startsWith("/admin/stats");
@@ -25,10 +27,30 @@ export default function AdminTabs() {
           href="/admin"
           className={clsx(
             "inline-flex items-center rounded-full border px-4 py-2 text-sm",
-            !isOrders && !isSettings && !isStats ? "bg-black text-white" : "bg-white"
+            !isOrders && !isSettings && !isStats && !isPromotions && !isOptions ? "bg-black text-white" : "bg-white"
           )}
         >
           Productos
+        </Link>
+
+        <Link
+          href="/admin/promotions"
+          className={clsx(
+            "inline-flex items-center rounded-full border px-4 py-2 text-sm",
+            isPromotions ? "bg-black text-white" : "bg-white"
+          )}
+        >
+          Promociones
+        </Link>
+
+        <Link
+          href="/admin/options"
+          className={clsx(
+            "inline-flex items-center rounded-full border px-4 py-2 text-sm",
+            isOptions ? "bg-black text-white" : "bg-white"
+          )}
+        >
+          Toppings
         </Link>
 
         {canSeeOrders && (

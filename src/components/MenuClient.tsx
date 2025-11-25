@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import AddToCartButton from "@/components/AddToCartButton";
 import CartQtyActions from "@/components/CartQtyActions";
+import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { useSubscriptionPlan } from "@/context/SubscriptionPlanContext";
 import { useOrdersEnabled } from "@/context/OrdersEnabledContext";
 import { subscriptionAllowsOrders } from "@/lib/subscription";
+import { addItem } from "@/lib/cart-storage";
 
 function normalizeDays(arr: any): number[] {
   if (!Array.isArray(arr)) return [];
@@ -26,6 +28,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
   const [cats, setCats] = useState<any[] | null>(Array.isArray(initialCats) ? initialCats : null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [modalProduct, setModalProduct] = useState<any | null>(null);
   const plan = useSubscriptionPlan();
   const ordersEnabled = useOrdersEnabled();
   const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
@@ -56,6 +59,33 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
     }
     return () => { alive = false; };
   }, [day]);
+
+  function closeModal() {
+    setModalProduct(null);
+  }
+
+  function handleOptionsConfirm(product: any, payload: { options: any[]; totalPrice: number; basePrice: number; optionTotal: number; variantKey: string }) {
+    addItem(
+      {
+        id: product.id,
+        name: product.name,
+        price: payload.totalPrice,
+        image: product.image_url || undefined,
+        category_id: product.category_id ?? null,
+        options: payload.options.map((opt) => ({
+          optionId: opt.optionId,
+          name: opt.name,
+          groupName: opt.groupName,
+          price_delta: opt.price_delta,
+        })),
+        variantKey: payload.variantKey,
+        basePrice: payload.basePrice,
+        optionTotal: payload.optionTotal,
+      },
+      1
+    );
+    closeModal();
+  }
 
   if (loading) {
     return (
@@ -92,7 +122,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
         if (!hasAny && (products && products.length > 0)) {
           return (
             <section className="mb-10">
-              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">Productos</h2>
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide border-b border-slate-200 pb-1" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>Productos</h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {products.map((p: any) => {
                   const pDays = normalizeDays(p.product_weekdays);
@@ -114,23 +144,37 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                       {p.available === false && (
                         <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                       )}
-                      {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
+                      {allowOrdering && !(Array.isArray(p.option_groups) && p.option_groups.length > 0) && (
+                        <CartQtyActions productId={p.id} allowAdd={!out} />
+                      )}
                       {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                       <div className="p-3">
-                        <div className="flex items-baseline justify-between gap-4">
-                          <h3 className="text-base font-medium">{p.name}</h3>
-                          <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
-                            {formatPrice(Number(p.price || 0))}
-                          </span>
-                        </div>
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                        <h3 className="text-base font-medium break-words">{p.name}</h3>
+                        <span className={[ 'whitespace-nowrap font-semibold text-right sm:text-left', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
+                          {formatPrice(Number(p.price || 0))}
+                        </span>
+                      </div>
                         {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                        {allowOrdering && (
-                          <AddToCartButton
-                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
-                            disabled={out}
-                            disabledLabel={disabledLabel}
-                          />
-                        )}
+                        {allowOrdering &&
+                          (Array.isArray(p.option_groups) && p.option_groups.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setModalProduct(p)}
+                              disabled={out}
+                              className={`mt-2 w-full rounded border px-3 py-1 text-sm ${
+                                out ? "cursor-not-allowed opacity-50" : "bg-emerald-600 text-white hover:bg-emerald-700"
+                              }`}
+                            >
+                              Personalizar y añadir
+                            </button>
+                          ) : (
+                            <AddToCartButton
+                              product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined, category_id: p.category_id ?? null }}
+                              disabled={out}
+                              disabledLabel={disabledLabel}
+                            />
+                          ))}
                       </div>
                     </li>
                   );
@@ -149,7 +193,7 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
         return (
           <section key={String(section.id)} className="mb-10">
             {!selectedCat && (
-              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide text-slate-900 border-b border-slate-200 pb-1">
+              <h2 className="mb-4 text-2xl md:text-3xl font-semibold tracking-wide border-b border-slate-200 pb-1" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>
                 {section.name}
               </h2>
             )}
@@ -174,23 +218,37 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
                     {p.available === false && (
                       <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
                     )}
-                    {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
+                    {allowOrdering && !(Array.isArray(p.option_groups) && p.option_groups.length > 0) && (
+                      <CartQtyActions productId={p.id} allowAdd={!out} />
+                    )}
                     {p.image_url && (<img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />)}
                     <div className="p-3">
-                      <div className="flex items-baseline justify-between gap-4">
-                        <h3 className="text-base font-medium">{p.name}</h3>
-                        <span className={[ 'whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                        <h3 className="text-base font-medium break-words">{p.name}</h3>
+                        <span className={[ 'whitespace-nowrap font-semibold text-right sm:text-left', out ? 'text-slate-500 line-through' : 'text-emerald-700' ].join(' ')}>
                           {formatPrice(Number(p.price || 0))}
                         </span>
                       </div>
                       {p.description && (<p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{p.description}</p>)}
-                      {allowOrdering && (
-                        <AddToCartButton
-                          product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
-                          disabled={out}
-                          disabledLabel={disabledLabel}
-                        />
-                      )}
+                      {allowOrdering &&
+                        (Array.isArray(p.option_groups) && p.option_groups.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setModalProduct(p)}
+                            disabled={out}
+                            className={`mt-2 w-full rounded border px-3 py-1 text-sm ${
+                              out ? "cursor-not-allowed opacity-50" : "bg-emerald-600 text-white hover:bg-emerald-700"
+                            }`}
+                          >
+                            Personalizar y añadir
+                          </button>
+                        ) : (
+                          <AddToCartButton
+                            product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined, category_id: p.category_id ?? null }}
+                            disabled={out}
+                            disabledLabel={disabledLabel}
+                          />
+                        ))}
                     </div>
                   </li>
                 );
@@ -199,6 +257,20 @@ export default function MenuClient({ day, categories: initialCats, selectedCat }
           </section>
         );
       })}
+      {modalProduct && Array.isArray(modalProduct.option_groups) && modalProduct.option_groups.length > 0 && (
+        <ProductOptionsModal
+          product={{
+            id: modalProduct.id,
+            name: modalProduct.name,
+            price: Number(modalProduct.price || 0),
+            category_id: modalProduct.category_id ?? null,
+            option_groups: modalProduct.option_groups,
+            image_url: modalProduct.image_url,
+          }}
+          onClose={closeModal}
+          onConfirm={(payload) => handleOptionsConfirm(modalProduct, payload)}
+        />
+      )}
     </>
   );
 }

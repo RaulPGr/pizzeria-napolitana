@@ -1,14 +1,15 @@
-﻿// src/app/menu/page.tsx
+// src/app/menu/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { headers, cookies } from 'next/headers';
-import AddToCartButton from '@/components/AddToCartButton';
+import AddToCartWithOptions from '@/components/AddToCartWithOptions';
 import CartQtyActions from '@/components/CartQtyActions';
 import { getSubscriptionForSlug } from '@/lib/subscription-server';
 import { subscriptionAllowsOrders } from '@/lib/subscription';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/promotions';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -81,9 +82,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
   }
   const qps = new URLSearchParams();
   qps.set('day', String(selectedDaySafe));
+  let tenantParam = '';
   if (host) {
     const parts = host.split('.');
-    if (parts.length >= 3) qps.set('tenant', parts[0]);
+    if (parts.length >= 3) {
+      tenantParam = parts[0];
+      qps.set('tenant', tenantParam);
+    }
   }
   const apiUrl = origin ? `${origin}/api/products?${qps.toString()}` : `/api/products?${qps.toString()}`;
 
@@ -102,6 +107,21 @@ export default async function MenuPage({ searchParams }: PageProps) {
   } catch (e: any) {
     error = { message: e?.message || 'Fetch error' };
   }
+
+  let promotions: PromotionRule[] = [];
+  try {
+    const promoParams = new URLSearchParams();
+    if (tenantParam) promoParams.set('tenant', tenantParam);
+    const promoQuery = promoParams.toString();
+    const promoUrl = origin
+      ? `${origin}/api/promotions${promoQuery ? `?${promoQuery}` : ''}`
+      : `/api/promotions${promoQuery ? `?${promoQuery}` : ''}`;
+    const resp = await fetch(promoUrl, { cache: 'no-store' });
+    const pj = await resp.json().catch(() => ({}));
+    if (resp.ok && Array.isArray(pj?.promotions)) {
+      promotions = pj.promotions as PromotionRule[];
+    }
+  } catch {}
 
   // View list for selected day (reinforce API filtering and handle day=0)
   const viewProducts = (menuMode === 'daily')
@@ -135,6 +155,33 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const dayNames = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const currentIsoDay = ((new Date().getDay() + 6) % 7) + 1;
 
+  const promotionCache = new Map<string, PromotionRule | null>();
+  function getProductPromotion(p: any) {
+    if (!promotions.length) return null;
+    const key = `${p.id}-${p.category_id ?? 'nocat'}-${p.price ?? ''}`;
+    if (promotionCache.has(key)) {
+      const cached = promotionCache.get(key);
+      return cached || null;
+    }
+    const promo = findPromotionForProduct(
+      { id: p.id, price: Number(p.price || 0), category_id: p.category_id ?? null },
+      promotions
+    );
+    promotionCache.set(key, promo);
+    return promo;
+  }
+
+  function getEffectivePrice(price: number, promo: PromotionRule | null) {
+    if (!promo) return price;
+    const value = Number(promo.value || 0);
+    if (!Number.isFinite(value) || value <= 0) return price;
+    if (promo.type === "percent") {
+      const pct = Math.min(Math.max(value, 0), 100);
+      return Math.max(0, price - (price * pct) / 100);
+    }
+    return Math.max(0, price - value);
+  }
+
   function availabilityFor(p: any) {
     if (p.available === false) {
       return { out: true, disabledLabel: "Agotado" as string | undefined };
@@ -161,28 +208,61 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   function renderProductCard(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
+    const promo = getProductPromotion(p);
+    const priceValue = Number(p.price || 0);
+    const effectivePrice = getEffectivePrice(priceValue, promo);
+    const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li key={p.id} className={['relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}>
-        {p.available === false && (
-          <span className="absolute left-2 top-2 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+        {(p.available === false || promo) && (
+          <div className="absolute left-2 top-2 flex flex-col gap-1">
+            {p.available === false && (
+              <span className="rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+            )}
+            {promo && (
+              <span className="rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow">
+                {promo.name || 'Promoción'}
+              </span>
+            )}
+          </div>
         )}
-        {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
+        {allowOrdering && !(Array.isArray(p.option_groups) && p.option_groups.length > 0) && (
+          <CartQtyActions productId={p.id} allowAdd={!out} />
+        )}
         {p.image_url && (
           <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
         )}
         <div className="p-3">
-          <div className="flex items-baseline justify-between gap-4">
-            <h3 className="text-base font-medium">{p.name}</h3>
-            <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
-              {formatPrice(Number(p.price || 0))}
-            </span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+            <h3 className="text-base font-medium break-words">{p.name}</h3>
+            {showPrice && (
+              <div className="text-right sm:text-left">
+                {promo ? (
+                  <>
+                    <span className="block text-sm text-slate-500 line-through">{formatPrice(priceValue)}</span>
+                    <span className="block whitespace-nowrap font-semibold text-emerald-700">{formatPrice(effectivePrice)}</span>
+                  </>
+                ) : (
+                  <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+                    {formatPrice(priceValue)}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           {p.description && (
             <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{p.description}</p>
           )}
           {allowOrdering && (
-            <AddToCartButton
-              product={{ id: p.id, name: p.name, price: Number(p.price || 0), image_url: p.image_url || undefined }}
+            <AddToCartWithOptions
+              product={{
+                id: p.id,
+                name: p.name,
+                price: Number(p.price || 0),
+                image_url: p.image_url || undefined,
+                category_id: p.category_id ?? null,
+                option_groups: Array.isArray(p.option_groups) ? p.option_groups : [],
+              }}
               disabled={out}
               disabledLabel={disabledLabel}
             />
@@ -194,6 +274,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   function renderProductListRow(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
+    const promo = getProductPromotion(p);
+    const priceValue = Number(p.price || 0);
+    const effectivePrice = getEffectivePrice(priceValue, promo);
+    const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
       <li
         key={p.id}
@@ -203,26 +287,64 @@ export default async function MenuPage({ searchParams }: PageProps) {
           allowOrdering ? 'pr-24' : '',
         ].join(' ')}
       >
-        {p.available === false && (
-          <span className="absolute left-4 top-3 rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+        {(p.available === false || promo) && (
+          <div className="absolute left-4 top-3 flex flex-col gap-1">
+            {p.available === false && (
+              <span className="rounded bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow">Agotado</span>
+            )}
+            {promo && (
+              <span className="rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow">
+                {promo.name || 'Promoción'}
+              </span>
+            )}
+          </div>
         )}
-        {allowOrdering && <CartQtyActions productId={p.id} allowAdd={!out} />}
+        {allowOrdering && !(Array.isArray(p.option_groups) && p.option_groups.length > 0) && (
+          <CartQtyActions productId={p.id} allowAdd={!out} />
+        )}
         <div className="flex flex-col gap-2">
+<<<<<<< HEAD
           <div className="flex items-start justify-between gap-3">
+=======
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+>>>>>>> feature/entorno-staging
             <div className="flex flex-col flex-1 min-w-0">
               <h3 className="text-base font-medium">{p.name}</h3>
               {p.description && (
                 <p className="text-sm text-slate-600">{p.description}</p>
               )}
             </div>
+<<<<<<< HEAD
             <span className={['whitespace-nowrap font-semibold flex-shrink-0 text-right', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
               {formatPrice(Number(p.price || 0))}
             </span>
+=======
+            {showPrice && (
+              <div className="flex-shrink-0 text-right w-full sm:w-auto">
+                {promo ? (
+                  <>
+                    <span className="block text-sm text-slate-500 line-through">{formatPrice(priceValue)}</span>
+                    <span className="block whitespace-nowrap font-semibold text-emerald-700">{formatPrice(effectivePrice)}</span>
+                  </>
+                ) : (
+                  <span className={['whitespace-nowrap font-semibold', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
+                    {formatPrice(priceValue)}
+                  </span>
+                )}
+              </div>
+            )}
+>>>>>>> feature/entorno-staging
           </div>
           {allowOrdering && (
             <div className="max-w-xs">
-              <AddToCartButton
-                product={{ id: p.id, name: p.name, price: Number(p.price || 0) }}
+              <AddToCartWithOptions
+                product={{
+                  id: p.id,
+                  name: p.name,
+                  price: Number(p.price || 0),
+                  category_id: p.category_id ?? null,
+                  option_groups: Array.isArray(p.option_groups) ? p.option_groups : [],
+                }}
                 disabled={out}
                 disabledLabel={disabledLabel}
               />
@@ -235,7 +357,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <h1 className="mb-6 text-3xl font-semibold">Menú</h1>
+      <h1 className="mb-6 text-3xl font-semibold" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>Carta</h1>
 
      {menuMode === 'daily' && (
         <DayTabs selectedDay={selectedDaySafe} hasAllDays={hasAllDays} availableDays={(Array.isArray((payload as any)?.available_days) ? (payload as any).available_days : undefined) as any} />
@@ -262,7 +384,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         if (!hasAny && viewProducts && viewProducts.length > 0) {
           return (
             <section className="mb-10">
-              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide text-slate-900 md:text-3xl">
+              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide md:text-3xl" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>
                 Productos
               </h2>
               {isListLayout ? (
@@ -289,7 +411,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         return (
           <section key={String(section.id)} className="mb-10">
             {!selectedCat && (
-              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide text-slate-900 md:text-3xl">
+              <h2 className="mb-4 border-b border-slate-200 pb-1 text-2xl font-semibold tracking-wide md:text-3xl" style={{ color: 'var(--menu-heading-color, #1f2937)' }}>
                 {section.name}
               </h2>
             )}

@@ -100,12 +100,12 @@ export async function GET(req: Request) {
 
     const { data: members, error } = await supabaseAdmin
       .from('business_members')
-      .select('user_id, role, created_at')
+      .select('user_id, role, created_at, last_access_at')
       .eq('business_id', bizId)
       .order('created_at', { ascending: true });
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
-    const results: Array<{ userId: string; email: string | null; role: MemberRole; createdAt: string }> = [];
+    const results: Array<{ userId: string; email: string | null; role: MemberRole; createdAt: string; lastAccessAt: string | null }> = [];
     for (const m of members || []) {
       const userId = (m as any)?.user_id as string | undefined;
       const role = (m as any)?.role as MemberRole;
@@ -119,6 +119,7 @@ export async function GET(req: Request) {
           email,
           role,
           createdAt: (m as any)?.created_at || null,
+          lastAccessAt: (m as any)?.last_access_at || null,
         });
       } catch {
         results.push({
@@ -126,6 +127,7 @@ export async function GET(req: Request) {
           email: null,
           role,
           createdAt: (m as any)?.created_at || null,
+          lastAccessAt: (m as any)?.last_access_at || null,
         });
       }
     }
