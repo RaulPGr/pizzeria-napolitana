@@ -303,22 +303,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
           <CartQtyActions productId={p.id} allowAdd={!out} />
         )}
         <div className="flex flex-col gap-2">
-<<<<<<< HEAD
-          <div className="flex items-start justify-between gap-3">
-=======
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
->>>>>>> feature/entorno-staging
             <div className="flex flex-col flex-1 min-w-0">
               <h3 className="text-base font-medium">{p.name}</h3>
               {p.description && (
                 <p className="text-sm text-slate-600">{p.description}</p>
               )}
             </div>
-<<<<<<< HEAD
-            <span className={['whitespace-nowrap font-semibold flex-shrink-0 text-right', out ? 'text-slate-500 line-through' : 'text-emerald-700'].join(' ')}>
-              {formatPrice(Number(p.price || 0))}
-            </span>
-=======
             {showPrice && (
               <div className="flex-shrink-0 text-right w-full sm:w-auto">
                 {promo ? (
@@ -333,7 +324,6 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 )}
               </div>
             )}
->>>>>>> feature/entorno-staging
           </div>
           {allowOrdering && (
             <div className="max-w-xs">
