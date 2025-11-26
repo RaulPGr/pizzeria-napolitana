@@ -207,36 +207,41 @@ export default function OrderDetailPage(props: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((it, idx) => (
-                  <tr key={idx} className="border-b border-slate-100 last:border-0 text-sm text-slate-800">
-                    <td className="py-2">
-                      <div>{it.name ?? "Producto"}</div>
-                      {it.options && it.options.length > 0 ? (
-                        <ul className="mt-1 text-xs text-slate-500 space-y-0.5">
-                          {it.options.map((opt, optIdx) => {
-                            const base = opt.groupName ? `${opt.groupName}: ${opt.name}` : opt.name;
-                            let deltaLabel = "";
-                            if (typeof opt.priceDelta === "number" && opt.priceDelta !== 0) {
-                              const sign = opt.priceDelta > 0 ? "+" : "-";
-                              deltaLabel = ` (${sign}${Math.abs(opt.priceDelta).toLocaleString("es-ES", {
-                                style: "currency",
-                                currency: "EUR",
-                              })})`;
-                            }
-                            return (
-                              <li key={optIdx}>
-                                {base}
-                                {deltaLabel}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : null}
-                    </td>
-                    <td className="py-2 text-center">x{it.quantity}</td>
-                    <td className="py-2 text-right">{centsToEUR(it.quantity * it.unit_price_cents)}</td>
-                  </tr>
-                ))}
+                {order.items.map((it, idx) => {
+                  const optionTotalCents = (it.options || []).reduce(
+                    (sum, opt) => sum + Math.round(((opt.priceDelta ?? 0) as number) * 100),
+                    0
+                  );
+                  const basePriceCents = it.unit_price_cents - optionTotalCents;
+                  return (
+                    <tr key={idx} className="border-b border-slate-100 last:border-0 text-sm text-slate-800">
+                      <td className="py-2">
+                        <div className="font-medium">{it.name ?? "Producto"}</div>
+                        <div className="text-xs text-slate-500">Precio base: {centsToEUR(basePriceCents)}</div>
+                        {it.options && it.options.length > 0 ? (
+                          <ul className="mt-1 text-xs text-slate-500 space-y-0.5">
+                            {it.options.map((opt, optIdx) => {
+                              const base = opt.groupName ? `${opt.groupName}: ${opt.name}` : opt.name;
+                              const deltaCents = Math.round(((opt.priceDelta ?? 0) as number) * 100);
+                              const deltaLabel =
+                                deltaCents !== 0
+                                  ? ` (${deltaCents > 0 ? "+" : "-"}${centsToEUR(Math.abs(deltaCents))})`
+                                  : "";
+                              return (
+                                <li key={optIdx}>
+                                  {base}
+                                  {deltaLabel}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : null}
+                      </td>
+                      <td className="py-2 text-center">x{it.quantity}</td>
+                      <td className="py-2 text-right">{centsToEUR(it.quantity * it.unit_price_cents)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="text-sm text-slate-900">
