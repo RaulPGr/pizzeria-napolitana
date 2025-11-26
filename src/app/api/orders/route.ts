@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     const productIds = [...new Set(body.items.map((i) => i.productId))];
     const { data: products, error: prodErr } = await supabaseAdmin
       .from('products')
-      .select('id, name, price')
+      .select('id, name, price, category_id')
       .in('id', productIds);
     if (prodErr) throw prodErr;
 
