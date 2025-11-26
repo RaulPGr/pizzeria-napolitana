@@ -7,6 +7,7 @@ import LogoutButton from "@/components/LogoutButton";
 import { useAdminAccess } from "@/context/AdminAccessContext";
 import { subscriptionAllowsOrders, subscriptionAllowsReservations } from "@/lib/subscription";
 
+// Barra de pestañas del panel admin, adaptada a los permisos del negocio.
 export default function AdminTabs() {
   const pathname = usePathname();
   const isOrders = pathname?.startsWith("/admin/orders");

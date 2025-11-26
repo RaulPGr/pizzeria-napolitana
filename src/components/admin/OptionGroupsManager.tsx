@@ -72,7 +72,9 @@ const DEFAULT_OPTION_FORM: OptionFormState = {
   sort_order: "",
 };
 
+// Panel completo para gestionar grupos de opciones/toppings.
 export default function OptionGroupsManager() {
+  // Estado remoto (datos del backend).
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [groups, setGroups] = useState<OptionGroup[]>([]);
@@ -91,6 +93,7 @@ export default function OptionGroupsManager() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Carga inicial de grupos, opciones, productos y categorías del negocio.
   async function load() {
     setLoading(true);
     setMessage(null);
@@ -148,6 +151,7 @@ export default function OptionGroupsManager() {
     void load();
   }, []);
 
+  // Mapas auxiliares para presentar datos de forma cómoda en la UI.
   const optionsByGroup = useMemo(() => {
     const map = new Map<string, OptionItem[]>();
     options.forEach((option) => {
@@ -174,6 +178,7 @@ export default function OptionGroupsManager() {
     return map;
   }, [categoryAssignments]);
 
+  // Helpers para preparar formularios.
   function resetGroupForm() {
     setGroupForm(DEFAULT_GROUP_FORM);
     setEditingGroupId(null);
@@ -247,7 +252,7 @@ export default function OptionGroupsManager() {
     }
   }
 
-  function resetOptionForm() {
+ function resetOptionForm() {
     setOptionForm(DEFAULT_OPTION_FORM);
     setEditingOptionId(null);
   }

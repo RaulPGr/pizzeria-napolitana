@@ -7,6 +7,7 @@ import { adminEmails } from '@/utils/plan';
 type PromotionScope = 'order' | 'category' | 'product';
 type PromotionType = 'percent' | 'fixed';
 
+// Helpers para identificar al negocio y validar permisos.
 async function getTenantSlug(): Promise<string> {
   try {
     const cookieStore = await cookies();
@@ -142,6 +143,7 @@ function sanitizePayload(body: any) {
   };
 }
 
+// Lista promociones + categorías y productos para que el panel pueda referenciarlos.
 export async function GET() {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
@@ -176,6 +178,7 @@ export async function GET() {
   });
 }
 
+// Crea una promoción nueva.
 export async function POST(req: Request) {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;

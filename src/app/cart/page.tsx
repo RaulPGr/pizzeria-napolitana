@@ -21,10 +21,13 @@ function todayISO(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// Pantalla del carrito: gestiona artículos, promociones y envío del pedido.
 function CartPageContent() {
   const router = useRouter();
   // Carrito
   const [items, setItems] = useState<CartItem[]>([]);
+  // Suscripción a los cambios del carrito (storage/local events).
+  // Carga promociones disponibles para poder aplicar el mejor descuento.
   useEffect(() => {
     const unsub = subscribe((next) => setItems(next));
     return () => unsub();
@@ -55,6 +58,7 @@ function CartPageContent() {
   const [ordersOpenNow, setOrdersOpenNow] = useState<boolean | null>(null);
 
   // Cargar métodos de pago
+  // Carga métodos de pago disponibles para el negocio actual.
   useEffect(() => {
     const slug = resolveTenantSlugClient();
     if (slug) {
@@ -82,6 +86,7 @@ function CartPageContent() {
     })();
   }, []);
 
+  // Obtener horario de pedidos para validar fecha/hora de recogida.
   useEffect(() => {
     const controller = new AbortController();
     (async () => {
@@ -217,6 +222,7 @@ function CartPageContent() {
     } catch { return null; }
   }
 
+  // Genera un listado de horas posibles (salto de 5 min) dentro del horario configurado.
   const timeSuggestions: string[] = useMemo(() => {
     const minsStart = (() => {
       if (date === todayISO()) {
@@ -299,6 +305,7 @@ function CartPageContent() {
   const canSubmit = submitReason === null;
 
   // Envío
+  // Envía el pedido al backend (validando campos y horarios).
   async function onConfirm() {
     if (!canSubmit) return;
 

@@ -49,6 +49,7 @@ function formatReservationTimestamp(value: string, tzOffsetMinutes?: number | nu
   }
 }
 
+// Lista las reservas del negocio actual (panel admin).
 export async function GET(req: Request) {
   try {
     const slug = await getTenantSlug(req);
@@ -75,6 +76,7 @@ export async function GET(req: Request) {
   }
 }
 
+// Permite cambiar estado de la reserva y envía email si procede.
 export async function PATCH(req: Request) {
   try {
     const slug = await getTenantSlug(req);

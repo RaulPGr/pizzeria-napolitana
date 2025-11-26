@@ -1,4 +1,5 @@
 // src/app/api/orders/route.ts
+// Endpoint público que recibe pedidos desde la carta.
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getTenant } from '@/lib/tenant';
@@ -32,6 +33,7 @@ type BodyInput = {
   };
 };
 
+// Crea un nuevo pedido a partir del carrito del cliente.
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BodyInput;
@@ -353,6 +355,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('order_item_options').insert(optionRows);
       }
     }
+    // En paralelo mandamos emails de confirmación y notificaciones al negocio.
     ;(async () => {
       try {
         // Enviar SIEMPRE si el pedido trae email del cliente (no bloquea la respuesta)
@@ -429,6 +432,7 @@ export async function POST(req: NextRequest) {
       }
     })();
 
+    // Y por último, avisamos por Telegram si está configurado.
     try {
       const result = await notifyOrderViaTelegram(orderId, {
         ...(tenant as any)?.social,

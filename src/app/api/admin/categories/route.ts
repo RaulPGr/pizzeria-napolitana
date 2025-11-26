@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createServerClient } from '@supabase/ssr';
 import { adminEmails } from '@/utils/plan';
 
+// Helpers compartidos para identificar el negocio en el panel admin.
 async function getTenantSlug(): Promise<string> {
   try {
     const cookieStore = await cookies();
@@ -65,6 +66,7 @@ async function getBusinessIdBySlug(slug: string): Promise<string | null> {
   return (data as any)?.id ?? null;
 }
 
+// Devuelve todas las categorías del negocio para el panel de productos.
 export async function GET() {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
@@ -81,6 +83,7 @@ export async function GET() {
   return NextResponse.json({ ok: true, categories: data || [] });
 }
 
+// Crea una nueva categoría (nombre + sort optional).
 export async function POST(req: Request) {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;

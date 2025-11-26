@@ -9,6 +9,7 @@ function getAdminClient() {
   return createClient(url, service, { auth: { persistSession: false } });
 }
 
+// Devuelve un pedido completo (con items) para mostrarlo al cliente y al panel.
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -19,6 +20,7 @@ export async function GET(req: Request) {
 
     const supabase = getAdminClient();
 
+    // Cabecera del pedido.
     const { data: order, error } = await supabase
       .from("orders")
       .select(
@@ -30,6 +32,7 @@ export async function GET(req: Request) {
     if (error) throw error;
     if (!order) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
+    // Líneas del pedido; añadimos posteriormente las opciones seleccionadas.
     const { data: items, error: e2 } = await supabase
       .from("order_items")
       .select(
@@ -39,6 +42,7 @@ export async function GET(req: Request) {
 
     if (e2) throw e2;
 
+    // Normalizamos la respuesta para incluir los toppings legibles.
     const normalizedItems =
       (items || []).map((item) => ({
         order_id: item.order_id,

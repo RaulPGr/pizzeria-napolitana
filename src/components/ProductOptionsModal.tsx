@@ -54,6 +54,7 @@ function formatPrice(n: number) {
   }
 }
 
+// Modal que permite elegir toppings/extras antes de añadir el producto al carrito.
 export default function ProductOptionsModal({ product, onConfirm, onClose }: Props) {
   const basePrice = Number(product.price || 0);
   const [selected, setSelected] = useState<Record<string, Set<string>>>(() => {
@@ -97,6 +98,7 @@ export default function ProductOptionsModal({ product, onConfirm, onClose }: Pro
     });
   }
 
+  // Normalizamos límites y requisitos para simplificar la validación.
   const normalizedGroups = useMemo(() => {
     return product.option_groups.map((group) => {
       const selectionType = group.selection_type || "single";
@@ -128,6 +130,7 @@ export default function ProductOptionsModal({ product, onConfirm, onClose }: Pro
     };
   }, [normalizedGroups, selected]);
 
+  // Lista plana de las opciones seleccionadas, útil para calcular total y renderizar.
   const selectionList = useMemo(() => {
     const list: CartOptionSelection[] = [];
     for (const group of normalizedGroups) {

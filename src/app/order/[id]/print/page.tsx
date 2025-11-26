@@ -22,6 +22,7 @@ function centsToEUR(cents: number) {
   return (cents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 }
 
+// Versión optimizada para impresión/PDF del pedido.
 export default function PrintTicketPage(props: any) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +44,7 @@ export default function PrintTicketPage(props: any) {
     return () => { mounted = false; };
   }, [props]);
 
+  // Trae datos básicos del negocio para la cabecera del ticket.
   async function loadBiz() {
     try {
       const r = await fetch('/api/admin/business', { cache: 'no-store' });
@@ -51,6 +53,7 @@ export default function PrintTicketPage(props: any) {
     } catch {}
   }
 
+  // Descarga el pedido y lanza window.print tras cargarlo.
   async function loadOrder(id: string) {
     try {
       setLoading(true); setError(null);
@@ -148,4 +151,3 @@ export default function PrintTicketPage(props: any) {
     </div>
   );
 }
-

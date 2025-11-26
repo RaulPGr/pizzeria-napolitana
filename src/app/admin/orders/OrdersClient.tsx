@@ -76,6 +76,7 @@ function formatOptionLine(opt: OrderItemOption) {
 
 const NEW_WINDOW_MS = 120000; // 2 minutos para considerar "reciente"
 
+// Pantalla principal de gestión de pedidos en el panel.
 export default function OrdersClient() {
   const { plan, isSuper } = useAdminAccess();
   const limited = !subscriptionAllowsOrders(plan) && !isSuper;
@@ -104,6 +105,7 @@ export default function OrdersClient() {
   const seenIdsRef = (globalThis as any).__pl_seen_orders || new Set<string>();
   ;(globalThis as any).__pl_seen_orders = seenIdsRef;
 
+  // Suscripción inicial para cargar pedidos una vez al montar el componente.
   useEffect(() => {
     // Cargar vistos persistidos
     try {
@@ -118,6 +120,7 @@ export default function OrdersClient() {
   }, []);
 
   // Realtime + polling de respaldo
+  // Conecta a Supabase Realtime para recibir nuevos pedidos casi en directo.
   useEffect(() => {
     let t: number | undefined;
     const schedule = () => {
@@ -154,6 +157,7 @@ export default function OrdersClient() {
   }, []);
 
   // Listener de eventos globales por si el disparo llega desde otro componente (polling/sound)
+  // Escucha eventos globales para marcar pedidos como "vistos" cuando llegan notificaciones.
   useEffect(() => {
     const onNew = (ev: any) => {
       try {
@@ -229,6 +233,7 @@ export default function OrdersClient() {
     }
   }
 
+  // Separamos pedidos activos y del histórico para listarlos en secciones distintas.
   const { activos, historico } = useMemo(() => {
     const a: OrderRow[] = [];
     const h: OrderRow[] = [];

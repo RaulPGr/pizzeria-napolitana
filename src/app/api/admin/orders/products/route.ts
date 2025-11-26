@@ -9,6 +9,7 @@ import { createServerClient } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { adminEmails } from '@/utils/plan';
 
+// Devuelve productos y categorías para el panel admin (ProductsTable).
 export async function GET() {
   try {
     const table = process.env.NEXT_PUBLIC_PRODUCTS_TABLE || 'products';

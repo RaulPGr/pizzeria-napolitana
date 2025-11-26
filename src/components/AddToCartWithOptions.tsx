@@ -35,6 +35,7 @@ type Props = {
   disabledLabel?: string;
 };
 
+// Botón "Añadir al carrito" que abre el modal de toppings cuando el producto los tiene.
 export default function AddToCartWithOptions({ product, disabled, disabledLabel }: Props) {
   const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
   const [open, setOpen] = useState(false);
@@ -55,6 +56,7 @@ export default function AddToCartWithOptions({ product, disabled, disabledLabel 
     );
   }
 
+  // El modal devuelve la selección y aquí la persistimos en el almacenamiento del carrito.
   function handleConfirm(payload: { options: any[]; totalPrice: number; basePrice: number; optionTotal: number; variantKey: string }) {
     addItem(
       {

@@ -1,6 +1,7 @@
 // src/lib/cart-storage.ts
 "use client";
 
+// Representa un topping/extra almacenado dentro del carrito del cliente.
 export type CartOption = {
   optionId?: string;
   name: string;
@@ -8,6 +9,7 @@ export type CartOption = {
   price_delta?: number;
 };
 
+// Cada línea del carrito (producto base + opciones seleccionadas).
 export type CartItem = {
   id: string | number;
   name: string;
@@ -95,6 +97,7 @@ export function getCount(): number {
   return read().reduce((acc, it) => acc + (Number(it.qty) || 0), 0);
 }
 
+// Añade un producto al carrito teniendo en cuenta variantes (toppings seleccionados).
 export function addItem(
   product: {
     id: any;
@@ -158,6 +161,7 @@ export function addItem(
   write(items);
 }
 
+// Actualiza la cantidad de un ítem concreto.
 export function setQty(id: any, qty: number, variantKey?: string) {
   const items = read()
     .map((it) =>
@@ -169,6 +173,7 @@ export function setQty(id: any, qty: number, variantKey?: string) {
   write(items);
 }
 
+// Elimina un ítem del carrito.
 export function removeItem(id: any, variantKey?: string) {
   const items = read().filter((it) => !(it.id === id && (it.variantKey || null) === (variantKey || null)));
   write(items);

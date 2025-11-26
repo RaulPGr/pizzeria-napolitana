@@ -6,6 +6,8 @@ import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { adminEmails } from "@/utils/plan";
 
+// Helpers compartidos (mismos que en product-option-groups).
+// Helpers compartidos del panel admin (obtenemos slug, autenticamos, etc.).
 async function getTenantSlug(): Promise<string> {
   try {
     const cookieStore = await cookies();
@@ -156,6 +158,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, id: (data as any)?.id });
 }
 
+// Actualiza una opción existente.
 export async function PATCH(req: Request) {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
@@ -191,6 +194,7 @@ export async function PATCH(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
+// Elimina una opción de topping del negocio.
 export async function DELETE(req: Request) {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;

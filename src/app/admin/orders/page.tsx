@@ -8,4 +8,3 @@ export default function AdminOrdersPage() {
   // Aquí solo montamos el cliente de pedidos.
   return <OrdersClient />;
 }
-

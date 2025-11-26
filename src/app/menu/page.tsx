@@ -13,9 +13,12 @@ import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
+// Convierte el número de día de JavaScript (0=domingo) al formato ISO que usamos en la carta (1=lunes).
 function jsToIso(jsDay: number) { return ((jsDay + 6) % 7) + 1; }
 
+// Determina qué día del menú debemos mostrar teniendo en cuenta la zona horaria del negocio.
 function todayIsoTZ(tz?: string) {
+  // ----- Productos y categorías para el día seleccionado -----
   try {
     const zone = tz || process.env.NEXT_PUBLIC_TIMEZONE || 'Europe/Madrid';
     const wd = new Intl.DateTimeFormat('en-GB', { timeZone: zone, weekday: 'short' }).format(new Date());
@@ -31,6 +34,7 @@ function formatPrice(n: number) {
   catch { return n.toFixed(2) + ' EUR'; }
 }
 
+// Normaliza la lista de días que viene desde la API (pueden ser objetos o números).
 function normalizeDays(arr: any): number[] {
   if (!Array.isArray(arr)) return [];
   return arr
@@ -38,6 +42,7 @@ function normalizeDays(arr: any): number[] {
     .filter((n) => Number.isFinite(n) && n >= 1 && n <= 7);
 }
 
+// Página principal de la carta (modo tarjetas o listado).
 export default async function MenuPage({ searchParams }: PageProps) {
   const sp = searchParams || {};
   const rawDay = sp?.day; const rawCat = sp?.cat;
@@ -65,6 +70,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     const parts = host.split('.');
     if (parts.length >= 3) slug = parts[0].toLowerCase();
   }
+  // Esta llamada nos dice si el negocio tiene plan suficiente para aceptar pedidos online.
   const { plan, ordersEnabled } = await getSubscriptionForSlug(slug);
   const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
 
@@ -97,6 +103,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   let menuMode: 'fixed' | 'daily' = 'fixed';
   let error: { message: string } | null = null;
   let payload: any = null;
+  // ----- Promociones aplicables al negocio -----
   try {
     const resp = await fetch(apiUrl, { cache: 'no-store' });
     try { payload = await resp.json(); } catch {}
@@ -123,7 +130,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     }
   } catch {}
 
-  // View list for selected day (reinforce API filtering and handle day=0)
+  // Filtramos de nuevo por día, por si la API devuelve productos extra y para soportar el selector "Todos".
   const viewProducts = (menuMode === 'daily')
     ? (products || []).filter((p: any) => {
         const pDays = normalizeDays(p?.product_weekdays);
@@ -132,6 +139,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
       })
     : (products || []);
 
+  // Agrupamos los productos por categoría para renderizarlos en secciones.
   const groups = new Map<number | 'nocat', any[]>();
   for (const p of viewProducts) {
     const cidNum = Number(p?.category_id);
@@ -156,6 +164,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const currentIsoDay = ((new Date().getDay() + 6) % 7) + 1;
 
   const promotionCache = new Map<string, PromotionRule | null>();
+  // Determina si un producto tiene alguna promoción activa.
   function getProductPromotion(p: any) {
     if (!promotions.length) return null;
     const key = `${p.id}-${p.category_id ?? 'nocat'}-${p.price ?? ''}`;
@@ -171,6 +180,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return promo;
   }
 
+  // Calcula el precio final tras aplicar la promoción (si la hay).
   function getEffectivePrice(price: number, promo: PromotionRule | null) {
     if (!promo) return price;
     const value = Number(promo.value || 0);
@@ -182,6 +192,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return Math.max(0, price - value);
   }
 
+  // Reglas para saber si se puede añadir al carrito (agotado o fuera del día correspondiente).
   function availabilityFor(p: any) {
     if (p.available === false) {
       return { out: true, disabledLabel: "Agotado" as string | undefined };
@@ -206,6 +217,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     return { out: !canAdd, disabledLabel };
   }
 
+  // Tarjeta de producto en el layout de "tarjetas".
   function renderProductCard(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
     const promo = getProductPromotion(p);
@@ -277,6 +289,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     );
   }
 
+  // Fila de producto cuando la carta está en modo "listado compacto".
   function renderProductListRow(p: any) {
     const { out, disabledLabel } = availabilityFor(p);
     const promo = getProductPromotion(p);
@@ -433,6 +446,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
   );
 }
 
+// Pastilla reutilizable para los filtros de categoría.
 function FilterPill({ href, active, children }: { href: string; active?: boolean; children: React.ReactNode }) {
   return (
     <Link href={href} className={[ 'rounded-full border px-3 py-1 text-sm transition-colors', active ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50' ].join(' ')}>
@@ -441,6 +455,7 @@ function FilterPill({ href, active, children }: { href: string; active?: boolean
   );
 }
 
+// Selector horizontal de días cuando la carta está en modo diario.
 function DayTabs({ selectedDay, hasAllDays, availableDays }: { selectedDay?: number; hasAllDays: boolean; availableDays?: number[] }) {
   const js = new Date().getDay(); const today = jsToIso(js);
   const current = (typeof selectedDay === 'number' && !Number.isNaN(selectedDay) && selectedDay >= 0 && selectedDay <= 7) ? selectedDay : today;

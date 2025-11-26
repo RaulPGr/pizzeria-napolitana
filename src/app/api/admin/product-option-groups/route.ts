@@ -6,6 +6,7 @@ import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { adminEmails } from "@/utils/plan";
 
+// Utilidades de tenant/autenticación para el panel admin.
 async function getTenantSlug(): Promise<string> {
   try {
     const cookieStore = await cookies();
@@ -84,6 +85,7 @@ async function ensureGroupBelongs(businessId: string, groupId: string) {
   return !!data;
 }
 
+// Comprueba que el grupo y el producto pertenecen al negocio antes de asignarlos.
 async function ensureGroupAndProduct(
   businessId: string,
   groupId: string,
@@ -101,6 +103,7 @@ async function ensureGroupAndProduct(
   return { ok: true };
 }
 
+// Devuelve todos los grupos/opciones/asignaciones para el panel de toppings.
 export async function GET() {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
@@ -202,6 +205,7 @@ export async function GET() {
   });
 }
 
+// Asigna un grupo a un producto concreto.
 export async function POST(req: Request) {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;
@@ -245,6 +249,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, id: (data as any)?.id });
 }
 
+// Elimina una asignación (por id o por par producto/grupo).
 export async function DELETE(req: Request) {
   const auth = await assertAdminOrMember();
   if (!auth.ok) return auth.res;

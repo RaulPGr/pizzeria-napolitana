@@ -20,6 +20,7 @@ type Props = {
   initialWeekdays?: Record<number, number[]>;
 };
 
+// Selector de días para los modos de carta "daily".
 function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChange: (v: number[]) => void; compact?: boolean }) {
   const days = [
     { d: 1, label: 'L' }, { d: 2, label: 'M' }, { d: 3, label: 'X' },
@@ -43,6 +44,7 @@ function WeekdaySelector({ value, onChange, compact }: { value: number[]; onChan
   );
 }
 
+// Componente principal del panel de productos (listar/crear/editar).
 export default function ProductsTable({ initialProducts, categories, initialWeekdays }: Props) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
@@ -50,6 +52,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
   const [cats, setCats] = useState<Category[]>(categories);
 
+  // Crea una URL temporal para mostrar la imagen seleccionada antes de subirla.
   React.useEffect(() => {
     (async () => {
       try {
@@ -78,7 +81,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [newDays, setNewDays] = useState<number[]>([]);
   const ALL_DAYS = [1,2,3,4,5,6,7];
 
-  // Comprime imágenes grandes para evitar el límite de payload en funciones
+  // Comprime imágenes grandes en cliente para evitar superar límites al subirlas.
   async function compressImage(file: File, maxW = 1400, maxH = 1400, quality = 0.84): Promise<File> {
     try {
       if (!file || !(file instanceof File)) return file;
@@ -142,6 +145,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
 
   function resetFilters() { setFilterCat(""); setFilterName(""); setFilterAvail("all"); setPriceMin(""); setPriceMax(""); }
 
+  // Widget para crear/renombrar/eliminar categorías desde la misma pantalla.
   function CategoriesManager() {
     const [newCatName, setNewCatName] = useState("");
     const [busy, setBusy] = useState(false);

@@ -6,6 +6,7 @@ import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { adminEmails } from "@/utils/plan";
 
+// Helpers compartidos para verificar acceso en el panel admin.
 async function getTenantSlug(): Promise<string> {
   try {
     const cookieStore = await cookies();
@@ -74,6 +75,7 @@ async function getBusinessIdBySlug(slug: string): Promise<string | null> {
   return (data as any)?.id ?? null;
 }
 
+// Verifica que tanto grupo como categoría pertenecen al negocio actual.
 async function ensureGroupAndCategory(
   businessId: string,
   groupId: string,

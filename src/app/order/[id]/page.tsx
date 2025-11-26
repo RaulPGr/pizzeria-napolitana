@@ -31,6 +31,7 @@ function centsToEUR(cents: number) {
 
 type PageProps = { params: Promise<{ id: string }> };
 
+// Página que muestra el pedido confirmado (la ve el cliente después de pagar).
 export default function OrderDetailPage(props: PageProps) {
   const search = useSearchParams();
   const paidFlag = search.get("paid");
@@ -42,6 +43,7 @@ export default function OrderDetailPage(props: PageProps) {
   const [biz, setBiz] = useState<BizInfo>({});
 
   // Resolver id cuando Next lo entrega como Promise
+  // params puede ser una Promise (Next 15); aquí resolvemos el id real.
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -53,6 +55,7 @@ export default function OrderDetailPage(props: PageProps) {
     };
   }, [props.params]);
 
+  // Trae los datos del pedido desde la API interna.
   async function loadOrder(currentId: string) {
     if (!currentId) return;
     try {
@@ -74,7 +77,7 @@ export default function OrderDetailPage(props: PageProps) {
     void loadOrder(id);
   }, [id]);
 
-  // Datos del negocio (logo y nombre)
+  // Datos del negocio (logo y nombre) para reproducir el aspecto del PDF.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -160,6 +163,7 @@ export default function OrderDetailPage(props: PageProps) {
       ) : null}
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
+        {/* Cabecera con logo y nombre del comercio */}
         <div className="flex flex-col items-center text-center gap-3">
           {biz.logo_url ? (
             <img
@@ -195,6 +199,7 @@ export default function OrderDetailPage(props: PageProps) {
           </div>
         </div>
 
+        {/* Tabla de artículos: incluye desglose de toppings para cada producto */}
         <div className="mt-8 border-t border-slate-100 pt-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Artículos</h2>
           {order.items?.length ? (

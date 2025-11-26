@@ -93,6 +93,7 @@ function formatScope(promo: Promotion, categories: Option[], products: Option[])
   return promo.scope;
 }
 
+// Panel para crear y editar promociones por pedido/categoría/producto.
 export default function PromotionsManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -104,6 +105,7 @@ export default function PromotionsManager() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Descarga toda la información necesaria (promos, categorías, productos).
   async function load() {
     setLoading(true);
     setError(null);
@@ -130,7 +132,7 @@ export default function PromotionsManager() {
     setEditingId(null);
   }
 
-function startEdit(promo: Promotion) {
+  function startEdit(promo: Promotion) {
   setEditingId(promo.id);
   setForm({
     name: promo.name || "",
@@ -170,6 +172,7 @@ function startEdit(promo: Promotion) {
     });
   }
 
+  // Inserta o actualiza la promoción según estemos editando o creando.
   async function save() {
     try {
       setSaving(true);
@@ -211,6 +214,7 @@ function startEdit(promo: Promotion) {
     }
   }
 
+  // Elimina una promoción previa (con confirmación).
   async function remove(id: string) {
     if (!window.confirm("¿Eliminar esta promoción?")) return;
     try {

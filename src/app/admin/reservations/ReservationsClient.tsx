@@ -58,6 +58,7 @@ function todayKey() {
   return now.toISOString().slice(0, 10);
 }
 
+// Listado de reservas para el panel admin (confirmar/cancelar).
 export default function ReservationsClient() {
   const { plan, isSuper } = useAdminAccess();
   const reservationsBlocked = !subscriptionAllowsReservations(plan) && !isSuper;

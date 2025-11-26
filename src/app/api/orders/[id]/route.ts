@@ -14,6 +14,7 @@ async function getBusinessIdBySlug(slug: string): Promise<string | null> {
 
 type Params = { params: { id: string } };
 
+// Devuelve el detalle completo de un pedido (usado en el panel admin).
 export async function GET(_req: Request, { params }: Params) {
   try {
     const id = params.id;
@@ -47,6 +48,7 @@ export async function GET(_req: Request, { params }: Params) {
       return NextResponse.json({ ok: false, message: e2.message }, { status: 400 });
     }
 
+    // Adjuntamos toppings para mostrarlos en la tabla del panel.
     const normalizedItems = (items || []).map((item) => ({
       id: item.id,
       product_id: item.product_id,
