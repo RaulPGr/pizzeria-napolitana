@@ -213,7 +213,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
     const effectivePrice = getEffectivePrice(priceValue, promo);
     const showPrice = Number.isFinite(priceValue) && priceValue > 0;
     return (
-      <li key={p.id} className={['relative overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}>
+      <li
+        key={p.id}
+        className={['relative flex h-full flex-col overflow-hidden rounded border bg-white', out ? 'opacity-60' : ''].join(' ')}
+      >
         {(p.available === false || promo) && (
           <div className="absolute left-2 top-2 flex flex-col gap-1">
             {p.available === false && (
@@ -232,7 +235,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         {p.image_url && (
           <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
         )}
-        <div className="p-3">
+        <div className="flex flex-1 flex-col p-3">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
             <h3 className="text-base font-medium break-words">{p.name}</h3>
             {showPrice && (
@@ -254,18 +257,20 @@ export default async function MenuPage({ searchParams }: PageProps) {
             <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{p.description}</p>
           )}
           {allowOrdering && (
-            <AddToCartWithOptions
-              product={{
-                id: p.id,
-                name: p.name,
-                price: Number(p.price || 0),
-                image_url: p.image_url || undefined,
-                category_id: p.category_id ?? null,
-                option_groups: Array.isArray(p.option_groups) ? p.option_groups : [],
-              }}
-              disabled={out}
-              disabledLabel={disabledLabel}
-            />
+            <div className="mt-4 pt-2">
+              <AddToCartWithOptions
+                product={{
+                  id: p.id,
+                  name: p.name,
+                  price: Number(p.price || 0),
+                  image_url: p.image_url || undefined,
+                  category_id: p.category_id ?? null,
+                  option_groups: Array.isArray(p.option_groups) ? p.option_groups : [],
+                }}
+                disabled={out}
+                disabledLabel={disabledLabel}
+              />
+            </div>
           )}
         </div>
       </li>
