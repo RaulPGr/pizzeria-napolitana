@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 type Config = { cash: boolean; card: boolean };
 
+// Formulario para activar/desactivar métodos de pago visibles en el carrito.
 export default function SettingsClient() {
   const [cfg, setCfg] = useState<Config>({ cash: true, card: true });
   const [saving, setSaving] = useState(false);

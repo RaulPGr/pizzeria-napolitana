@@ -7,6 +7,7 @@ import { adminEmails } from '@/utils/plan';
 
 export const dynamic = 'force-dynamic';
 
+// Estructura enviada al frontend (mismos campos que muestra la vista de estadísticas).
 type Dataset = {
   ordersCount: number;
   deliveredCount: number;
@@ -23,6 +24,7 @@ type Dataset = {
   byCategory: Array<{ id: number | 'nocat'; name: string; cents: number; qty: number }>;
 };
 
+// Calcula estadísticas por negocio (pedidos, ingresos, productos, etc.).
 export async function GET(req: NextRequest) {
   try {
     // Guard: requiere sesión admin o ser miembro del negocio

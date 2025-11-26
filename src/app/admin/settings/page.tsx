@@ -6,6 +6,7 @@ import OrdersHoursSettingsClient from "@/app/admin/settings/orders/client";
 import { useAdminAccess } from "@/context/AdminAccessContext";
 import { subscriptionAllowsOrders } from "@/lib/subscription";
 
+// Pestaña "Configuración" del panel admin (datos negocio, pagos, horario pedidos).
 export default function SettingsPage() {
   const { plan, isSuper } = useAdminAccess();
   const allowOrdersFeatures = subscriptionAllowsOrders(plan) || isSuper;

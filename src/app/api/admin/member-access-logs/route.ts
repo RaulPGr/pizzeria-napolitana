@@ -5,11 +5,13 @@ import { NextResponse } from 'next/server';
 import { cookies, headers } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+// Valida slugs recibidos por query/cookie/subdominio para evitar valores raros.
 function normalizeSlug(v: string | null | undefined): string {
   const s = (v || '').trim().toLowerCase();
   return s && /^[a-z0-9-_.]{1,120}$/.test(s) ? s : '';
 }
 
+// Busca el tenant actual en query (?tenant=), cookie o subdominio.
 async function getTenantSlug(req?: Request): Promise<string> {
   let slug = '';
   try {
@@ -35,6 +37,7 @@ async function getTenantSlug(req?: Request): Promise<string> {
   return slug;
 }
 
+// Traducimos el slug a id real de negocio para operar en Supabase.
 async function getBusinessId(slug: string): Promise<string | null> {
   const { data, error } = await supabaseAdmin
     .from('businesses')
@@ -45,6 +48,7 @@ async function getBusinessId(slug: string): Promise<string | null> {
   return (data as any)?.id ?? null;
 }
 
+// Devuelve el historial de accesos de miembros del negocio (últimas 50 entradas).
 export async function GET(req: Request) {
   try {
     const slug = await getTenantSlug(req);
@@ -60,6 +64,7 @@ export async function GET(req: Request) {
       .limit(50);
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
+    // Cache local para no llamar a getUserById repetidamente.
     const emailCache = new Map<string, string | null>();
     const results: Array<{ userId: string; email: string | null; accessedAt: string | null }> = [];
     for (const row of data || []) {

@@ -10,10 +10,12 @@ type Props = {
   children: React.ReactNode;
 };
 
+// Contexto global con el plan del negocio (Starter/Medium/Premium).
 export function SubscriptionPlanProvider({ plan, children }: Props) {
   return <SubscriptionPlanContext.Provider value={plan}>{children}</SubscriptionPlanContext.Provider>;
 }
 
+// Hook auxiliar para consultar el plan sin rehacer props en cada componente.
 export function useSubscriptionPlan(): SubscriptionPlan {
   return useContext(SubscriptionPlanContext);
 }

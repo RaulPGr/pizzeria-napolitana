@@ -21,6 +21,7 @@ type Biz = {
   menu_layout?: 'cards' | 'list' | null;
 };
 
+// Configuración general del negocio (datos públicos, notificaciones, redes, etc.).
 export default function BusinessSettingsClient() {
   const { plan } = useAdminAccess();
   const canManageReservations = subscriptionAllowsReservations(plan);
@@ -64,6 +65,7 @@ export default function BusinessSettingsClient() {
   const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
   const [menuLayout, setMenuLayout] = useState<'cards' | 'list'>('cards');
  
+  // Carga inicial de la ficha del negocio (datos generales + flags).
   useEffect(() => {
     (async () => {
       const t = getTenantFromUrl();
@@ -109,6 +111,7 @@ export default function BusinessSettingsClient() {
     })();
   }, []);
  
+  // Persiste los cambios básicos (datos, switchs, redes...).
   async function save() {
     setSaving(true);
     setMsg(null);
@@ -152,6 +155,7 @@ export default function BusinessSettingsClient() {
     }
   }
  
+  // Subida de logo o imagen de cabecera.
   async function upload(kind: 'logo' | 'hero', file: File) {
     const fd = new FormData();
     fd.append('type', kind);
@@ -618,6 +622,7 @@ function Section({ title, description, children }: SectionProps) {
   );
 }
 
+// Mini editor para los horarios (permite hasta dos tramos por día).
 function HoursEditor({ value, onChange }: { value: any; onChange: (v: any) => void }) {
   const days = [
     { key: 'monday', label: 'Lunes' },

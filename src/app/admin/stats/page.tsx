@@ -15,6 +15,7 @@ const RANGES: { key: RangeKey; label: string }[] = [
   { key: "all", label: "Siempre" },
 ];
 
+// Convierte cada rango semántico (hoy, 7d...) en fechas reales.
 function startEndForRange(key: RangeKey) {
   const now = new Date();
   const end = new Date(now);
@@ -27,6 +28,7 @@ function startEndForRange(key: RangeKey) {
   return { start, end };
 }
 
+// Normaliza importes en céntimos a texto en euros.
 function formatEur(cents: number) { try { return (cents/100).toLocaleString('es-ES',{style:'currency',currency:'EUR'});} catch { return `${(cents/100).toFixed(2)} €`; } }
 
 type Dataset = {
@@ -45,6 +47,7 @@ type Dataset = {
   byCategory: Array<{ id: number | 'nocat'; name: string; cents: number; qty: number }>;
 };
 
+// Dashboard de estadísticas sencillo (sólo para planes Premium o superadmin).
 export default function AdminStatsPage() {
   const { plan, isSuper } = useAdminAccess();
   const limited = plan !== "premium" && !isSuper;
@@ -61,8 +64,10 @@ export default function AdminStatsPage() {
   const [data, setData] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Cada vez que se cambia el rango recalculamos fechas.
   useEffect(() => { setDates(startEndForRange(range)); }, [range]);
 
+  // Descarga los datos agregados de la API, respetando tenant y fechas.
   async function fetchData() {
     setLoading(true);
     try {
@@ -83,8 +88,10 @@ export default function AdminStatsPage() {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }
 
+  // Vuelve a consultar en cuanto cambien las fechas calculadas.
   useEffect(() => { void fetchData(); }, [start?.toISOString(), end?.toISOString()]);
 
+  // KPIs básicos mostrados en las tarjetas superiores.
   const kpis = useMemo(() => ({
     totalOrders: data?.ordersCount || 0,
     delivered: data?.deliveredCount || 0,
@@ -93,6 +100,7 @@ export default function AdminStatsPage() {
     aovCents: data?.aovCents || 0,
   }), [data]);
 
+  // Extrae porcentajes para el donut de estados.
   const donut = useMemo(() => {
     const d = kpis.delivered, c = kpis.cancelled, p = Math.max(0, (kpis.totalOrders - d - c));
     const total = kpis.totalOrders || 1; return {
@@ -167,6 +175,7 @@ export default function AdminStatsPage() {
 }
 
 /* ---------- UI helpers ---------- */
+// Tarjeta contenedor reutilizable (mismo estilo en toda la vista).
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
     <section className={`p-4 border rounded bg-white ${className}`}>
@@ -176,8 +185,10 @@ function Card({ title, children, className = "" }: { title: string; children: Re
   );
 }
 
+// Placeholder mientras se cargan datos.
 function Skeleton() { return <div className="h-40 animate-pulse bg-gray-100 rounded" />; }
 
+// Tarjeta numérica simple (indicadores superiores).
 function KpiCard({ title, value, subtitle, tone = "default" }: { title: string; value: string; subtitle?: string; tone?: "default" | "primary" | "success" | "danger" }) {
   const tones: Record<NonNullable<typeof tone>, { bg: string; text: string; border: string }> = {
     default: { bg: "bg-white", text: "text-gray-900", border: "border-brand-crust" },
@@ -189,6 +200,7 @@ function KpiCard({ title, value, subtitle, tone = "default" }: { title: string; 
   return <div className={`p-4 rounded border ${t.bg} ${t.border}`}><p className="text-sm text-gray-500">{title}</p><p className={`text-2xl font-semibold ${t.text}`}>{value}</p>{subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}</div>;
 }
 
+// Gráfico de barras vertical rápido para ingresos mensuales.
 function BarMiniChart({ data }: { data: { key: string; date: Date; cents: number }[] }) {
   const max = Math.max(...data.map((d) => d.cents), 1);
   return (
@@ -221,6 +233,7 @@ function BarMiniChart({ data }: { data: { key: string; date: Date; cents: number
   );
 }
 
+// Donut generado con CSS puro para mostrar estados de pedido.
 function DonutState({ delivered, processing, cancelled, pDelivered, pProcessing, pCancelled }: { delivered: number; processing: number; cancelled: number; pDelivered: number; pProcessing: number; pCancelled: number }) {
   const grad = `conic-gradient(#10b981 ${pDelivered}%, #60a5fa 0 ${pDelivered + pProcessing}%, #fca5a5 0 ${Math.min(100, pDelivered + pProcessing + pCancelled)}%)`;
   return (
@@ -236,6 +249,7 @@ function DonutState({ delivered, processing, cancelled, pDelivered, pProcessing,
 }
 function Legend({ color, label, value }: { color: string; label: string; value: number }) { return (<div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: color }} /> <span className="text-gray-700">{label}</span> <span className="text-gray-500">· {value}</span></div>); }
 
+// Barras horizontales para rankings (ventas por día, categoría, etc.).
 function BarH({ data, prefix = "", suffix = "" }: { data: { label: string; value: number }[]; prefix?: string; suffix?: string }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   return (

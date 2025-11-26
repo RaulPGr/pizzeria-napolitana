@@ -176,6 +176,7 @@ function FontSelect({
   );
 }
 
+// Interfaz completa para personalizar tema, miembros y bots de Telegram.
 export default function ThemeSettingsClient() {
   function getTenantFromUrl(): string {
     if (typeof window === "undefined") return "";
