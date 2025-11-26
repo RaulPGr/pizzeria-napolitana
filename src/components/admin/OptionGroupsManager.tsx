@@ -21,12 +21,6 @@ type OptionItem = {
   sort_order?: number | null;
 };
 
-type Assignment = {
-  id: string;
-  product_id: number;
-  group_id: string;
-};
-
 type Product = {
   id: number;
   name: string;
@@ -83,7 +77,6 @@ export default function OptionGroupsManager() {
   const [saving, setSaving] = useState(false);
   const [groups, setGroups] = useState<OptionGroup[]>([]);
   const [options, setOptions] = useState<OptionItem[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryAssignments, setCategoryAssignments] = useState<CategoryAssignment[]>([]);
@@ -92,7 +85,6 @@ export default function OptionGroupsManager() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [optionForm, setOptionForm] = useState<OptionFormState>(DEFAULT_OPTION_FORM);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<number | "">("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">("");
   const [bulkGroupId, setBulkGroupId] = useState<string>("");
   const [bulkProductIds, setBulkProductIds] = useState<string[]>([]);
@@ -112,13 +104,6 @@ export default function OptionGroupsManager() {
       const incomingGroups: OptionGroup[] = Array.isArray(data.groups) ? data.groups : [];
       setGroups(incomingGroups);
       setOptions(Array.isArray(data.options) ? data.options : []);
-      const assignmentList = Array.isArray(data.assignments)
-        ? data.assignments.map((item: any) => ({
-            ...item,
-            product_id: Number(item.product_id),
-          }))
-        : [];
-      setAssignments(assignmentList);
       const productList: Product[] = Array.isArray(data.products) ? data.products : [];
       setProducts(productList);
       setBulkProductIds((prev) => prev.filter((id) => productList.some((p) => String(p.id) === id)));
@@ -146,11 +131,6 @@ export default function OptionGroupsManager() {
         setBulkGroupId(incomingGroups[0].id);
       } else if (bulkGroupId && incomingGroups.length && !incomingGroups.some((g) => g.id === bulkGroupId)) {
         setBulkGroupId(incomingGroups[0]?.id ?? "");
-      }
-      if (selectedProductId === "" && productList.length) {
-        setSelectedProductId(productList[0].id);
-      } else if (selectedProductId !== "" && !productList.some((p) => p.id === selectedProductId)) {
-        setSelectedProductId(productList[0]?.id ?? "");
       }
       if (selectedCategoryId === "" && categoryList.length) {
         setSelectedCategoryId(categoryList[0].id);
@@ -184,15 +164,6 @@ export default function OptionGroupsManager() {
     });
     return map;
   }, [options]);
-
-  const assignmentsByProduct = useMemo(() => {
-    const map = new Map<number, Set<string>>();
-    assignments.forEach((assign) => {
-      if (!map.has(assign.product_id)) map.set(assign.product_id, new Set());
-      map.get(assign.product_id)!.add(assign.group_id);
-    });
-    return map;
-  }, [assignments]);
 
   const categoryAssignmentsByCategory = useMemo(() => {
     const map = new Map<number, Set<string>>();
@@ -348,47 +319,6 @@ export default function OptionGroupsManager() {
     }
   }
 
-  async function toggleAssignment(groupId: string, productIdOverride?: number) {
-    const targetProduct = typeof productIdOverride === "number" ? productIdOverride : selectedProductId;
-    if (targetProduct === "") {
-      setError("Selecciona un producto");
-      return;
-    }
-    const numericProductId = Number(targetProduct);
-    setSaving(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const assignedIds = assignmentsByProduct.get(numericProductId);
-      const alreadyAssigned = assignedIds?.has(groupId);
-      if (alreadyAssigned) {
-        const url = `/api/admin/product-option-groups?product_id=${numericProductId}&group_id=${encodeURIComponent(
-          groupId
-        )}`;
-        const resp = await fetch(url, { method: "DELETE" });
-        const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudo desasignar el grupo");
-        }
-      } else {
-        const resp = await fetch("/api/admin/product-option-groups", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ group_id: groupId, product_id: numericProductId }),
-        });
-        const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || !data?.ok) {
-          throw new Error(data?.error || "No se pudo asignar el grupo");
-        }
-      }
-      await load();
-    } catch (e: any) {
-      setError(e?.message || "No se pudo actualizar la asignacion");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function toggleCategoryAssignment(groupId: string) {
     if (selectedCategoryId === "") {
       setError("Selecciona una categoria");
@@ -481,10 +411,6 @@ export default function OptionGroupsManager() {
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId) || null;
   const currentOptions = selectedGroupId ? optionsByGroup.get(selectedGroupId) || [] : [];
-  const assignedGroupIds = useMemo(() => {
-    if (selectedProductId === "") return new Set<string>();
-    return assignmentsByProduct.get(Number(selectedProductId)) ?? new Set<string>();
-  }, [assignmentsByProduct, selectedProductId]);
   const assignedCategoryGroups = useMemo(() => {
     if (selectedCategoryId === "") return new Set<string>();
     return categoryAssignmentsByCategory.get(Number(selectedCategoryId)) ?? new Set<string>();
@@ -891,59 +817,6 @@ export default function OptionGroupsManager() {
         )}
       </section>
 
-      <section className="rounded border bg-white p-4 shadow-sm">
-        <h3 className="text-base font-semibold">Asignar grupos a productos</h3>
-        {products.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">Todavia no hay productos disponibles.</p>
-        ) : (
-          <div className="mt-3 space-y-4">
-            <label className="text-sm">
-              <span className="text-slate-600">Producto</span>
-              <select
-                className="mt-1 w-full rounded border px-3 py-2 bg-white"
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value ? Number(e.target.value) : "")}
-              >
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                    {product.category_name ? ` - ${product.category_name}` : ""}
-                    {product.active === false ? " (inactivo)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {groups.length === 0 ? (
-              <p className="text-sm text-slate-500">Crea al menos un grupo para asignarlo al producto seleccionado.</p>
-            ) : (
-              <div className="space-y-2 rounded border px-4 py-3">
-                {groups.map((group) => {
-                  const assigned = assignedGroupIds.has(group.id);
-                  return (
-                    <label key={group.id} className="flex items-center justify-between gap-3 text-sm">
-                      <div>
-                        <p className="font-medium">{group.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {group.selection_type === "multiple" ? "Varias selecciones" : "Una seleccion"}
-                          {" - "}
-                          {group.is_required === false ? "Opcional" : "Obligatorio"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void toggleAssignment(group.id)}
-                        className={`rounded-full border px-3 py-1 text-xs ${assigned ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}
-                      >
-                        {assigned ? "Asignado" : "Asignar"}
-                      </button>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
