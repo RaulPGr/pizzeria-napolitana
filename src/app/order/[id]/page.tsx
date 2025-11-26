@@ -5,7 +5,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-type OrderItem = { quantity: number; name?: string | null; unit_price_cents: number };
+type OrderItemOption = { name: string; groupName?: string | null; priceDelta?: number | null };
+type OrderItem = { quantity: number; name?: string | null; unit_price_cents: number; options?: OrderItemOption[] };
 type Order = {
   id: string;
   created_at: string;
@@ -208,7 +209,30 @@ export default function OrderDetailPage(props: PageProps) {
               <tbody>
                 {order.items.map((it, idx) => (
                   <tr key={idx} className="border-b border-slate-100 last:border-0 text-sm text-slate-800">
-                    <td className="py-2">{it.name ?? "Producto"}</td>
+                    <td className="py-2">
+                      <div>{it.name ?? "Producto"}</div>
+                      {it.options && it.options.length > 0 ? (
+                        <ul className="mt-1 text-xs text-slate-500 space-y-0.5">
+                          {it.options.map((opt, optIdx) => {
+                            const base = opt.groupName ? `${opt.groupName}: ${opt.name}` : opt.name;
+                            let deltaLabel = "";
+                            if (typeof opt.priceDelta === "number" && opt.priceDelta !== 0) {
+                              const sign = opt.priceDelta > 0 ? "+" : "-";
+                              deltaLabel = ` (${sign}${Math.abs(opt.priceDelta).toLocaleString("es-ES", {
+                                style: "currency",
+                                currency: "EUR",
+                              })})`;
+                            }
+                            return (
+                              <li key={optIdx}>
+                                {base}
+                                {deltaLabel}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                    </td>
                     <td className="py-2 text-center">x{it.quantity}</td>
                     <td className="py-2 text-right">{centsToEUR(it.quantity * it.unit_price_cents)}</td>
                   </tr>

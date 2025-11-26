@@ -33,13 +33,30 @@ export async function GET(req: Request) {
     const { data: items, error: e2 } = await supabase
       .from("order_items")
       .select(
-        "order_id, product_id, name, quantity, unit_price_cents, line_total_cents"
+        "order_id, product_id, name, quantity, unit_price_cents, line_total_cents, order_item_options ( name_snapshot, group_name_snapshot, price_delta_snapshot )"
       )
       .eq("order_id", id);
 
     if (e2) throw e2;
 
-    return NextResponse.json({ order: { ...order, items: items ?? [] } });
+    const normalizedItems =
+      (items || []).map((item) => ({
+        order_id: item.order_id,
+        product_id: item.product_id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price_cents: item.unit_price_cents,
+        line_total_cents: item.line_total_cents,
+        options: Array.isArray((item as any)?.order_item_options)
+          ? (item as any).order_item_options.map((opt: any) => ({
+              name: opt.name_snapshot,
+              groupName: opt.group_name_snapshot,
+              priceDelta: typeof opt.price_delta_snapshot === "number" ? opt.price_delta_snapshot : null,
+            }))
+          : [],
+      })) ?? [];
+
+    return NextResponse.json({ order: { ...order, items: normalizedItems } });
   } catch (e: any) {
     return NextResponse.json(
       { error: e?.message ?? "Error" },
