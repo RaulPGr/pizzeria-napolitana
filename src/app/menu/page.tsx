@@ -134,7 +134,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const viewProducts = (menuMode === 'daily')
     ? (products || []).filter((p: any) => {
         const pDays = normalizeDays(p?.product_weekdays);
-        if (selectedDaySafe === 0) return pDays.length === 7; // only 7/7
+        if (selectedDaySafe === 0) return pDays.length === 0 || pDays.length === 7; // only 7/7 or sin dias
+        if (pDays.length === 0) return true;
         return pDays.length === 7 || pDays.includes(selectedDaySafe);
       })
     : (products || []);
@@ -148,7 +149,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
     groups.get(key)!.push(p);
   }
 
-  const hasAllDays = menuMode === 'daily' && products.some((p) => normalizeDays(p.product_weekdays).length === 7);
+  const hasAllDays = menuMode === 'daily' && products.some((p) => {
+    const days = normalizeDays(p.product_weekdays);
+    return days.length === 0 || days.length === 7;
+  });
 
   const orderedSections: Array<{ id: number | 'nocat'; name: string; sort_order?: number }>
     = [ ...(categories || []), ...(groups.has('nocat') ? [{ id: 'nocat' as const, name: 'Otros', sort_order: 9999 }] : []) ];
