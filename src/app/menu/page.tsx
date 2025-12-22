@@ -105,7 +105,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
   let payload: any = null;
   // ----- Promociones aplicables al negocio -----
   try {
-    const resp = await fetch(apiUrl, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch(apiUrl, { cache: 'no-store', signal: controller.signal });
+    clearTimeout(timer);
     try { payload = await resp.json(); } catch {}
     products = Array.isArray(payload?.products) ? payload.products : [];
     categories = Array.isArray(payload?.categories) ? payload.categories : [];
@@ -123,7 +126,10 @@ export default async function MenuPage({ searchParams }: PageProps) {
     const promoUrl = origin
       ? `${origin}/api/promotions${promoQuery ? `?${promoQuery}` : ''}`
       : `/api/promotions${promoQuery ? `?${promoQuery}` : ''}`;
-    const resp = await fetch(promoUrl, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(promoUrl, { cache: 'no-store', signal: controller.signal });
+    clearTimeout(timer);
     const pj = await resp.json().catch(() => ({}));
     if (resp.ok && Array.isArray(pj?.promotions)) {
       promotions = pj.promotions as PromotionRule[];
