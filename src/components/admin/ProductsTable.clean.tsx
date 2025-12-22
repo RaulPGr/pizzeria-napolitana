@@ -297,6 +297,20 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     await refresh();
   }
 
+  // Quitar imagen del producto
+  async function removeImage(id: number) {
+    if (!confirm("¿Eliminar la imagen del producto?")) return;
+    setLoading(true);
+    const res = await fetch("/api/products", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, image_url: null }),
+    });
+    setLoading(false);
+    if (!res.ok) { const txt = await res.text().catch(() => ""); alert("Error al quitar imagen" + (txt ? `: ${txt}` : "")); return; }
+    await refresh();
+  }
+
   // Toggle disponible
   async function toggleAvailable(p: Product, checked: boolean) {
     setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, available: checked } : x)));
@@ -425,7 +439,16 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
               if (editingId === p.id) {
                 return (
                   <tr key={p.id} className="border-t">
-                    <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">-</span>}</td>
+                    <td className="px-3 py-2">
+                      {p.image_url ? (
+                        <div className="space-y-2">
+                          <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" />
+                          <button onClick={() => removeImage(p.id)} className="rounded border px-2 py-1 text-xs">Quitar imagen</button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
                       <textarea className="mt-2 w-full rounded border px-2 py-2 min-h-[80px]" value={editRow.description ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} placeholder="Descripción" />
@@ -489,6 +512,11 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
                       <button onClick={() => triggerUpload(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-gray-700 text-white hover:bg-gray-800" title="Cambiar imagen del producto" aria-label="Cambiar imagen del producto">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M9 3a1 1 0 0 0-.894.553L7.105 5H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3h-2.105l-.999-1.447A1 1 0 0 0 14.999 3H9Zm3 5.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/></svg>
                       </button>
+                      {p.image_url && (
+                        <button onClick={() => removeImage(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-slate-500 text-white hover:bg-slate-600" title="Quitar imagen" aria-label="Quitar imagen">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                      )}
                       <button onClick={() => onDelete(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700" title="Eliminar producto" aria-label="Eliminar producto">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                       </button>
