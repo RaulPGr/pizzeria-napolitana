@@ -88,13 +88,15 @@ export default async function MenuPage({ searchParams }: PageProps) {
   let menuLayout: "cards" | "list" = "cards";
   if (slug) {
     try {
-      const themeQuery = supabaseAdmin
+      const themePromise = supabaseAdmin
         .from("businesses")
         .select("theme_config")
         .eq("slug", slug)
-        .maybeSingle();
+        .maybeSingle()
+        .then((res) => res)
+        .catch(() => ({ data: null }));
       const { data: themeRow } = await withTimeout(
-        themeQuery,
+        themePromise,
         3000,
         { data: null } as any
       );
