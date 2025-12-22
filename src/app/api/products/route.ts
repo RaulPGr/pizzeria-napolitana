@@ -255,6 +255,24 @@ export async function GET(req: Request) {
     catErr = error;
   } catch (e) { catErr = e; }
 
+  // Fallback: si la consulta pública no devuelve categorías, intentamos con admin.
+  if (Array.isArray(categories) && categories.length === 0) {
+    try {
+      const bidC = await getCachedBusinessId();
+      if (bidC) {
+        const { data: catsAdmin } = await supabaseAdmin
+          .from('categories')
+          .select('*')
+          .eq('business_id', bidC)
+          .order('sort_order', { ascending: true })
+          .order('name', { ascending: true });
+        if (Array.isArray(catsAdmin) && catsAdmin.length > 0) {
+          categories = catsAdmin as any[];
+        }
+      }
+    } catch {}
+  }
+
   // Fallback final: si aún no hay productos pero sí tenemos categorías con business_id,
   // usamos supabaseAdmin para traer los productos de ese negocio (sin RLS) y aplicamos filtro de día.
   try {
