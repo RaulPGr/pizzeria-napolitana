@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { headers, cookies } from 'next/headers';
 import AddToCartWithOptions from '@/components/AddToCartWithOptions';
 import CartQtyActions from '@/components/CartQtyActions';
-import { getSubscriptionForSlug } from '@/lib/subscription-server';
+import { getSubscriptionForSlug, type SubscriptionInfo } from '@/lib/subscription-server';
 import { subscriptionAllowsOrders } from '@/lib/subscription';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/promotions';
@@ -78,7 +78,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
     if (parts.length >= 3) slug = parts[0].toLowerCase();
   }
   // Esta llamada nos dice si el negocio tiene plan suficiente para aceptar pedidos online.
-  const { plan, ordersEnabled } = await withTimeout(
+  const { plan, ordersEnabled } = await withTimeout<SubscriptionInfo>(
     getSubscriptionForSlug(slug),
     3000,
     { plan: 'premium', ordersEnabled: true }
