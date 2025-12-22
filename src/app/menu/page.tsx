@@ -34,6 +34,13 @@ function formatPrice(n: number) {
   catch { return n.toFixed(2) + ' EUR'; }
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  const timer = new Promise<T>((resolve) => {
+    setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([promise, timer]);
+}
+
 // Normaliza la lista de días que viene desde la API (pueden ser objetos o números).
 function normalizeDays(arr: any): number[] {
   if (!Array.isArray(arr)) return [];
@@ -71,17 +78,25 @@ export default async function MenuPage({ searchParams }: PageProps) {
     if (parts.length >= 3) slug = parts[0].toLowerCase();
   }
   // Esta llamada nos dice si el negocio tiene plan suficiente para aceptar pedidos online.
-  const { plan, ordersEnabled } = await getSubscriptionForSlug(slug);
+  const { plan, ordersEnabled } = await withTimeout(
+    getSubscriptionForSlug(slug),
+    3000,
+    { plan: 'premium', ordersEnabled: true }
+  );
   const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
 
   let menuLayout: "cards" | "list" = "cards";
   if (slug) {
     try {
-      const { data: themeRow } = await supabaseAdmin
-        .from("businesses")
-        .select("theme_config")
-        .eq("slug", slug)
-        .maybeSingle();
+      const { data: themeRow } = await withTimeout(
+        supabaseAdmin
+          .from("businesses")
+          .select("theme_config")
+          .eq("slug", slug)
+          .maybeSingle(),
+        3000,
+        { data: null } as any
+      );
       const layout = (themeRow as any)?.theme_config?.menu?.layout;
       if (layout === "list") menuLayout = "list";
     } catch {}
