@@ -1,6 +1,4 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+const nextConfig: any = {
   // Ignora errores de ESLint durante el build en Vercel/producción
   eslint: { ignoreDuringBuilds: true },
   // Si alguna vez necesitas ignorar errores de TS en build, descomenta:
@@ -8,4 +6,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
