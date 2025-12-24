@@ -123,6 +123,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<Partial<Product>>({});
   const [editDays, setEditDays] = useState<number[]>([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Subida de imagen
   const fileRef = useRef<HTMLInputElement>(null);
@@ -272,6 +273,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     setEditingId(p.id);
     setEditRow({ id: p.id, name: p.name, description: p.description, price: p.price, available: p.available, category_id: p.category_id });
     setEditDays(weekdays[p.id] ? [...weekdays[p.id]] : []);
+    setEditModalOpen(true);
   }
 
   async function saveEdit() {
@@ -282,9 +284,9 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     setLoading(false);
     if (!res.ok) { const txt = await res.text().catch(() => ""); alert("Error al guardar cambios" + (txt ? `: ${txt}` : "")); return; }
     setWeekdays((prev) => ({ ...prev, [editingId]: menuMode === 'daily' ? editDays.slice() : (prev[editingId] || []) }));
-    setEditingId(null); setEditRow({}); await refresh();
+    setEditingId(null); setEditRow({}); setEditModalOpen(false); await refresh();
   }
-  function cancelEdit() { setEditingId(null); setEditRow({}); }
+  function cancelEdit() { setEditingId(null); setEditRow({}); setEditModalOpen(false); }
 
   // Cambiar imagen
   function triggerUpload(id: number) { setUploadTargetId(id); fileRef.current?.click(); }
@@ -435,100 +437,150 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
             </tr>
           </thead>
           <tbody>
-            {view.map((p) => {
-              if (editingId === p.id) {
-                return (
-                  <tr key={p.id} className="border-t">
-                    <td className="px-3 py-2">
-                      {p.image_url ? (
-                        <div className="space-y-2">
-                          <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" />
-                          <button onClick={() => removeImage(p.id)} className="rounded border px-2 py-1 text-xs">Quitar imagen</button>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <input className="w-full rounded border px-2 py-1" value={editRow.name ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))} />
-                      <textarea className="mt-2 w-full rounded border px-2 py-2 min-h-[80px]" value={editRow.description ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))} placeholder="Descripción" />
-                      {menuMode === 'daily' && (
-                        <div className="mt-2 space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <label className="inline-flex items-center gap-2">
-                              <input type="checkbox" checked={editDays.length === 7} onChange={(e) => setEditDays(e.target.checked ? ALL_DAYS.slice() : [])} />
-                              <span>Todos los días</span>
-                            </label>
-                          </div>
-                          <WeekdaySelector value={editDays} onChange={setEditDays} compact />
-                        </div>
-                      )}
-                    </td>
-                    <td className="w-[120px] px-3 py-2">
-                      <input type="number" step="0.01" className="w-[110px] rounded border px-2 py-1" value={String(editRow.price ?? 0)} onChange={(e) => setEditRow((r) => ({ ...r, price: e.target.value === '' ? 0 : Number(e.target.value) }))} />
-                    </td>
-                    <td className="w-[110px] px-3 py-2">
-                      <label className="inline-flex items-center gap-2">
-                        <input type="checkbox" checked={!!editRow.available} onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))} />
-                        <span>{editRow.available ? 'Sí' : 'No'}</span>
-                      </label>
-                    </td>
-                    <td className="w-[220px] px-3 py-2">
-                      <select className="w-full rounded border px-2 py-1" value={editRow.category_id ?? ''} onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === '' ? null : Number(e.target.value) }))}>
-                        <option value="">Sin categoría</option>
-                        {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-2 justify-end">
-                        <button onClick={saveEdit} disabled={loading} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-60">Guardar</button>
-                        <button onClick={cancelEdit} className="rounded bg-gray-200 px-3 py-1">Cancelar</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              }
-
-              return (
-                <tr key={p.id} className="border-t bg-white even:bg-gray-50 hover:bg-gray-100">
-                  <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">-</span>}</td>
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{p.name}</div>
-                    {p.description ? <div className="mt-1 text-xs text-gray-500">{p.description}</div> : null}
-                  </td>
-                  <td className="px-3 py-2">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(p.price))}</td>
-                  <td className="px-3 py-2">
-                    <label className="inline-flex items-center gap-2">
-                      <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
-                      <span>{p.available ? 'Sí' : 'No'}</span>
-                    </label>
-                  </td>
-                  <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '-' : '-'}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex w-full flex-wrap justify-end gap-2">
-                      <button onClick={() => startEdit(p)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-blue-600 text-white hover:bg-blue-700" title="Editar producto" aria-label="Editar producto">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M16.862 3.487a1.75 1.75 0 0 1 2.476 2.476l-9.8 9.8a4 4 0 0 1-1.693.99l-2.707.77a.75.75 0 0 1-.923-.923l.77-2.707a4 4 0 0 1 .99-1.693l9.8-9.8Z"/><path d="M5.25 19.5h13.5a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1 0-1.5Z"/></svg>
-                      </button>
-                      <button onClick={() => triggerUpload(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-gray-700 text-white hover:bg-gray-800" title="Cambiar imagen del producto" aria-label="Cambiar imagen del producto">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M9 3a1 1 0 0 0-.894.553L7.105 5H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3h-2.105l-.999-1.447A1 1 0 0 0 14.999 3H9Zm3 5.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/></svg>
-                      </button>
-                      {p.image_url && (
-                        <button onClick={() => removeImage(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-slate-500 text-white hover:bg-slate-600" title="Quitar imagen" aria-label="Quitar imagen">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                        </button>
-                      )}
-                      <button onClick={() => onDelete(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700" title="Eliminar producto" aria-label="Eliminar producto">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {view.map((p) => (
+              <tr key={p.id} className="border-t bg-white even:bg-gray-50 hover:bg-gray-100">
+                <td className="px-3 py-2">{p.image_url ? <img src={p.image_url} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="text-gray-400">-</span>}</td>
+                <td className="px-3 py-2">
+                  <div className="font-medium">{p.name}</div>
+                  {p.description ? <div className="mt-1 text-xs text-gray-500">{p.description}</div> : null}
+                </td>
+                <td className="px-3 py-2">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(p.price))}</td>
+                <td className="px-3 py-2">
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={p.available} onChange={(e) => toggleAvailable(p, e.target.checked)} />
+                    <span>{p.available ? 'Sí' : 'No'}</span>
+                  </label>
+                </td>
+                <td className="px-3 py-2">{p.category_id ? catById.get(p.category_id) || '-' : '-'}</td>
+                <td className="px-3 py-2">
+                  <div className="flex w-full flex-wrap justify-end gap-2">
+                    <button onClick={() => startEdit(p)} className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700" title="Actualizar producto" aria-label="Actualizar producto">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path d="M16.862 3.487a1.75 1.75 0 0 1 2.476 2.476l-9.8 9.8a4 4 0 0 1-1.693.99l-2.707.77a.75.75 0 0 1-.923-.923l.77-2.707a4 4 0 0 1 .99-1.693l9.8-9.8Z"/><path d="M5.25 19.5h13.5a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1 0-1.5Z"/></svg>
+                      <span className="text-sm">Actualizar</span>
+                    </button>
+                    <button onClick={() => onDelete(p.id)} className="inline-flex h-9 w-9 items-center justify-center rounded bg-red-600 text-white hover:bg-red-700" title="Eliminar producto" aria-label="Eliminar producto">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
         </div>
       </div>
+
+      {/* Modal edición producto */}
+      {editModalOpen && editingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-2xl rounded-lg bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Actualizar producto</h3>
+                <p className="text-sm text-slate-600">Edita los datos y guarda los cambios.</p>
+              </div>
+              <button onClick={cancelEdit} className="text-slate-500 hover:text-slate-700">✕</button>
+            </div>
+            {(() => {
+              const modalProduct = products.find((x) => x.id === editingId);
+              return (
+                <div className="space-y-4">
+                  {modalProduct?.image_url && (
+                    <div className="flex items-center gap-3">
+                      <img src={modalProduct.image_url} alt="" className="h-16 w-24 rounded object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => triggerUpload(modalProduct.id)}
+                        className="rounded border px-3 py-1 text-sm"
+                      >
+                        Cambiar imagen
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(modalProduct.id)}
+                        className="rounded border px-3 py-1 text-sm text-rose-600"
+                      >
+                        Quitar imagen
+                      </button>
+                    </div>
+                  )}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Nombre</label>
+                      <input
+                        className="w-full rounded border px-3 py-2"
+                        value={editRow.name ?? ''}
+                        onChange={(e) => setEditRow((r) => ({ ...r, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Precio</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full rounded border px-3 py-2"
+                        value={String(editRow.price ?? 0)}
+                        onChange={(e) => setEditRow((r) => ({ ...r, price: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Descripción</label>
+                    <textarea
+                      className="w-full rounded border px-3 py-2"
+                      rows={4}
+                      value={editRow.description ?? ''}
+                      onChange={(e) => setEditRow((r) => ({ ...r, description: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Categoría</label>
+                      <select
+                        className="w-full rounded border px-3 py-2"
+                        value={editRow.category_id ?? ''}
+                        onChange={(e) => setEditRow((r) => ({ ...r, category_id: e.target.value === '' ? null : Number(e.target.value) }))}
+                      >
+                        <option value="">Sin categoría</option>
+                        {cats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Disponible</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={!!editRow.available}
+                          onChange={(e) => setEditRow((r) => ({ ...r, available: e.target.checked }))}
+                        />
+                        <span className="text-sm text-slate-700">{editRow.available ? 'Sí' : 'No'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {menuMode === 'daily' && (
+                    <div className="space-y-2 rounded border p-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <label className="inline-flex items-center gap-2">
+                          <input type="checkbox" checked={editDays.length === 7} onChange={(e) => setEditDays(e.target.checked ? ALL_DAYS.slice() : [])} />
+                          <span>Todos los días</span>
+                        </label>
+                      </div>
+                      <WeekdaySelector value={editDays} onChange={setEditDays} compact />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={cancelEdit} className="rounded border px-4 py-2 text-sm">Cancelar</button>
+              <button onClick={saveEdit} disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-60">
+                {loading ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
