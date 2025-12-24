@@ -85,9 +85,14 @@ export default function LoginPage() {
                   setErr("Introduce un email válido para enviar el enlace");
                   return;
                 }
-                // Usamos el dominio/subdominio actual para que el reset se haga dentro del tenant.
-                const origin = window.location.origin;
-                const redirectTo = `${origin}/auth/reset`;
+                // Forzamos el enlace al subdominio del negocio (evita que use un dominio de preview).
+                const host = window.location.hostname;
+                const parts = host.split(".");
+                let redirectTo = `${window.location.origin}/auth/reset`;
+                if (parts.length >= 3) {
+                  const slug = parts[0];
+                  redirectTo = `https://${slug}.pidelocal.es/auth/reset`;
+                }
                 const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) throw error;
                 setErr("Te hemos enviado un email para cambiar la contraseña");
