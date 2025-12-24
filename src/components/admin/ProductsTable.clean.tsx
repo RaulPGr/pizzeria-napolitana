@@ -124,6 +124,8 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [editRow, setEditRow] = useState<Partial<Product>>({});
   const [editDays, setEditDays] = useState<number[]>([]);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editFilePreview, setEditFilePreview] = useState<string | null>(null);
 
   // Subida de imagen
   const fileRef = useRef<HTMLInputElement>(null);
@@ -284,19 +286,53 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     setLoading(false);
     if (!res.ok) { const txt = await res.text().catch(() => ""); alert("Error al guardar cambios" + (txt ? `: ${txt}` : "")); return; }
     setWeekdays((prev) => ({ ...prev, [editingId]: menuMode === 'daily' ? editDays.slice() : (prev[editingId] || []) }));
-    setEditingId(null); setEditRow({}); setEditModalOpen(false); await refresh();
+    setEditingId(null); setEditRow({}); setEditModalOpen(false); setEditFile(null); setEditFilePreview(null); await refresh();
   }
-  function cancelEdit() { setEditingId(null); setEditRow({}); setEditModalOpen(false); }
+  function cancelEdit() { setEditingId(null); setEditRow({}); setEditModalOpen(false); setEditFile(null); setEditFilePreview(null); }
 
-  // Cambiar imagen
+  // Seleccionar imagen (mostrar vista previa antes de subir)
   function triggerUpload(id: number) { setUploadTargetId(id); fileRef.current?.click(); }
   async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]; if (!f || !uploadTargetId) return; setLoading(true);
+    const f = e.target.files?.[0];
+    if (!f || !uploadTargetId) return;
+    if (editingId && uploadTargetId === editingId) {
+      try {
+        const url = URL.createObjectURL(f);
+        setEditFile(f);
+        setEditFilePreview(url);
+      } catch {
+        setEditFile(f);
+        setEditFilePreview(null);
+      }
+      e.target.value = "";
+      return;
+    }
+    // flujo antiguo (no debería usarse ya), sube directamente
+    setLoading(true);
     const compact = await compressImage(f);
     const fd = new FormData(); fd.append("id", String(uploadTargetId)); fd.append("file", compact);
     const res = await fetch("/api/products", { method: "PATCH", body: fd }); setLoading(false); e.target.value = ""; setUploadTargetId(null);
     if (!res.ok) { const txt = await res.text().catch(() => ""); alert("Error al subir imagen" + (txt ? `: ${txt}` : "")); return; }
     await refresh();
+  }
+
+  async function uploadPendingImage() {
+    if (!editFile || !editingId) return;
+    setLoading(true);
+    try {
+      const compact = await compressImage(editFile);
+      const fd = new FormData(); fd.append("id", String(editingId)); fd.append("file", compact);
+      const res = await fetch("/api/products", { method: "PATCH", body: fd });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => ""); throw new Error(txt || 'Error al subir imagen');
+      }
+      setEditFile(null); setEditFilePreview(null);
+      await refresh();
+    } catch (err: any) {
+      alert(err?.message || 'No se pudo subir la imagen');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Quitar imagen del producto
@@ -485,25 +521,46 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
               const modalProduct = products.find((x) => x.id === editingId);
               return (
                 <div className="space-y-4">
-                  {modalProduct?.image_url && (
+                  <div className="flex flex-col gap-3 rounded border p-3">
                     <div className="flex items-center gap-3">
-                      <img src={modalProduct.image_url} alt="" className="h-16 w-24 rounded object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => triggerUpload(modalProduct.id)}
-                        className="rounded border px-3 py-1 text-sm"
-                      >
-                        Cambiar imagen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeImage(modalProduct.id)}
-                        className="rounded border px-3 py-1 text-sm text-rose-600"
-                      >
-                        Quitar imagen
-                      </button>
+                      {editFilePreview ? (
+                        <img src={editFilePreview} alt="Vista previa" className="h-20 w-32 rounded object-cover" />
+                      ) : modalProduct?.image_url ? (
+                        <img src={modalProduct.image_url} alt="" className="h-20 w-32 rounded object-cover" />
+                      ) : (
+                        <div className="h-20 w-32 rounded border border-dashed border-slate-300 flex items-center justify-center text-xs text-slate-500">Sin imagen</div>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => triggerUpload(modalProduct?.id || 0)}
+                          className="rounded border px-3 py-1 text-sm"
+                        >
+                          Seleccionar imagen
+                        </button>
+                        {modalProduct?.image_url && (
+                          <button
+                            type="button"
+                            onClick={() => removeImage(modalProduct.id)}
+                            className="rounded border px-3 py-1 text-sm text-rose-600"
+                          >
+                            Quitar imagen
+                          </button>
+                        )}
+                        {editFile && (
+                          <button
+                            type="button"
+                            onClick={uploadPendingImage}
+                            disabled={loading}
+                            className="rounded bg-emerald-600 px-3 py-1 text-sm text-white disabled:opacity-60"
+                          >
+                            {loading ? 'Subiendo...' : 'Subir imagen'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
+                    {editFilePreview && <div className="text-xs text-slate-500">Vista previa de cómo se verá la imagen en la web.</div>}
+                  </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Nombre</label>
