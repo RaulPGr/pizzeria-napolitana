@@ -85,7 +85,9 @@ export default function LoginPage() {
                   setErr("Introduce un email válido para enviar el enlace");
                   return;
                 }
-                const redirectTo = `${window.location.origin}/auth/reset`;
+                // Usamos el dominio/subdominio actual para que el reset se haga dentro del tenant.
+                const origin = window.location.origin;
+                const redirectTo = `${origin}/auth/reset`;
                 const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) throw error;
                 setErr("Te hemos enviado un email para cambiar la contraseña");
