@@ -126,6 +126,9 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editFile, setEditFile] = useState<File | null>(null);
   const [editFilePreview, setEditFilePreview] = useState<string | null>(null);
+  const [editZoom, setEditZoom] = useState(1);
+  const [editOffsetX, setEditOffsetX] = useState(0);
+  const [editOffsetY, setEditOffsetY] = useState(0);
 
   // Subida de imagen
   const fileRef = useRef<HTMLInputElement>(null);
@@ -276,6 +279,11 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     setEditRow({ id: p.id, name: p.name, description: p.description, price: p.price, available: p.available, category_id: p.category_id });
     setEditDays(weekdays[p.id] ? [...weekdays[p.id]] : []);
     setEditModalOpen(true);
+    setEditFile(null);
+    setEditFilePreview(null);
+    setEditZoom(1);
+    setEditOffsetX(0);
+    setEditOffsetY(0);
   }
 
   async function saveEdit() {
@@ -288,7 +296,7 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     setWeekdays((prev) => ({ ...prev, [editingId]: menuMode === 'daily' ? editDays.slice() : (prev[editingId] || []) }));
     setEditingId(null); setEditRow({}); setEditModalOpen(false); setEditFile(null); setEditFilePreview(null); await refresh();
   }
-  function cancelEdit() { setEditingId(null); setEditRow({}); setEditModalOpen(false); setEditFile(null); setEditFilePreview(null); }
+  function cancelEdit() { setEditingId(null); setEditRow({}); setEditModalOpen(false); setEditFile(null); setEditFilePreview(null); setEditZoom(1); setEditOffsetX(0); setEditOffsetY(0); }
 
   // Seleccionar imagen (mostrar vista previa antes de subir)
   function triggerUpload(id: number) { setUploadTargetId(id); fileRef.current?.click(); }
@@ -300,6 +308,9 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
         const url = URL.createObjectURL(f);
         setEditFile(f);
         setEditFilePreview(url);
+        setEditZoom(1);
+        setEditOffsetX(0);
+        setEditOffsetY(0);
       } catch {
         setEditFile(f);
         setEditFilePreview(null);
@@ -316,17 +327,57 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     await refresh();
   }
 
+  async function buildEditedImage(file: File): Promise<File> {
+    // Aplica zoom y desplazamiento antes de subir.
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = url; });
+      const iw = img.naturalWidth || img.width;
+      const ih = img.naturalHeight || img.height;
+      // Tamaño objetivo máximo
+      const MAX_W = 1400, MAX_H = 1400;
+      const baseScale = Math.min(MAX_W / iw, MAX_H / ih, 1);
+      const finalScale = baseScale * Math.max(1, editZoom || 1);
+      const drawW = Math.max(1, Math.round(iw * finalScale));
+      const drawH = Math.max(1, Math.round(ih * finalScale));
+      const canvasW = Math.min(drawW, MAX_W);
+      const canvasH = Math.min(drawH, MAX_H);
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasW; canvas.height = canvasH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { URL.revokeObjectURL(url); return file; }
+      // Centrado + offset (offset -0.5..0.5)
+      const extraX = canvasW - drawW;
+      const extraY = canvasH - drawH;
+      const offsetX = extraX / 2 + (editOffsetX || 0) * canvasW * 0.5;
+      const offsetY = extraY / 2 + (editOffsetY || 0) * canvasH * 0.5;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,canvasW,canvasH);
+      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+      URL.revokeObjectURL(url);
+      if (!blob) return file;
+      const name = (file.name || 'image').replace(/\.[^.]+$/, '.jpg');
+      return new File([blob], name, { type: 'image/jpeg' });
+    } catch {
+      return file;
+    }
+  }
+
   async function uploadPendingImage() {
     if (!editFile || !editingId) return;
     setLoading(true);
     try {
-      const compact = await compressImage(editFile);
+      const edited = await buildEditedImage(editFile);
+      const compact = await compressImage(edited);
       const fd = new FormData(); fd.append("id", String(editingId)); fd.append("file", compact);
       const res = await fetch("/api/products", { method: "PATCH", body: fd });
       if (!res.ok) {
         const txt = await res.text().catch(() => ""); throw new Error(txt || 'Error al subir imagen');
       }
       setEditFile(null); setEditFilePreview(null);
+      setEditZoom(1); setEditOffsetX(0); setEditOffsetY(0);
       await refresh();
     } catch (err: any) {
       alert(err?.message || 'No se pudo subir la imagen');
@@ -521,45 +572,73 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
               const modalProduct = products.find((x) => x.id === editingId);
               return (
                 <div className="space-y-4">
-                  <div className="flex flex-col gap-3 rounded border p-3">
-                    <div className="flex items-center gap-3">
-                      {editFilePreview ? (
-                        <img src={editFilePreview} alt="Vista previa" className="h-20 w-32 rounded object-cover" />
-                      ) : modalProduct?.image_url ? (
-                        <img src={modalProduct.image_url} alt="" className="h-20 w-32 rounded object-cover" />
-                      ) : (
-                        <div className="h-20 w-32 rounded border border-dashed border-slate-300 flex items-center justify-center text-xs text-slate-500">Sin imagen</div>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => triggerUpload(modalProduct?.id || 0)}
-                          className="rounded border px-3 py-1 text-sm"
-                        >
-                          Seleccionar imagen
-                        </button>
-                        {modalProduct?.image_url && (
+                                    <div className="flex flex-col gap-3 rounded border p-3">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="h-24 w-40 overflow-hidden rounded border border-slate-200 bg-slate-100">
+                          {(() => {
+                            const previewSrc = editFilePreview ?? modalProduct?.image_url ?? null;
+                            if (!previewSrc) return <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">Sin imagen</div>;
+                            const translateX = editFilePreview ? editOffsetX * 50 : 0;
+                            const translateY = editFilePreview ? editOffsetY * 50 : 0;
+                            const zoom = editFilePreview ? editZoom : 1;
+                            return (
+                              <img
+                                src={previewSrc}
+                                alt="Vista previa"
+                                className="h-full w-full object-cover transition-transform"
+                                style={{ transform: `translate(${translateX}%, ${translateY}%) scale(${zoom})`, transformOrigin: 'center' }}
+                              />
+                            );
+                          })()}
+                        </div>
+                        <div className="flex flex-1 flex-wrap gap-2">
                           <button
                             type="button"
-                            onClick={() => removeImage(modalProduct.id)}
-                            className="rounded border px-3 py-1 text-sm text-rose-600"
+                            onClick={() => triggerUpload(modalProduct?.id || 0)}
+                            className="rounded border px-3 py-1 text-sm"
                           >
-                            Quitar imagen
+                            Seleccionar imagen
                           </button>
-                        )}
-                        {editFile && (
-                          <button
-                            type="button"
-                            onClick={uploadPendingImage}
-                            disabled={loading}
-                            className="rounded bg-emerald-600 px-3 py-1 text-sm text-white disabled:opacity-60"
-                          >
-                            {loading ? 'Subiendo...' : 'Subir imagen'}
-                          </button>
-                        )}
+                          {modalProduct?.image_url && (
+                            <button
+                              type="button"
+                              onClick={() => removeImage(modalProduct.id)}
+                              className="rounded border px-3 py-1 text-sm text-rose-600"
+                            >
+                              Quitar imagen
+                            </button>
+                          )}
+                          {editFile && (
+                            <button
+                              type="button"
+                              onClick={uploadPendingImage}
+                              disabled={loading}
+                              className="rounded bg-emerald-600 px-3 py-1 text-sm text-white disabled:opacity-60"
+                            >
+                              {loading ? 'Subiendo...' : 'Subir imagen'}
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {editFilePreview && (
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <label className="flex flex-col gap-1 text-xs text-slate-600">
+                            Zoom ({editZoom.toFixed(2)}x)
+                            <input type="range" min={1} max={3} step={0.05} value={editZoom} onChange={(e) => setEditZoom(Number(e.target.value))} />
+                          </label>
+                          <label className="flex flex-col gap-1 text-xs text-slate-600">
+                            Desplazar X ({Math.round(editOffsetX * 100)}%)
+                            <input type="range" min={-0.5} max={0.5} step={0.01} value={editOffsetX} onChange={(e) => setEditOffsetX(Number(e.target.value))} />
+                          </label>
+                          <label className="flex flex-col gap-1 text-xs text-slate-600">
+                            Desplazar Y ({Math.round(editOffsetY * 100)}%)
+                            <input type="range" min={-0.5} max={0.5} step={0.01} value={editOffsetY} onChange={(e) => setEditOffsetY(Number(e.target.value))} />
+                          </label>
+                        </div>
+                      )}
                     </div>
-                    {editFilePreview && <div className="text-xs text-slate-500">Vista previa de cómo se verá la imagen en la web.</div>}
+                    {editFilePreview && <div className="text-xs text-slate-500">Ajusta zoom y encuadre antes de subir la imagen. Al guardar no se sube solo: pulsa "Subir imagen".</div>}
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1">
@@ -641,3 +720,10 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     </div>
   );
 }
+
+
+
+
+
+
+
