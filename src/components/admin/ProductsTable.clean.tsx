@@ -406,6 +406,14 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
   }
 
   function resetImageEdits() {
+    // Si hay una imagen en edición, sólo reinicia zoom/posicionamiento y conserva la vista previa.
+    if (editFilePreview || editFile) {
+      setEditZoom(1);
+      setEditOffsetX(0);
+      setEditOffsetY(0);
+      return;
+    }
+    // Si no hay imagen en edición, resetea todo.
     setEditFile(null);
     setEditFilePreview(null);
     setEditZoom(1);
