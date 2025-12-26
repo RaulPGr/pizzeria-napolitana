@@ -405,6 +405,14 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     }
   }
 
+  function resetImageEdits() {
+    setEditFile(null);
+    setEditFilePreview(null);
+    setEditZoom(1);
+    setEditOffsetX(0);
+    setEditOffsetY(0);
+  }
+
   // Quitar imagen del producto
   async function removeImage(id: number) {
     if (!confirm("¿Eliminar la imagen del producto?")) return;
@@ -645,6 +653,15 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
                               className="rounded bg-emerald-600 px-3 py-1 text-sm text-white disabled:opacity-60"
                             >
                               {loading ? 'Subiendo...' : 'Subir imagen'}
+                            </button>
+                          )}
+                          {editFilePreview && (
+                            <button
+                              type="button"
+                              onClick={resetImageEdits}
+                              className="rounded border px-3 py-1 text-sm"
+                            >
+                              Restablecer
                             </button>
                           )}
                         </div>
