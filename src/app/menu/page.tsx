@@ -10,6 +10,8 @@ import { getSubscriptionForSlug, type SubscriptionInfo } from '@/lib/subscriptio
 import { subscriptionAllowsOrders } from '@/lib/subscription';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/promotions';
+import dynamic from 'next/dynamic';
+const ImageLightbox = dynamic(() => import('@/components/ImageLightbox'), { ssr: false });
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
@@ -291,7 +293,17 @@ export default async function MenuPage({ searchParams }: PageProps) {
           <CartQtyActions productId={p.id} allowAdd={!out} />
         )}
         {p.image_url ? (
-          <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
+          <div className="relative">
+            <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
+            <button
+              type="button"
+              data-fullimage={p.image_url}
+              data-alt={p.name}
+              className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur transition hover:bg-black/80"
+            >
+              Ver grande
+            </button>
+          </div>
         ) : businessLogo ? (
           <div className="relative h-40 w-full overflow-hidden bg-gradient-to-br from-slate-50 to-slate-200">
             <img
@@ -503,6 +515,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         );
       })}
     </div>
+      <ImageLightbox />
   );
 }
 
