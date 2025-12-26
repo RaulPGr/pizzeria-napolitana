@@ -223,6 +223,17 @@ export default async function MenuPage({ searchParams }: PageProps) {
     }
     return Math.max(0, price - value);
   }
+  function sortProductsByImage(arr: any[]) {
+    return (arr || []).slice().sort((a, b) => {
+      const ia = a?.image_url ? 1 : 0;
+      const ib = b?.image_url ? 1 : 0;
+      if (ia !== ib) return ib - ia;
+      const sa = Number(a?.sort_order ?? 0);
+      const sb = Number(b?.sort_order ?? 0);
+      if (sa !== sb) return sa - sb;
+      return String(a?.name || '').localeCompare(String(b?.name || ''));
+    });
+  }
 
   // Reglas para saber si se puede añadir al carrito (agotado o fuera del día correspondiente).
   function availabilityFor(p: any) {
@@ -276,8 +287,12 @@ export default async function MenuPage({ searchParams }: PageProps) {
         {allowOrdering && !(Array.isArray(p.option_groups) && p.option_groups.length > 0) && (
           <CartQtyActions productId={p.id} allowAdd={!out} />
         )}
-        {p.image_url && (
+        {p.image_url ? (
           <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-sm text-slate-500">
+            Sin imagen
+          </div>
         )}
         <div className="flex flex-1 flex-col p-3">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
@@ -435,7 +450,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
                 </div>
               ) : (
                 <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {viewProducts.map((p: any) => renderProductCard(p))}
+                  {sortProductsByImage(viewProducts).map((p: any) => renderProductCard(p))}
                 </ul>
               )}
             </section>
@@ -463,12 +478,12 @@ export default async function MenuPage({ searchParams }: PageProps) {
                   </div>
                 )}
                 <ul className="divide-y divide-slate-100">
-                  {list.map((p: any) => renderProductListRow(p))}
+                  {sortProductsByImage(list).map((p: any) => renderProductListRow(p))}
                 </ul>
               </div>
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {list.map((p: any) => renderProductCard(p))}
+                {sortProductsByImage(list).map((p: any) => renderProductCard(p))}
               </ul>
             )}
           </section>
@@ -510,3 +525,6 @@ function DayTabs({ selectedDay, hasAllDays, availableDays }: { selectedDay?: num
     </div>
   );
 }
+
+
+
