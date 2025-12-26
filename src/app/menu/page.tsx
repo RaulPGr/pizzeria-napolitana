@@ -86,11 +86,13 @@ export default async function MenuPage({ searchParams }: PageProps) {
   const allowOrdering = subscriptionAllowsOrders(plan) && ordersEnabled;
 
   let menuLayout: "cards" | "list" = "cards";
+  let businessLogo: string | null = null;
+
   if (slug) {
     try {
       const themeQuery = supabaseAdmin
         .from("businesses")
-        .select("theme_config")
+        .select("theme_config, logo_url")
         .eq("slug", slug)
         .maybeSingle();
       const themePromise = new Promise((resolve) => {
@@ -106,6 +108,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
       );
       const layout = (themeRow as any)?.theme_config?.menu?.layout;
       if (layout === "list") menuLayout = "list";
+      businessLogo = (themeRow as any)?.logo_url ?? null;
     } catch {}
   }
   const qps = new URLSearchParams();
@@ -289,6 +292,16 @@ export default async function MenuPage({ searchParams }: PageProps) {
         )}
         {p.image_url ? (
           <img src={p.image_url} alt={p.name} className="h-40 w-full object-cover" loading="lazy" />
+        ) : businessLogo ? (
+          <div className="relative h-40 w-full overflow-hidden bg-gradient-to-br from-slate-50 to-slate-200">
+            <img
+              src={businessLogo}
+              alt="Logo del comercio"
+              className="absolute inset-0 h-full w-full object-contain opacity-45 grayscale"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-white/60" />
+          </div>
         ) : (
           <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-sm text-slate-500">
             Sin imagen
