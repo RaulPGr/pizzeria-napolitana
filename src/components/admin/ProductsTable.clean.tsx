@@ -386,6 +386,25 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
     }
   }
 
+  // Permite tomar la imagen ya subida y abrirla en modo de ajuste (zoom/posiciÃ³n).
+  async function startAdjustExistingImage(url?: string | null) {
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const fname = (url.split('/').pop() || 'imagen') + '.jpg';
+      const file = new File([blob], fname, { type: blob.type || 'image/jpeg' });
+      const preview = URL.createObjectURL(file);
+      setEditFile(file);
+      setEditFilePreview(preview);
+      setEditZoom(1);
+      setEditOffsetX(0);
+      setEditOffsetY(0);
+    } catch {
+      alert('No se pudo cargar la imagen existente para editar.');
+    }
+  }
+
   // Quitar imagen del producto
   async function removeImage(id: number) {
     if (!confirm("¿Eliminar la imagen del producto?")) return;
@@ -600,6 +619,15 @@ export default function ProductsTable({ initialProducts, categories, initialWeek
                           >
                             Seleccionar imagen
                           </button>
+                          {modalProduct?.image_url && !editFilePreview && (
+                            <button
+                              type="button"
+                              onClick={() => startAdjustExistingImage(modalProduct.image_url)}
+                              className="rounded border px-3 py-1 text-sm"
+                            >
+                              Ajustar imagen actual
+                            </button>
+                          )}
                           {modalProduct?.image_url && (
                             <button
                               type="button"
