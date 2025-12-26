@@ -486,7 +486,7 @@ export default async function MenuPage({ searchParams }: PageProps) {
         return null;
       })()}
 
-      <ImageLightbox />\n      {visibleSections.map((section) => {
+      {visibleSections.map((section) => {
         const list = section.id === 'nocat' ? groups.get('nocat') || [] : groups.get(Number(section.id)) || [];
         if (!list || list.length === 0) return null;
 
@@ -516,8 +516,8 @@ export default async function MenuPage({ searchParams }: PageProps) {
           </section>
         );
       })}
-    </div>
       <ImageLightbox />
+    </div>
   );
 }
 
