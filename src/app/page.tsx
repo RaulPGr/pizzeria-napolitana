@@ -244,20 +244,26 @@ export default function HomePage() {
           </div>
         </section>
       )}
-      <section className="relative">
-        <img src={INFO.fachadaUrl} alt="Fachada" className="h-[420px] md:h-[520px] w-full object-cover" />
-        {showHeroOverlay ? (
-          <>
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
-                <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
-                <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver carta</button>
+      <section className="relative overflow-hidden">
+        <div className="relative min-h-[360px] sm:min-h-[420px] md:min-h-[520px] w-full">
+          <img
+            src={INFO.fachadaUrl}
+            alt="Fachada"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {showHeroOverlay ? (
+            <>
+              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 flex items-center justify-center px-4">
+                <div className="text-center space-y-2">
+                  <div className="text-3xl md:text-5xl font-bold tracking-tight text-white drop-shadow">{INFO.nombre}</div>
+                  <p className="text-white/90 drop-shadow">{INFO.slogan}</p>
+                  <button onClick={() => router.push(INFO.menuPath)} className="mt-3 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Ver carta</button>
+                </div>
               </div>
-            </div>
-          </>
-        ) : null}
+            </>
+          ) : null}
+        </div>
       </section>
 
       <section className="max-w-6xl mx-auto grid gap-4 p-4 md:grid-cols-2 mt-6">
