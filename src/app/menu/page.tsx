@@ -12,8 +12,6 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/promotions';
 import dynamic from 'next/dynamic';
 const ImageLightbox = dynamic(() => import('@/components/ImageLightbox'), { ssr: false });
-import dynamic from 'next/dynamic';
-const ImageLightbox = dynamic(() => import('@/components/ImageLightbox'), { ssr: false });
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
