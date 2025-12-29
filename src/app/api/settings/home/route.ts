@@ -50,6 +50,13 @@ export async function GET(req: Request) {
     const subscription = normalizeSubscriptionPlan((biz as any)?.theme_config?.subscription);
     const social = (biz.social as any) || {};
     const ordersEnabled = social.orders_enabled !== false;
+    const resCapacity = Number(social.reservations_capacity ?? 0);
+    const resSlots = Array.isArray(social.reservations_slots) ? social.reservations_slots : null;
+    const resZones = Array.isArray(social.reservations_zones) ? social.reservations_zones : null;
+    const resLead = Number.isFinite(social.reservations_lead_hours) ? Number(social.reservations_lead_hours) : null;
+    const resMaxDays = Number.isFinite(social.reservations_max_days) ? Number(social.reservations_max_days) : null;
+    const resAuto = typeof social.reservations_auto_confirm === 'boolean' ? !!social.reservations_auto_confirm : null;
+    const resBlocked = Array.isArray(social.reservations_blocked_dates) ? social.reservations_blocked_dates : null;
     const out = {
       business: { name: biz.name || null, slogan: biz.slogan || null, description: biz.description || null },
       contact: {
@@ -65,7 +72,13 @@ export async function GET(req: Request) {
       reservations: {
         enabled: !!social.reservations_enabled,
         email: social.reservations_email || biz.email || null,
-        capacity: Number(social.reservations_capacity ?? 0),
+        capacity: resCapacity,
+        slots: resSlots,
+        zones: resZones,
+        lead_hours: resLead,
+        max_days: resMaxDays,
+        auto_confirm: resAuto,
+        blocked_dates: resBlocked,
       },
       orders: {
         enabled: ordersEnabled,

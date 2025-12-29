@@ -67,6 +67,12 @@ export async function GET(req: Request) {
     const social = (biz as any)?.social || {};
     const ordersEnabled = social?.orders_enabled !== false;
     const reservationsCapacity = Number(social?.reservations_capacity ?? 0);
+    const reservationsSlots = Array.isArray(social?.reservations_slots) ? social.reservations_slots : null;
+    const reservationsZones = Array.isArray(social?.reservations_zones) ? social.reservations_zones : null;
+    const reservationsLeadHours = Number.isFinite(social?.reservations_lead_hours) ? Number(social.reservations_lead_hours) : null;
+    const reservationsMaxDays = Number.isFinite(social?.reservations_max_days) ? Number(social.reservations_max_days) : null;
+    const reservationsAutoConfirm = typeof social?.reservations_auto_confirm === 'boolean' ? !!social.reservations_auto_confirm : null;
+    const reservationsBlockedDates = Array.isArray(social?.reservations_blocked_dates) ? social.reservations_blocked_dates : null;
     const theme = (biz as any)?.theme_config || {};
     const menuLayout = theme?.menu?.layout === 'list' ? 'list' : 'cards';
     const telegramEnabled = !!social?.telegram_notifications_enabled;
@@ -85,6 +91,12 @@ export async function GET(req: Request) {
         reservations_enabled: !!social.reservations_enabled,
         reservations_email: social.reservations_email || (biz as any)?.email || null,
         reservations_capacity: Number.isFinite(reservationsCapacity) && reservationsCapacity > 0 ? Math.floor(reservationsCapacity) : 0,
+        reservations_slots: reservationsSlots,
+        reservations_zones: reservationsZones,
+        reservations_lead_hours: reservationsLeadHours,
+        reservations_max_days: reservationsMaxDays,
+        reservations_auto_confirm: reservationsAutoConfirm,
+        reservations_blocked_dates: reservationsBlockedDates,
         menu_layout: menuLayout,
         telegram_notifications_enabled: telegramEnabled,
         telegram_bot_token: telegramToken,
@@ -192,6 +204,43 @@ export async function PATCH(req: Request) {
       let cap = Number(body.reservations_capacity);
       if (!Number.isFinite(cap) || cap < 0) cap = 0;
       socialUpdates.reservations_capacity = Math.floor(cap);
+    }
+    if (body.reservations_slots !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      try {
+        const raw = Array.isArray(body.reservations_slots) ? body.reservations_slots : JSON.parse(body.reservations_slots);
+        if (Array.isArray(raw)) socialUpdates.reservations_slots = raw;
+      } catch {}
+    }
+    if (body.reservations_zones !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      try {
+        const raw = Array.isArray(body.reservations_zones) ? body.reservations_zones : JSON.parse(body.reservations_zones);
+        if (Array.isArray(raw)) socialUpdates.reservations_zones = raw;
+      } catch {}
+    }
+    if (body.reservations_lead_hours !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const v = Number(body.reservations_lead_hours);
+      socialUpdates.reservations_lead_hours = Number.isFinite(v) && v > 0 ? Math.floor(v) : null;
+    }
+    if (body.reservations_max_days !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      const v = Number(body.reservations_max_days);
+      socialUpdates.reservations_max_days = Number.isFinite(v) && v > 0 ? Math.floor(v) : null;
+    }
+    if (body.reservations_auto_confirm !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      socialUpdates.reservations_auto_confirm = !!body.reservations_auto_confirm;
+    }
+    if (body.reservations_blocked_dates !== undefined) {
+      if (!socialUpdates) socialUpdates = { ...socialBase };
+      try {
+        const raw = Array.isArray(body.reservations_blocked_dates)
+          ? body.reservations_blocked_dates
+          : JSON.parse(body.reservations_blocked_dates);
+        if (Array.isArray(raw)) socialUpdates.reservations_blocked_dates = raw;
+      } catch {}
     }
     if (body.menu_layout !== undefined) {
       const raw = typeof body.menu_layout === 'string' ? body.menu_layout.trim().toLowerCase() : '';

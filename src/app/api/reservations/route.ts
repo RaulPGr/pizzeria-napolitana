@@ -60,6 +60,23 @@ function formatReservationTimestamp(date: Date, tzOffsetMinutes?: number | null)
   }
 }
 
+type Slot = { from: string; to: string; capacity?: number };
+function parseSlots(raw: any): Slot[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((s) => ({
+      from: typeof s?.from === 'string' ? s.from : '',
+      to: typeof s?.to === 'string' ? s.to : '',
+      capacity: Number.isFinite(s?.capacity) ? Number(s.capacity) : undefined,
+    }))
+    .filter((s) => /^\d{2}:\d{2}$/.test(s.from) && /^\d{2}:\d{2}$/.test(s.to));
+}
+
+function hhmmToMinutes(v: string) {
+  const [h, m] = v.split(':').map(Number);
+  return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -74,6 +91,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, message: 'Las reservas no estan activadas' }, { status: 400 });
     }
     const capacity = Number(social?.reservations_capacity ?? 0);
+    const slots = parseSlots(social?.reservations_slots);
+    const leadHours = Number.isFinite(social?.reservations_lead_hours) ? Number(social.reservations_lead_hours) : null;
+    const maxDays = Number.isFinite(social?.reservations_max_days) ? Number(social.reservations_max_days) : null;
+    const autoConfirm = social?.reservations_auto_confirm === true;
+    const blockedDates: string[] = Array.isArray(social?.reservations_blocked_dates)
+      ? social.reservations_blocked_dates.filter((d: any) => typeof d === 'string')
+      : [];
 
     const name = (body?.name || '').trim();
     const phone = (body?.phone || '').trim();
@@ -107,11 +131,64 @@ export async function POST(req: NextRequest) {
     if (reservedAt.getTime() < Date.now()) {
       return NextResponse.json({ ok: false, message: 'No puedes reservar en el pasado' }, { status: 400 });
     }
+    if (leadHours && leadHours > 0) {
+      const minDate = Date.now() + leadHours * 60 * 60 * 1000;
+      if (reservedAt.getTime() < minDate) {
+        return NextResponse.json({ ok: false, message: 'La reserva debe hacerse con mas antelacion' }, { status: 400 });
+      }
+    }
+    if (maxDays && maxDays > 0) {
+      const maxDate = Date.now() + maxDays * 24 * 60 * 60 * 1000;
+      if (reservedAt.getTime() > maxDate) {
+        return NextResponse.json({ ok: false, message: 'La reserva es demasiado lejana en el tiempo' }, { status: 400 });
+      }
+    }
+    if (blockedDates.includes(date)) {
+      return NextResponse.json({ ok: false, message: 'No se admiten reservas en esta fecha' }, { status: 409 });
+    }
     if (!isWithinSchedule(date, time, tenant.opening_hours)) {
       return NextResponse.json({ ok: false, message: 'La reserva debe estar dentro del horario de apertura' }, { status: 400 });
     }
 
-    if (capacity && capacity > 0) {
+    if (slots.length > 0) {
+      const minutes = hhmmToMinutes(time);
+      const slot = slots.find((s) => minutes >= hhmmToMinutes(s.from) && minutes < hhmmToMinutes(s.to));
+      if (!slot) {
+        return NextResponse.json({ ok: false, message: 'Fuera del horario de reservas disponible' }, { status: 400 });
+      }
+      const slotCapacity = slot.capacity && slot.capacity > 0 ? slot.capacity : capacity && capacity > 0 ? capacity : null;
+      if (slotCapacity && slotCapacity > 0) {
+        const dayStartUtc = new Date(Date.UTC(yyyy, (mm || 1) - 1, dd || 1, 0, 0, 0, 0)).toISOString();
+        const dayEndUtc = new Date(Date.UTC(yyyy, (mm || 1) - 1, dd || 1, 23, 59, 59, 999)).toISOString();
+        const { data: dayRes, error: dayErr } = await supabaseAdmin
+          .from('reservations')
+          .select('reserved_at, timezone_offset_minutes, status')
+          .eq('business_id', tenant.id)
+          .gte('reserved_at', dayStartUtc)
+          .lte('reserved_at', dayEndUtc)
+          .neq('status', 'cancelled');
+        if (dayErr) throw dayErr;
+        const countInSlot =
+          dayRes?.filter((r) => {
+            const rowOffset =
+              typeof r.timezone_offset_minutes === 'number' && Number.isFinite(r.timezone_offset_minutes)
+                ? r.timezone_offset_minutes
+                : offsetToUse;
+            const dt = new Date(r.reserved_at);
+            dt.setMinutes(dt.getMinutes() + rowOffset);
+            const rowMinutes = dt.getHours() * 60 + dt.getMinutes();
+            const rowDate = dt.toISOString().slice(0, 10);
+            return rowDate === date && rowMinutes >= hhmmToMinutes(slot.from) && rowMinutes < hhmmToMinutes(slot.to);
+          }).length ?? 0;
+        if (countInSlot >= slotCapacity) {
+          return NextResponse.json(
+            { ok: false, message: 'La franja horaria ya no tiene disponibilidad. Elige otra hora.' },
+            { status: 409 }
+          );
+        }
+      }
+    } else if (capacity && capacity > 0) {
+      // Compatibilidad con el comportamiento anterior (sin franjas personalizadas)
       const { count, error: countErr } = await supabaseAdmin
         .from('reservations')
         .select('*', { head: true, count: 'exact' })
@@ -120,10 +197,14 @@ export async function POST(req: NextRequest) {
         .neq('status', 'cancelled');
       if (countErr) throw countErr;
       if ((count ?? 0) >= capacity) {
-        return NextResponse.json({ ok: false, message: 'La franja horaria ya no tiene disponibilidad. Elige otra hora.' }, { status: 409 });
+        return NextResponse.json(
+          { ok: false, message: 'La franja horaria ya no tiene disponibilidad. Elige otra hora.' },
+          { status: 409 }
+        );
       }
     }
 
+    const status = autoConfirm ? 'confirmed' : 'pending';
     const { data: inserted, error } = await supabaseAdmin
       .from('reservations')
       .insert({
@@ -135,6 +216,7 @@ export async function POST(req: NextRequest) {
         reserved_at: reservedAt.toISOString(),
         notes,
         timezone_offset_minutes: tzOffsetMinutes,
+        status,
       })
       .select('id')
       .maybeSingle();
