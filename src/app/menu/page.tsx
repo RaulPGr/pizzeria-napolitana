@@ -10,8 +10,7 @@ import { getSubscriptionForSlug, type SubscriptionInfo } from '@/lib/subscriptio
 import { subscriptionAllowsOrders } from '@/lib/subscription';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { findPromotionForProduct, type Promotion as PromotionRule } from '@/lib/promotions';
-import nextDynamic from 'next/dynamic';
-const ImageLightbox = nextDynamic(() => import('@/components/ImageLightbox'), { ssr: false });
+import ImageLightbox from '@/components/ImageLightbox';
 
 type PageProps = { searchParams?: { [key: string]: string | string[] | undefined } };
 
