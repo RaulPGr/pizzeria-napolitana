@@ -52,6 +52,11 @@ export default function BusinessSettingsClient() {
   const [reservationsEnabled, setReservationsEnabled] = useState(false);
   const [reservationsEmail, setReservationsEmail] = useState('');
   const [reservationsCapacity, setReservationsCapacity] = useState<number>(0);
+  const [reservationsSlots, setReservationsSlots] = useState<Array<{ from: string; to: string; capacity?: number }>>([]);
+  const [reservationsLeadHours, setReservationsLeadHours] = useState<number | ''>('');
+  const [reservationsMaxDays, setReservationsMaxDays] = useState<number | ''>('');
+  const [reservationsAutoConfirm, setReservationsAutoConfirm] = useState(false);
+  const [reservationsBlockedDates, setReservationsBlockedDates] = useState<string>('');
   const [telegramEnabled, setTelegramEnabled] = useState(false);
   const [telegramConfigured, setTelegramConfigured] = useState(false);
   const [telegramResEnabled, setTelegramResEnabled] = useState(false);
@@ -95,6 +100,30 @@ export default function BusinessSettingsClient() {
         setReservationsEmail(j.data.reservations_email || j.data.email || '');
         const cap = Number(j.data.reservations_capacity ?? 0);
         setReservationsCapacity(Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0);
+        try {
+          const slots = Array.isArray(j.data.reservations_slots)
+            ? j.data.reservations_slots
+            : [];
+          setReservationsSlots(
+            slots
+              .map((s: any) => ({
+                from: typeof s?.from === 'string' ? s.from : '',
+                to: typeof s?.to === 'string' ? s.to : '',
+                capacity: Number.isFinite(s?.capacity) ? Number(s.capacity) : undefined,
+              }))
+              .filter((s: any) => s.from || s.to)
+          );
+        } catch {
+          setReservationsSlots([]);
+        }
+        const lead = Number(j.data.reservations_lead_hours ?? '');
+        setReservationsLeadHours(Number.isFinite(lead) ? lead : '');
+        const maxd = Number(j.data.reservations_max_days ?? '');
+        setReservationsMaxDays(Number.isFinite(maxd) ? maxd : '');
+        setReservationsAutoConfirm(Boolean(j.data.reservations_auto_confirm));
+        if (Array.isArray(j.data.reservations_blocked_dates)) {
+          setReservationsBlockedDates(j.data.reservations_blocked_dates.filter((d: any) => typeof d === 'string').join(', '));
+        }
         setTelegramEnabled(Boolean(j.data.telegram_notifications_enabled));
         setTelegramConfigured(Boolean(j.data.telegram_bot_token && j.data.telegram_chat_id));
         setTelegramResEnabled(Boolean(j.data.telegram_reservations_enabled));
@@ -134,6 +163,14 @@ export default function BusinessSettingsClient() {
         reservations_enabled: reservationsEnabled,
         reservations_email: reservationsEmail || null,
         reservations_capacity: reservationsCapacity,
+        reservations_slots: reservationsSlots,
+        reservations_lead_hours: reservationsLeadHours === '' ? null : Number(reservationsLeadHours),
+        reservations_max_days: reservationsMaxDays === '' ? null : Number(reservationsMaxDays),
+        reservations_auto_confirm: reservationsAutoConfirm,
+        reservations_blocked_dates: reservationsBlockedDates
+          .split(',')
+          .map((d) => d.trim())
+          .filter(Boolean),
         telegram_notifications_enabled: telegramEnabled,
         telegram_reservations_enabled: telegramResEnabled,
           address_line: address,
@@ -509,6 +546,124 @@ export default function BusinessSettingsClient() {
                   <p className="text-xs text-slate-500">
                     Si lo dejas vacio usaremos el email principal del negocio.
                   </p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Antelacion minima (horas)</label>
+                    <input
+                      className="w-full rounded border border-slate-200 px-3 py-2"
+                      type="number"
+                      min={0}
+                      max={240}
+                      value={reservationsLeadHours}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                        setReservationsLeadHours(v);
+                      }}
+                      placeholder="0 = sin limite"
+                    />
+                    <p className="text-xs text-slate-500">Tiempo minimo antes de la hora reservada.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Max dias de antelacion</label>
+                    <input
+                      className="w-full rounded border border-slate-200 px-3 py-2"
+                      type="number"
+                      min={0}
+                      max={180}
+                      value={reservationsMaxDays}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                        setReservationsMaxDays(v);
+                      }}
+                      placeholder="0 = sin limite"
+                    />
+                    <p className="text-xs text-slate-500">Dias maximos respecto a hoy para reservar.</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Franjas personalizadas (HH:MM)</label>
+                  <div className="space-y-2">
+                    {reservationsSlots.length === 0 && (
+                      <p className="text-xs text-slate-500">Sin franjas: se usa el horario de apertura y el cupo general.</p>
+                    )}
+                    {reservationsSlots.map((slot, idx) => (
+                      <div key={idx} className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="time"
+                          value={slot.from}
+                          onChange={(e) => {
+                            const next = [...reservationsSlots];
+                            next[idx] = { ...next[idx], from: e.target.value };
+                            setReservationsSlots(next);
+                          }}
+                          className="w-28 rounded border border-slate-200 px-2 py-1"
+                        />
+                        <span className="text-sm text-slate-600">a</span>
+                        <input
+                          type="time"
+                          value={slot.to}
+                          onChange={(e) => {
+                            const next = [...reservationsSlots];
+                            next[idx] = { ...next[idx], to: e.target.value };
+                            setReservationsSlots(next);
+                          }}
+                          className="w-28 rounded border border-slate-200 px-2 py-1"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Cupo"
+                          value={slot.capacity ?? ''}
+                          onChange={(e) => {
+                            const num = e.target.value === '' ? undefined : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                            const next = [...reservationsSlots];
+                            next[idx] = { ...next[idx], capacity: num };
+                            setReservationsSlots(next);
+                          }}
+                          className="w-24 rounded border border-slate-200 px-2 py-1"
+                        />
+                        <button
+                          type="button"
+                          className="text-xs text-red-600"
+                          onClick={() => setReservationsSlots(reservationsSlots.filter((_, i) => i !== idx))}
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600"
+                      onClick={() => setReservationsSlots([...reservationsSlots, { from: '', to: '' }])}
+                    >
+                      Anadir franja
+                    </button>
+                    <p className="text-xs text-slate-500">
+                      Si indicas cupo en la franja, se usa ese valor; si no, el cupo general.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={reservationsAutoConfirm}
+                      onChange={(e) => setReservationsAutoConfirm(e.target.checked)}
+                    />
+                    <span>Confirmar automaticamente si hay disponibilidad</span>
+                  </label>
+                  <p className="text-xs text-slate-500">Si hay cupo, la reserva entra como confirmada; si no, queda pendiente.</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Fechas bloqueadas (YYYY-MM-DD)</label>
+                  <input
+                    className="w-full rounded border border-slate-200 px-3 py-2"
+                    placeholder="2025-12-24, 2025-12-25"
+                    value={reservationsBlockedDates}
+                    onChange={(e) => setReservationsBlockedDates(e.target.value)}
+                  />
+                  <p className="text-xs text-slate-500">Separa con comas. Esas fechas no aceptaran reservas.</p>
                 </div>
               </div>
             )}
