@@ -63,12 +63,25 @@ export default function BusinessSettingsClient() {
   const [telegramResConfigured, setTelegramResConfigured] = useState(false);
    const [instagram, setInstagram] = useState('');
    const [facebook, setFacebook] = useState('');
-   const [tiktok, setTiktok] = useState('');
-   const [web, setWeb] = useState('');
-   const [saving, setSaving] = useState(false);
+  const [tiktok, setTiktok] = useState('');
+  const [web, setWeb] = useState('');
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [menuMode, setMenuMode] = useState<'fixed' | 'daily'>('fixed');
   const [menuLayout, setMenuLayout] = useState<'cards' | 'list'>('cards');
+  function isHHMM(v: string) {
+    return /^\d{2}:\d{2}$/.test(v);
+  }
+
+  const invalidSlots = reservationsSlots
+    .map((s, idx) => (!isHHMM(s.from) || !isHHMM(s.to) ? idx : -1))
+    .filter((i) => i >= 0);
+
+  const blockedDatesArray = reservationsBlockedDates
+    .split(',')
+    .map((d) => d.trim())
+    .filter(Boolean);
+  const invalidDates = blockedDatesArray.filter((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d));
  
   // Carga inicial de la ficha del negocio (datos generales + flags).
   useEffect(() => {
@@ -142,6 +155,14 @@ export default function BusinessSettingsClient() {
  
   // Persiste los cambios básicos (datos, switchs, redes...).
   async function save() {
+    if (invalidSlots.length > 0) {
+      setMsg('Revisa las franjas: usa formato HH:MM en desde/hasta.');
+      return;
+    }
+    if (invalidDates.length > 0) {
+      setMsg('Revisa las fechas bloqueadas: usa formato YYYY-MM-DD separadas por comas.');
+      return;
+    }
     setSaving(true);
     setMsg(null);
     try {
@@ -167,10 +188,7 @@ export default function BusinessSettingsClient() {
         reservations_lead_hours: reservationsLeadHours === '' ? null : Number(reservationsLeadHours),
         reservations_max_days: reservationsMaxDays === '' ? null : Number(reservationsMaxDays),
         reservations_auto_confirm: reservationsAutoConfirm,
-        reservations_blocked_dates: reservationsBlockedDates
-          .split(',')
-          .map((d) => d.trim())
-          .filter(Boolean),
+        reservations_blocked_dates: blockedDatesArray,
         telegram_notifications_enabled: telegramEnabled,
         telegram_reservations_enabled: telegramResEnabled,
           address_line: address,
@@ -641,6 +659,11 @@ export default function BusinessSettingsClient() {
                     <p className="text-xs text-slate-500">
                       Si indicas cupo en la franja, se usa ese valor; si no, el cupo general.
                     </p>
+                    {invalidSlots.length > 0 && (
+                      <p className="text-xs text-rose-600">
+                        Hay franjas con formato invalido (usa HH:MM en desde y hasta).
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -664,6 +687,11 @@ export default function BusinessSettingsClient() {
                     onChange={(e) => setReservationsBlockedDates(e.target.value)}
                   />
                   <p className="text-xs text-slate-500">Separa con comas. Esas fechas no aceptaran reservas.</p>
+                  {invalidDates.length > 0 && (
+                    <p className="text-xs text-rose-600">
+                      Formato incorrecto en: {invalidDates.join(', ')} (usa YYYY-MM-DD)
+                    </p>
+                  )}
                 </div>
               </div>
             )}
