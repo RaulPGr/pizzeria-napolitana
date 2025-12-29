@@ -36,8 +36,8 @@ export default function ImageLightbox() {
   if (!openImage) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-      <div className="relative w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3 py-6 md:px-4">
+      <div className="relative flex max-h-full w-full max-w-4xl items-center justify-center overflow-hidden rounded-xl bg-white shadow-2xl">
         <button
           type="button"
           className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1 text-sm font-semibold text-white hover:bg-black/80"
@@ -48,7 +48,7 @@ export default function ImageLightbox() {
         <img
           src={openImage.src}
           alt={openImage.alt || "Imagen del producto"}
-          className="h-auto w-full object-contain"
+          className="max-h-[calc(100vh-120px)] w-full object-contain"
           loading="lazy"
         />
       </div>
