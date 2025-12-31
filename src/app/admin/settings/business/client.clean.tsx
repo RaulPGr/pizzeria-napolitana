@@ -656,6 +656,15 @@ export default function BusinessSettingsClient() {
                     >
                       Anadir franja
                     </button>
+                    {reservationsSlots.length > 0 && (
+                      <button
+                        type="button"
+                        className="text-xs text-slate-600"
+                        onClick={() => setReservationsSlots([])}
+                      >
+                        Vaciar franjas
+                      </button>
+                    )}
                     <p className="text-xs text-slate-500">
                       Si indicas cupo en la franja, se usa ese valor; si no, el cupo general.
                     </p>
