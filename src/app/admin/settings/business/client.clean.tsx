@@ -615,7 +615,9 @@ export default function BusinessSettingsClient() {
                             next[idx] = { ...next[idx], from: e.target.value };
                             setReservationsSlots(next);
                           }}
-                          className="w-28 rounded border border-slate-200 px-2 py-1"
+                          className={`w-28 rounded border px-2 py-1 ${
+                            isSlotInvalid(slot) ? 'border-rose-400 bg-rose-50' : 'border-slate-200'
+                          }`}
                         />
                         <span className="text-sm text-slate-600">a</span>
                         <input
@@ -626,7 +628,9 @@ export default function BusinessSettingsClient() {
                             next[idx] = { ...next[idx], to: e.target.value };
                             setReservationsSlots(next);
                           }}
-                          className="w-28 rounded border border-slate-200 px-2 py-1"
+                          className={`w-28 rounded border px-2 py-1 ${
+                            isSlotInvalid(slot) ? 'border-rose-400 bg-rose-50' : 'border-slate-200'
+                          }`}
                         />
                         <input
                           type="number"
@@ -665,6 +669,19 @@ export default function BusinessSettingsClient() {
                         Vaciar franjas
                       </button>
                     )}
+                    {reservationsSlots.length > 0 && (
+                      <ul className="list-disc pl-5 text-xs text-slate-600">
+                        {reservationsSlots.map((s, i) => (
+                          <li key={i}>
+                            {s.from || '--:--'} - {s.to || '--:--'}
+                            {s.capacity != null && s.capacity !== undefined && s.capacity !== ''
+                              ? ` (cupo ${s.capacity})`
+                              : ' (cupo general)'}
+                            {isSlotInvalid(s) && ' ⚠ formato HH:MM'}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <p className="text-xs text-slate-500">
                       Si indicas cupo en la franja, se usa ese valor; si no, el cupo general.
                     </p>
@@ -690,7 +707,9 @@ export default function BusinessSettingsClient() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Fechas bloqueadas (YYYY-MM-DD)</label>
                   <input
-                    className="w-full rounded border border-slate-200 px-3 py-2"
+                    className={`w-full rounded border px-3 py-2 ${
+                      invalidDates.length > 0 ? 'border-rose-400 bg-rose-50' : 'border-slate-200'
+                    }`}
                     placeholder="2025-12-24, 2025-12-25"
                     value={reservationsBlockedDates}
                     onChange={(e) => setReservationsBlockedDates(e.target.value)}
