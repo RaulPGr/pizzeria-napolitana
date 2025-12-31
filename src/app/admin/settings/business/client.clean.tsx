@@ -672,15 +672,19 @@ export default function BusinessSettingsClient() {
                     )}
                     {reservationsSlots.length > 0 && (
                       <ul className="list-disc pl-5 text-xs text-slate-600">
-                        {reservationsSlots.map((s, i) => (
-                          <li key={i}>
-                            {s.from || '--:--'} - {s.to || '--:--'}
-                            {s.capacity != null && s.capacity !== undefined && s.capacity !== ''
+                        {reservationsSlots.map((s, i) => {
+                          const capText =
+                            Number.isFinite(s.capacity) && s.capacity !== undefined
                               ? ` (cupo ${s.capacity})`
-                              : ' (cupo general)'}
-                            {isSlotInvalid(s) && ' ⚠ formato HH:MM'}
-                          </li>
-                        ))}
+                              : ' (cupo general)';
+                          return (
+                            <li key={i}>
+                              {s.from || '--:--'} - {s.to || '--:--'}
+                              {capText}
+                              {isSlotInvalid(s) && ' ⚠ formato HH:MM'}
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                     <p className="text-xs text-slate-500">
