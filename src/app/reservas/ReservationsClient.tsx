@@ -107,6 +107,7 @@ export default function ReservationsClient() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [uiHint, setUiHint] = useState<string | null>(null);
+  const [datesWithStatus, setDatesWithStatus] = useState<Array<{ date: string; blocked: boolean }>>([]);
 
   useEffect(() => {
     let active = true;
@@ -149,7 +150,7 @@ export default function ReservationsClient() {
 
   const availableDates = useMemo(() => {
     if (!config?.enabled) return [];
-    const dates: string[] = [];
+    const dates: Array<{ date: string; blocked: boolean }> = [];
     const today = new Date();
     const maxDays = config?.maxDays && config.maxDays > 0 ? config.maxDays : 30;
     const blockedSet = new Set((config?.blockedDates || []).map((d) => d.trim()));
@@ -157,13 +158,13 @@ export default function ReservationsClient() {
       const d = new Date();
       d.setDate(today.getDate() + i);
       const formatted = formatDateInput(d);
-      if (blockedSet.has(formatted)) continue;
+      const isBlocked = blockedSet.has(formatted);
       const key = DAY_KEYS[d.getDay()];
       const hasHours = config?.hours ? parseTramos((config.hours as any)?.[key]).length > 0 : false;
       if (config?.slots && config.slots.length > 0) {
-        dates.push(formatted);
+        dates.push({ date: formatted, blocked: isBlocked });
       } else if (hasHours) {
-        dates.push(formatted);
+        dates.push({ date: formatted, blocked: isBlocked });
       }
     }
     return dates;
@@ -188,10 +189,16 @@ export default function ReservationsClient() {
   }, [selectedDate, config?.slots, config?.hours, config?.enabled, config?.leadHours]);
 
   useEffect(() => {
-    if (!selectedDate && availableDates.length > 0) {
-      setSelectedDate(availableDates[0]);
+    setDatesWithStatus(availableDates);
+  }, [availableDates]);
+
+  useEffect(() => {
+    // Prefer the first no-bloqueada
+    if (!selectedDate && datesWithStatus.length > 0) {
+      const firstAllowed = datesWithStatus.find((d) => !d.blocked)?.date || datesWithStatus[0].date;
+      setSelectedDate(firstAllowed);
     }
-  }, [availableDates, selectedDate]);
+  }, [datesWithStatus, selectedDate]);
 
   useEffect(() => {
     if (timesForSelectedDate.length > 0) {
@@ -297,12 +304,13 @@ export default function ReservationsClient() {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             >
-              {availableDates.length === 0 && <option>No hay fechas disponibles</option>}
-              {availableDates.map((d) => {
-                const dt = new Date(d + "T00:00:00");
+              {datesWithStatus.length === 0 && <option>No hay fechas disponibles</option>}
+              {datesWithStatus.map(({ date, blocked }) => {
+                const dt = new Date(date + "T00:00:00");
                 return (
-                  <option key={d} value={d}>
+                  <option key={date} value={date} disabled={blocked}>
                     {DAY_LABELS[dt.getDay()]} {dt.toLocaleDateString("es-ES")}
+                    {blocked ? " — No se aceptan reservas" : ""}
                   </option>
                 );
               })}

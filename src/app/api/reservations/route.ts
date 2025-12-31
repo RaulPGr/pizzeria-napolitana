@@ -162,14 +162,14 @@ export async function POST(req: NextRequest) {
         const dayEndUtc = new Date(Date.UTC(yyyy, (mm || 1) - 1, dd || 1, 23, 59, 59, 999)).toISOString();
         const { data: dayRes, error: dayErr } = await supabaseAdmin
           .from('reservations')
-          .select('reserved_at, timezone_offset_minutes, status')
+          .select('reserved_at, timezone_offset_minutes, status, party_size')
           .eq('business_id', tenant.id)
           .gte('reserved_at', dayStartUtc)
           .lte('reserved_at', dayEndUtc)
           .neq('status', 'cancelled');
         if (dayErr) throw dayErr;
-        const countInSlot =
-          dayRes?.filter((r) => {
+        const usedSeats =
+          dayRes?.reduce((sum, r) => {
             const rowOffset =
               typeof r.timezone_offset_minutes === 'number' && Number.isFinite(r.timezone_offset_minutes)
                 ? r.timezone_offset_minutes
@@ -178,9 +178,13 @@ export async function POST(req: NextRequest) {
             dt.setMinutes(dt.getMinutes() + rowOffset);
             const rowMinutes = dt.getHours() * 60 + dt.getMinutes();
             const rowDate = dt.toISOString().slice(0, 10);
-            return rowDate === date && rowMinutes >= hhmmToMinutes(slot.from) && rowMinutes < hhmmToMinutes(slot.to);
-          }).length ?? 0;
-        if (countInSlot >= slotCapacity) {
+            if (rowDate === date && rowMinutes >= hhmmToMinutes(slot.from) && rowMinutes < hhmmToMinutes(slot.to)) {
+              const party = Number(r.party_size || 0);
+              return sum + (Number.isFinite(party) && party > 0 ? party : 1);
+            }
+            return sum;
+          }, 0) ?? 0;
+        if (usedSeats >= slotCapacity) {
           return NextResponse.json(
             { ok: false, message: 'La franja horaria ya no tiene disponibilidad. Elige otra hora.' },
             { status: 409 }
