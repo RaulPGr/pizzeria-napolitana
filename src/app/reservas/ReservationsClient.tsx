@@ -11,6 +11,10 @@ type Config = {
   businessAddress: string | null;
   businessLogo: string | null;
   hours: OpeningHours | null;
+  slots: Array<{ from: string; to: string; capacity?: number }> | null;
+  blockedDates: string[];
+  leadHours: number | null;
+  maxDays: number | null;
 };
 
 const DAY_LABELS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -57,6 +61,37 @@ function formatDateInput(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function hhmmToMinutes(v: string) {
+  const [h, m] = v.split(":").map(Number);
+  return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+}
+
+function buildSlotsFromCustom(
+  rawSlots: Array<{ from: string; to: string }>,
+  selectedDate: string,
+  leadHours: number | null
+) {
+  const slots: string[] = [];
+  const step = 30;
+  const today = new Date();
+  const selDate = new Date(selectedDate + "T00:00:00");
+  const enforceLead = leadHours && leadHours > 0 && selDate && sameDay(today, selDate);
+  const minLeadMinutes = enforceLead ? today.getHours() * 60 + today.getMinutes() + leadHours * 60 : null;
+  for (const s of rawSlots) {
+    if (!/^\d{2}:\d{2}$/.test(s.from) || !/^\d{2}:\d{2}$/.test(s.to)) continue;
+    const start = hhmmToMinutes(s.from);
+    const end = hhmmToMinutes(s.to);
+    if (end <= start) continue;
+    for (let minutes = start; minutes < end; minutes += step) {
+      if (minLeadMinutes !== null && minutes < minLeadMinutes) continue;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      slots.push(`${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`);
+    }
+  }
+  return slots;
+}
+
 export default function ReservationsClient() {
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +106,7 @@ export default function ReservationsClient() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [uiHint, setUiHint] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +129,12 @@ export default function ReservationsClient() {
           businessAddress: cfg.contact?.address || null,
           businessLogo: cfg.images?.logo || null,
           hours: cfg.hours || null,
+          slots: Array.isArray(cfg.reservations?.slots) ? cfg.reservations.slots : null,
+          blockedDates: Array.isArray(cfg.reservations?.blocked_dates)
+            ? cfg.reservations.blocked_dates.filter((d: any) => typeof d === "string")
+            : [],
+          leadHours: Number.isFinite(cfg.reservations?.lead_hours) ? Number(cfg.reservations.lead_hours) : null,
+          maxDays: Number.isFinite(cfg.reservations?.max_days) ? Number(cfg.reservations.max_days) : null,
         });
       } catch (e: any) {
         if (active) setError(e?.message || "No se pudo cargar la configuración");
@@ -106,30 +148,44 @@ export default function ReservationsClient() {
   }, []);
 
   const availableDates = useMemo(() => {
-    if (!config?.hours) return [];
+    if (!config?.enabled) return [];
     const dates: string[] = [];
     const today = new Date();
-    for (let i = 0; i < 30; i += 1) {
+    const maxDays = config?.maxDays && config.maxDays > 0 ? config.maxDays : 30;
+    const blockedSet = new Set((config?.blockedDates || []).map((d) => d.trim()));
+    for (let i = 0; i < maxDays; i += 1) {
       const d = new Date();
       d.setDate(today.getDate() + i);
+      const formatted = formatDateInput(d);
+      if (blockedSet.has(formatted)) continue;
       const key = DAY_KEYS[d.getDay()];
-      const tramos = parseTramos((config.hours as any)?.[key]);
-      if (tramos.length === 0) continue;
-      dates.push(formatDateInput(d));
+      const hasHours = config?.hours ? parseTramos((config.hours as any)?.[key]).length > 0 : false;
+      if (config?.slots && config.slots.length > 0) {
+        dates.push(formatted);
+      } else if (hasHours) {
+        dates.push(formatted);
+      }
     }
     return dates;
-  }, [config?.hours]);
+  }, [config?.hours, config?.slots, config?.blockedDates, config?.enabled, config?.maxDays]);
 
   const timesForSelectedDate = useMemo(() => {
-    if (!selectedDate || !config?.hours) return [];
+    if (!selectedDate || !config?.enabled) return [];
+    const today = new Date();
     const dt = new Date(selectedDate + "T00:00:00");
+    const minDate = sameDay(dt, today) ? new Date() : undefined;
+
+    // Si hay slots personalizados, construir a partir de ellos
+    if (config?.slots && config.slots.length > 0) {
+      return buildSlotsFromCustom(config.slots, selectedDate, config.leadHours ?? null);
+    }
+
+    if (!config?.hours) return [];
     const key = DAY_KEYS[dt.getDay()];
     const tramos = parseTramos((config.hours as any)?.[key]);
     if (tramos.length === 0) return [];
-    const today = new Date();
-    const minDate = sameDay(dt, today) ? new Date() : undefined;
     return buildSlots(tramos, minDate);
-  }, [selectedDate, config?.hours]);
+  }, [selectedDate, config?.slots, config?.hours, config?.enabled, config?.leadHours]);
 
   useEffect(() => {
     if (!selectedDate && availableDates.length > 0) {
@@ -140,10 +196,23 @@ export default function ReservationsClient() {
   useEffect(() => {
     if (timesForSelectedDate.length > 0) {
       setSelectedTime(timesForSelectedDate[0]);
+      setUiHint(null);
     } else {
       setSelectedTime("");
+      if (selectedDate) {
+        const blocked = config?.blockedDates?.includes(selectedDate);
+        if (blocked) {
+          setUiHint("No se aceptan reservas en esta fecha.");
+        } else if (config?.slots && config.slots.length > 0) {
+          setUiHint("No hay horarios disponibles para esta fecha.");
+        } else {
+          setUiHint("La fecha seleccionada no tiene horario disponible.");
+        }
+      } else {
+        setUiHint(null);
+      }
     }
-  }, [timesForSelectedDate]);
+  }, [timesForSelectedDate, selectedDate, config?.blockedDates, config?.slots]);
 
   async function submitReservation(e: React.FormEvent) {
     e.preventDefault();
@@ -254,6 +323,7 @@ export default function ReservationsClient() {
                 </option>
               ))}
             </select>
+            {uiHint && <p className="text-xs text-amber-600">{uiHint}</p>}
           </div>
         </section>
 
