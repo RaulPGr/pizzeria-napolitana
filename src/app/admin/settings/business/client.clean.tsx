@@ -82,6 +82,7 @@ export default function BusinessSettingsClient() {
     .map((d) => d.trim())
     .filter(Boolean);
   const invalidDates = blockedDatesArray.filter((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d));
+  const isSlotInvalid = (s: { from: string; to: string }) => !isHHMM(s.from) || !isHHMM(s.to);
  
   // Carga inicial de la ficha del negocio (datos generales + flags).
   useEffect(() => {
