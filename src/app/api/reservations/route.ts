@@ -184,7 +184,8 @@ export async function POST(req: NextRequest) {
             }
             return sum;
           }, 0) ?? 0;
-        if (usedSeats >= slotCapacity) {
+        const incoming = Number.isFinite(people) && people > 0 ? people : 1;
+        if (usedSeats + incoming > slotCapacity) {
           return NextResponse.json(
             { ok: false, message: 'La franja horaria ya no tiene disponibilidad. Elige otra hora.' },
             { status: 409 }
