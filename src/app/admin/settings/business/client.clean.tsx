@@ -594,6 +594,65 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
           title="Contacto y ubicacion"
           description="Datos de contacto y coordenadas para el mapa."
         >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Telefono</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+34 600 000 000"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">WhatsApp</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="+34 600 000 000"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Email</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="correo@negocio.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Direccion</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Calle, numero, ciudad"
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Latitud</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                placeholder="37.123456"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Longitud</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                placeholder="-1.234567"
+              />
+            </div>
+          </div>
+        </Section>
 
         <Section
           title="Horarios"
