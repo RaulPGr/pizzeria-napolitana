@@ -540,7 +540,7 @@ export default function BusinessSettingsClient() {
             {reservationsEnabled && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Capacidad por franja</label>
+                  <label className="text-sm font-medium text-slate-700">Capacidad por franja (comensales)</label>
                   <input
                     className="w-full rounded border border-slate-200 px-3 py-2"
                     type="number"
@@ -551,7 +551,7 @@ export default function BusinessSettingsClient() {
                       setReservationsCapacity(Math.max(0, Math.floor(Number(e.target.value) || 0)))
                     }
                   />
-                  <p className="text-xs text-slate-500">Pon 0 para ilimitadas.</p>
+                  <p className="text-xs text-slate-500">Pon 0 para ilimitadas. El cupo se calcula por comensales.</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Email para recibir reservas</label>
@@ -688,7 +688,7 @@ export default function BusinessSettingsClient() {
                       </ul>
                     )}
                     <p className="text-xs text-slate-500">
-                      Si indicas cupo en la franja, se usa ese valor; si no, el cupo general.
+                      Si indicas cupo en la franja, se usa ese valor; si no, el cupo general. El cupo es por comensales.
                     </p>
                     {invalidSlots.length > 0 && (
                       <p className="text-xs text-rose-600">
