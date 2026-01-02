@@ -984,10 +984,8 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
             </div>
           </div>
         </Section>
-
-        {reservationsSection}
       </div>
- 
+
       <div className="flex justify-end">
         <button
           onClick={() => void save()}
