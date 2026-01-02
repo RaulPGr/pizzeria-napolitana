@@ -22,7 +22,7 @@ type Biz = {
 };
 
 // Configuración general del negocio (datos públicos, notificaciones, redes, etc.).
-export default function BusinessSettingsClient() {
+export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full" | "reservations" }) {
   const { plan } = useAdminAccess();
   const canManageReservations = subscriptionAllowsReservations(plan);
   const canManageOrders = subscriptionAllowsOrders(plan);
@@ -224,6 +224,243 @@ export default function BusinessSettingsClient() {
     setBiz((b) => (b ? ({ ...b, [`${kind}_url`]: j.url } as Biz) : b));
   }
  
+  const reservationsSection = canManageReservations && (
+    <Section
+      title="Reservas de mesa"
+      description="Permite que tus clientes soliciten una reserva desde la web."
+    >
+      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={reservationsEnabled}
+          onChange={(e) => setReservationsEnabled(e.target.checked)}
+        />
+        <span>Activar formulario de reservas</span>
+      </label>
+      {reservationsEnabled && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Capacidad por franja (comensales)</label>
+            <input
+              className="w-full rounded border border-slate-200 px-3 py-2"
+              type="number"
+              min={0}
+              max={50}
+              value={reservationsCapacity}
+              onChange={(e) =>
+                setReservationsCapacity(Math.max(0, Math.floor(Number(e.target.value) || 0)))
+              }
+            />
+            <p className="text-xs text-slate-500">Pon 0 para ilimitadas. El cupo se calcula por comensales.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Email para recibir reservas</label>
+            <input
+              className="w-full rounded border border-slate-200 px-3 py-2"
+              type="email"
+              value={reservationsEmail}
+              onChange={(e) => setReservationsEmail(e.target.value)}
+              placeholder="reservas@negocio.com"
+            />
+            <p className="text-xs text-slate-500">
+              Si lo dejas vacio usaremos el email principal del negocio.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Antelacion minima (horas)</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                type="number"
+                min={0}
+                max={240}
+                value={reservationsLeadHours}
+                onChange={(e) => {
+                  const v = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                  setReservationsLeadHours(v);
+                }}
+                placeholder="0 = sin limite"
+              />
+              <p className="text-xs text-slate-500">Tiempo minimo antes de la hora reservada.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Max dias de antelacion</label>
+              <input
+                className="w-full rounded border border-slate-200 px-3 py-2"
+                type="number"
+                min={0}
+                max={180}
+                value={reservationsMaxDays}
+                onChange={(e) => {
+                  const v = e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                  setReservationsMaxDays(v);
+                }}
+                placeholder="0 = sin limite"
+              />
+              <p className="text-xs text-slate-500">Dias maximos respecto a hoy para reservar.</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Franjas personalizadas (HH:MM)</label>
+            <div className="space-y-2">
+              {reservationsSlots.length === 0 && (
+                <p className="text-xs text-slate-500">Sin franjas: se usa el horario de apertura y el cupo general.</p>
+              )}
+              {reservationsSlots.map((slot, idx) => (
+                <div key={idx} className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="time"
+                    value={slot.from}
+                    onChange={(e) => {
+                      const next = [...reservationsSlots];
+                      next[idx] = { ...next[idx], from: e.target.value };
+                      setReservationsSlots(next);
+                    }}
+                    className={`w-28 rounded border px-2 py-1 ${
+                      isSlotInvalid(slot) ? 'border-rose-400 bg-rose-50' : 'border-slate-200'
+                    }`}
+                  />
+                  <span className="text-sm text-slate-600">a</span>
+                  <input
+                    type="time"
+                    value={slot.to}
+                    onChange={(e) => {
+                      const next = [...reservationsSlots];
+                      next[idx] = { ...next[idx], to: e.target.value };
+                      setReservationsSlots(next);
+                    }}
+                    className={`w-28 rounded border px-2 py-1 ${
+                      isSlotInvalid(slot) ? 'border-rose-400 bg-rose-50' : 'border-slate-200'
+                    }`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Cupo"
+                    value={slot.capacity ?? ''}
+                    onChange={(e) => {
+                      const num = e.target.value === '' ? undefined : Math.max(0, Math.floor(Number(e.target.value) || 0));
+                      const next = [...reservationsSlots];
+                      next[idx] = { ...next[idx], capacity: num };
+                      setReservationsSlots(next);
+                    }}
+                    className="w-24 rounded border border-slate-200 px-2 py-1"
+                  />
+                  <button
+                    type="button"
+                    className="text-xs text-red-600"
+                    onClick={() => setReservationsSlots(reservationsSlots.filter((_, i) => i !== idx))}
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="text-xs text-blue-600"
+                onClick={() => setReservationsSlots([...reservationsSlots, { from: '', to: '' }])}
+              >
+                Anadir franja
+              </button>
+              {reservationsSlots.length > 0 && (
+                <button
+                  type="button"
+                  className="text-xs text-slate-600"
+                  onClick={() => setReservationsSlots([])}
+                >
+                  Vaciar franjas
+                </button>
+              )}
+              {reservationsSlots.length > 0 && (
+                <ul className="list-disc pl-5 text-xs text-slate-600">
+                  {reservationsSlots.map((s, i) => {
+                    const capText =
+                      Number.isFinite(s.capacity) && s.capacity !== undefined
+                        ? ` (cupo ${s.capacity})`
+                        : ' (cupo general)';
+                    return (
+                      <li key={i}>
+                        {s.from || '--:--'} - {s.to || '--:--'}
+                        {capText}
+                        {isSlotInvalid(s) && ' ⚠ formato HH:MM'}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="text-xs text-slate-500">
+                Si indicas cupo en la franja, se usa ese valor; si no, el cupo general. El cupo es por comensales.
+              </p>
+              {invalidSlots.length > 0 && (
+                <p className="text-xs text-rose-600">
+                  Hay franjas con formato invalido (usa HH:MM en desde y hasta).
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={reservationsAutoConfirm}
+                onChange={(e) => setReservationsAutoConfirm(e.target.checked)}
+              />
+              <span>Confirmar automaticamente si hay disponibilidad</span>
+            </label>
+            <p className="text-xs text-slate-500">Si hay cupo, la reserva entra como confirmada; si no, queda pendiente.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Fechas bloqueadas (YYYY-MM-DD)</label>
+            <input
+              className={`w-full rounded border px-3 py-2 ${
+                invalidDates.length > 0 ? 'border-rose-400 bg-rose-50' : 'border-slate-200'
+              }`}
+              placeholder="2025-12-24, 2025-12-25"
+              value={reservationsBlockedDates}
+              onChange={(e) => setReservationsBlockedDates(e.target.value)}
+            />
+            <p className="text-xs text-slate-500">Separa con comas. Esas fechas no aceptaran reservas.</p>
+            {invalidDates.length > 0 && (
+              <p className="text-xs text-rose-600">
+                Formato incorrecto en: {invalidDates.join(', ')} (usa YYYY-MM-DD)
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+
+  if (mode === "reservations") {
+    return (
+      <div className="space-y-8">
+        <header className="space-y-2">
+          <h2 className="text-2xl font-semibold text-slate-900">Configuracion de reservas</h2>
+          <p className="text-sm text-slate-600">Define franjas, cupos y bloqueo de fechas.</p>
+        </header>
+
+        {msg && (
+          <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {msg}
+          </div>
+        )}
+
+        <div className="space-y-6">{reservationsSection}</div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => void save()}
+            disabled={saving}
+            className="rounded bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:opacity-60"
+          >
+            {saving ? 'Guardando...' : 'Guardar cambios'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <header className="space-y-2">
@@ -232,13 +469,13 @@ export default function BusinessSettingsClient() {
           Organiza los datos que se muestran en tu pagina y como recibes avisos.
         </p>
       </header>
- 
+
       {msg && (
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           {msg}
         </div>
       )}
- 
+
       <div className="space-y-6">
         <Section
           title="Datos generales"
@@ -253,7 +490,7 @@ export default function BusinessSettingsClient() {
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
- 
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Slogan</label>
               <input
@@ -263,7 +500,7 @@ export default function BusinessSettingsClient() {
                 onChange={(e) => setSlogan(e.target.value)}
               />
             </div>
- 
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Sobre nosotros</label>
               <textarea
@@ -274,7 +511,7 @@ export default function BusinessSettingsClient() {
                 placeholder="Breve descripcion del negocio"
               />
             </div>
- 
+
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-slate-700">Tipo de menu</legend>
               <div className="flex flex-wrap items-center gap-6 text-sm text-slate-700">
@@ -357,64 +594,6 @@ export default function BusinessSettingsClient() {
           title="Contacto y ubicacion"
           description="Datos de contacto y coordenadas para el mapa."
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Telefono</label>
-              <input
-                className="w-full rounded border border-slate-200 px-3 py-2"
-                  placeholder="+34 600 000 000"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">WhatsApp</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  placeholder="+34600000000"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Email</label>
-                <input
-                  type="email"
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  placeholder="info@mirestaurante.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <label className="text-sm font-medium text-slate-700">Direccion</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  placeholder="Calle Mayor 123, 30001 Murcia"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Latitud</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  placeholder="37.9861"
-                  value={lat}
-                  onChange={(e) => setLat(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Longitud</label>
-                <input
-                  className="w-full rounded border border-slate-200 px-3 py-2"
-                  placeholder="-1.1303"
-                  value={lng}
-                  onChange={(e) => setLng(e.target.value)}
-                />
-              </div>
-            </div>
-        </Section>
 
         <Section
           title="Horarios"

@@ -20,6 +20,13 @@ export default function SettingsPage() {
         </div>
       </details>
 
+      <details className="rounded-lg border bg-white shadow-sm">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">Configuracion de reservas</summary>
+        <div className="p-4">
+          <BusinessSettingsClient mode="reservations" />
+        </div>
+      </details>
+
       {allowOrdersFeatures && (
         <details className="rounded-lg border bg-white shadow-sm">
           <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">Configuracion de pagos</summary>
