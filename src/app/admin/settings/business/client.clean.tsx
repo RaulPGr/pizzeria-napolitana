@@ -411,6 +411,24 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
             <p className="text-xs text-slate-500">Si hay cupo, la reserva entra como confirmada; si no, queda pendiente.</p>
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Alertas por Telegram (Reservas)</label>
+            {!telegramResConfigured && (
+              <p className="text-xs text-rose-600">
+                Telegram para reservas no está configurado. Pide al superadmin que lo añada en la pestaña Tema.
+              </p>
+            )}
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={telegramResEnabled}
+                disabled={!telegramResConfigured}
+                onChange={(e) => setTelegramResEnabled(e.target.checked)}
+              />
+              <span>Recibir avisos por Telegram</span>
+            </label>
+          </div>
+          <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Fechas bloqueadas (YYYY-MM-DD)</label>
             <input
               className={`w-full rounded border px-3 py-2 ${
