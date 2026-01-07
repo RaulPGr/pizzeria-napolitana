@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ReactNode, useEffect, useState } from 'react';
 import { useAdminAccess } from "@/context/AdminAccessContext";
@@ -21,7 +21,7 @@ type Biz = {
   menu_layout?: 'cards' | 'list' | null;
 };
 
-// Configuración general del negocio (datos públicos, notificaciones, redes, etc.).
+// ConfiguraciÃ³n general del negocio (datos pÃºblicos, notificaciones, redes, etc.).
 export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full" | "reservations" }) {
   const { plan } = useAdminAccess();
   const canManageReservations = subscriptionAllowsReservations(plan);
@@ -154,7 +154,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
     })();
   }, []);
  
-  // Persiste los cambios básicos (datos, switchs, redes...).
+  // Persiste los cambios bÃ¡sicos (datos, switchs, redes...).
   async function save() {
     if (invalidSlots.length > 0) {
       setMsg('Revisa las franjas: usa formato HH:MM en desde/hasta.');
@@ -382,7 +382,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
                       <li key={i}>
                         {s.from || '--:--'} - {s.to || '--:--'}
                         {capText}
-                        {isSlotInvalid(s) && ' ⚠ formato HH:MM'}
+                        {isSlotInvalid(s) && ' âš  formato HH:MM'}
                       </li>
                     );
                   })}
@@ -414,7 +414,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
             <p className="text-sm font-medium text-slate-700">Alertas por Telegram (Reservas)</p>
             {!telegramResConfigured && (
               <p className="text-xs text-rose-600">
-                Telegram para reservas no est� configurado. Pide al superadmin que lo a�ada en la pesta�a Tema.
+                Telegram para reservas no está configurado. Pide al superadmin que lo añada en la pestaña Tema.
               </p>
             )}
             <div className="flex flex-col gap-1 text-sm text-slate-700">
@@ -682,7 +682,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
         {canManageOrders && (
           <Section
             title="Pedidos online"
-            description="Activa o desactiva temporalmente la recepción de pedidos en la web."
+            description="Activa o desactiva temporalmente la recepciÃ³n de pedidos en la web."
           >
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
@@ -695,7 +695,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
             </label>
             {!ordersEnabled && (
               <p className="text-xs text-slate-500">
-                Mientras esté desactivado ocultaremos el carrito y los botones “Añadir” aunque sigas en plan Premium.
+                Mientras estÃ© desactivado ocultaremos el carrito y los botones â€œAÃ±adirâ€ aunque sigas en plan Premium.
               </p>
             )}
           </Section>
@@ -740,7 +740,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
           >
             {!telegramConfigured && (
               <p className="text-xs text-rose-600">
-                Telegram no está configurado. Pide al superadmin que lo configure en la pestaña Tema.
+                Telegram no estÃ¡ configurado. Pide al superadmin que lo configure en la pestaÃ±a Tema.
               </p>
             )}
             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -863,7 +863,7 @@ function Section({ title, description, children }: SectionProps) {
   );
 }
 
-// Mini editor para los horarios (permite hasta dos tramos por día).
+// Mini editor para los horarios (permite hasta dos tramos por dÃ­a).
 function HoursEditor({ value, onChange }: { value: any; onChange: (v: any) => void }) {
   const days = [
     { key: 'monday', label: 'Lunes' },
@@ -948,5 +948,6 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v: any) => vo
     </div>
   );
 }
+
 
 
