@@ -58,8 +58,21 @@ export default function MenuPage({ searchParams }: PageProps) {
     <Suspense
       fallback={
         <div className="flex h-[60vh] items-center justify-center">
+          <style jsx>{`
+            @keyframes menu-spin {
+              from {
+                transform: rotate(0deg);
+              }
+              to {
+                transform: rotate(360deg);
+              }
+            }
+          `}</style>
           <div className="flex items-center gap-3 text-slate-600">
-            <span className="h-6 w-6 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />
+            <span
+              className="h-6 w-6 rounded-full border-2 border-emerald-600 border-t-transparent"
+              style={{ animation: 'menu-spin 0.8s linear infinite' }}
+            />
             <span>Cargando carta...</span>
           </div>
         </div>
