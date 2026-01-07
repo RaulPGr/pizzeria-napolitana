@@ -410,14 +410,15 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
             </label>
             <p className="text-xs text-slate-500">Si hay cupo, la reserva entra como confirmada; si no, queda pendiente.</p>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Alertas por Telegram (Reservas)</label>
+                    <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-700">Alertas por Telegram (Reservas)</p>
             {!telegramResConfigured && (
               <p className="text-xs text-rose-600">
-                Telegram para reservas no est√° configurado. Pide al superadmin que lo a√±ada en la pesta√±a Tema.
+                Telegram para reservas no est· configurado. Pide al superadmin que lo aÒada en la pestaÒa Tema.
               </p>
             )}
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <div className="flex flex-col gap-1 text-sm text-slate-700">
+              <span className="text-xs text-slate-600">Recibir avisos por Telegram</span>
               <input
                 type="checkbox"
                 className="h-4 w-4"
@@ -425,8 +426,7 @@ export default function BusinessSettingsClient({ mode = "full" }: { mode?: "full
                 disabled={!telegramResConfigured}
                 onChange={(e) => setTelegramResEnabled(e.target.checked)}
               />
-              <span>Recibir avisos por Telegram</span>
-            </label>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Fechas bloqueadas (YYYY-MM-DD)</label>
@@ -948,3 +948,5 @@ function HoursEditor({ value, onChange }: { value: any; onChange: (v: any) => vo
     </div>
   );
 }
+
+
