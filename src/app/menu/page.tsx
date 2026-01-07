@@ -51,7 +51,26 @@ function normalizeDays(arr: any): number[] {
 }
 
 // Página principal de la carta (modo tarjetas o listado).
-export default async function MenuPage({ searchParams }: PageProps) {
+import { Suspense } from 'react';
+
+export default function MenuPage({ searchParams }: PageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[60vh] items-center justify-center">
+          <div className="flex items-center gap-3 text-slate-600">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+            <span>Cargando carta...</span>
+          </div>
+        </div>
+      }
+    >
+      <MenuContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function MenuContent({ searchParams }: PageProps) {
   const sp = searchParams || {};
   const rawDay = sp?.day; const rawCat = sp?.cat;
   const selectedCat = (Array.isArray(rawCat) ? rawCat[0] : rawCat) || '';
